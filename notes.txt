@@ -1,0 +1,7 @@
+https://www.tsmean.com/articles/how-to-write-a-typescript-library/
+
+https://medium.com/@martin_hotell/typescript-library-tips-rollup-your-types-995153cc81c7
+
+https://gist.github.com/aleclarson/9900ed2a9a3119d865286b218e14d226  rollup typescript
+
+https://github.com/alexjoverm/typescript-library-starter/blob/master/rollup.config.ts

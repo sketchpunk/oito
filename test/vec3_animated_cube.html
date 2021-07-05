@@ -1,0 +1,45 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+
+import Starter, { THREE }   from "./lib/starter.js";
+import Vec3                 from "../dist/Vec3.js";
+import Maths                from "../dist/Maths.js";
+
+let App, Cube;
+
+window.addEventListener( "load", _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:false, grid:true } );
+    App.onRender = onRender;
+    App.set_camera( 45, 20, 6 );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App.add( ( Cube = Starter.facedCube() ) );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App.render();
+});
+
+function onRender( dt, et ){
+    const SEC = 4;
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Smoothly transition between 0 to 1 to 0 every SEC
+    let t = Maths.smoothTStep( 
+        Maths.bounce(
+            Maths.gradient010( 
+                Maths.fract( et / SEC ) 
+            )
+        )
+    );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Move Cube
+    let angle	= Maths.noise( et * 0.2 ) * Maths.PI_2;	// Smooth Randomish Angles
+    let v		= new Vec3();
+    v	.fromLerp( [1,0,0], [-1,0,0], t )   // Directions to PingPong From
+        .scale( 3 )                         // Increase Range of Movement
+        .axisAngle( Vec3.UP, angle )        // Rotate Direction
+        .toStruct( Cube.position );         // Apply it to THREE.js's Position Struct
+}
+
+</script></body></html>

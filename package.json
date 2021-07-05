@@ -1,0 +1,31 @@
+{
+	"name"			: "oito",
+	"version"		: "0.0.0.1",
+	"description"	: "Javascript Math Library, primarily aimed for WebGL/WebGPU",
+	"keywords"		: [ "webgl", "webgpu", "math" ],
+	"repository"	: { "url": "https://github.com/sketchpunk/oito.git", "type": "git" },
+	"author"		: { "name": "Sketchpunk", "email": "tmp@tmp.com", "url": "http://tmp" },
+	"license"		: "MIT",
+	"main"			: "dist/index.js",
+	"types"			: "dist/index.d.ts",
+	"files"			: [ "dist" ],
+
+	"devDependencies": {
+		"typescript"						: "^4.3.2",
+		"@typescript-eslint/eslint-plugin"	: "^4.27.0",
+		"@typescript-eslint/parser"			: "^4.27.0",
+
+		"eslint"		: "^7.28.0",
+		"concurrently"	: "^6.2.0",
+		"lite-server"	: "^2.6.1",
+		"three"         : "0.129.0"
+	},
+	"scripts": {
+		"test"		: "echo \"Error: no test specified\" && exit 1",
+		"tsc"		: "tsc --watch --preserveWatchOutput",
+		"lite"		: "lite-server",
+		"start"		: "concurrently \"npm:tsc\" \"npm:lite\" ",
+		"build"		: "tsc -p tsconfig.json",
+		"lint"		: "eslint src/ --ext .js,.jsx,.ts,.tsx"
+	}
+}
