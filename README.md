@@ -26,10 +26,10 @@ function onRender( dt, et ){
     // Move Cube
     let angle = Maths.noise( et * 0.2 ) * Maths.PI_2;	// Smooth Randomish Angles
     let v     = new Vec3();
-    v	.fromLerp( [1,0,0], [-1,0,0], t )	// Directions to PingPong From
-        .scale( 3 )							// Increase Range of Movement
-        .axisAngle( Vec3.UP, angle )		// Rotate Direction
-        .toStruct( Cube.position );			// Apply it to THREE.js's Position Struct
+    v	.fromLerp( [1,0,0], [-1,0,0], t )   // Directions to PingPong From
+        .scale( 3 )                         // Increase Range of Movement
+        .axisAngle( Vec3.UP, angle )        // Rotate Direction
+        .toStruct( Cube.position );         // Apply it to THREE.js's Position Struct
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Rotate Cube
