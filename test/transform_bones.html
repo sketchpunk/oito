@@ -1,0 +1,119 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+
+import Starter, { THREE }   from "./lib/starter.js";
+import Transform            from "../dist/Transform.js";
+import Maths                from "../dist/Maths.js";
+import Vec3                 from "../dist/Vec3.js";
+
+let App, Chain;
+
+window.addEventListener( "load", _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:false, grid:true } );
+    App.onRender = onRender;
+    App.set_camera( 0, 20, 6 );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Chain = new BoneChain()
+        .addBatch( 8, 0.4 )
+        .update();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App.render();
+});
+
+function onRender( dt, et ){
+    // Animation Timing
+    let b, t = Math.sin( et * 0.8 );
+
+    // Update Bone Local Space Rotation
+    for( b of Chain.bones ){
+        b.local.rot.fromAxisAngle( Vec3.FORWARD, t * Maths.PI_Q );
+    }
+
+    // Compute Worldspace Transforms for Bones
+    Chain.update();
+}
+
+//##########################################################################
+
+class Bone{
+    // #region MAIN
+    local = new Transform();    // Local Space Transform
+    world = new Transform();    // World Space Transform
+    len   = 0.2;                // Bone Length
+    obj   = null;               // Refence to ThreeJS Object
+
+    constructor( len = null ){ 
+        if( len != null ) this.len = len;
+    }
+
+    update(){
+        // Copy World Space Transform to 3JS Object
+        this.world.rot.toStruct( this.obj.quaternion );
+        this.world.pos.toStruct( this.obj.position );
+        this.world.scl.toStruct( this.obj.scale );
+    }
+    // #endregion /////////////////////////////////////////////////////////////////////
+}
+
+class BoneChain{
+    // #region MAIN
+    bones   = new Array();
+    count   = 0;
+    constructor(){}
+    // #endregion /////////////////////////////////////////////////////////////////////
+
+    // #region METHODS
+    addBatchAry( ary ){
+        for( let i of ary ) this.add( i );
+        return this;
+    }
+    
+    addBatch( cnt, size ){
+        for( let i=0; i < cnt; i++ ) this.add( size );
+        return this;
+    }
+
+    add( len=0.2, pos=null ){
+        let b = new Bone( len );
+
+        // If no position, get previous bone's length
+        // and use that to create a local offset positon
+        // for the child bone.
+        if( pos == null && this.bones.length != 0 ){
+            let p = this.bones[ this.bones.length-1 ];
+            b.local.pos.xyz( 0, p.len, 0 );
+        }
+
+        this.bones.push( b );
+        this.count = this.bones.length;
+
+        //-----------------------------------
+        // Create 3JS Bone Representation
+        const S = 0.2
+        b.obj = Starter.pivotGrp( Starter.facedCube( null, null, [ S, len, S ] ) );
+        App.add( b.obj );
+
+        return this;
+    }
+    // #endregion /////////////////////////////////////////////////////////////////////
+
+    // #region UPDATES
+    update(){
+        let b;
+        for( let i=0; i < this.bones.length; i++ ){
+            b = this.bones[ i ];
+
+            // If root Local == World, else Parent.World + Child.Local
+            if( i == 0 ) b.world.copy( b.local );
+            else         b.world.fromAdd( this.bones[ i-1 ].world, b.local );
+
+            b.update();
+        }
+        return this;
+    }
+    // #endregion /////////////////////////////////////////////////////////////////////
+}
+
+</script></body></html>

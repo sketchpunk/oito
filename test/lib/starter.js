@@ -122,8 +122,8 @@ class Starter{
 
     // Create a Cube with its faces colored a specific way based on which direction/axis it faces.
     // The Main bits are RED:FORWARD(+Z), GREEN:LEFT(+X), BLUE:TOP(+Y)
-    static facedCube( pos=null, scl=null ){
-        const geo = new THREE.BoxGeometry( 1, 1, 1 );
+    static facedCube( pos=null, scl=null, size=[1,1,1] ){
+        const geo = new THREE.BoxGeometry( size[0], size[1], size[2] );
         const mat = [
             new THREE.MeshBasicMaterial( { color: 0x00ff00 } ), // Left
             new THREE.MeshBasicMaterial( { color: 0x777777 } ), // Right
@@ -139,6 +139,16 @@ class Starter{
         if( scl != null )   mesh.scale.set( scl, scl, scl );
 
         return mesh; 
+    }
+
+    static pivotGrp( mesh ){
+        const pivot = new THREE.Group();
+        pivot.add( mesh );
+
+        let h = mesh.geometry.parameters.height;
+        mesh.position.y = h / 2;
+    
+        return pivot;
     }
 
     static axis( size=1 ){ return new THREE.AxisHelper( size ); }
@@ -157,6 +167,19 @@ class Starter{
     // #endregion ////////////////////////////////////////////////////////////////////////////////////////
 }
 
+/*
+function OriginCube( x, y, z ){
+    const mat   = new THREE.MeshPhongMaterial( {color:'#80f080'} );
+    const geo   = new THREE.BoxGeometry( x, y, z );
+    const mesh  = new THREE.Mesh( geo, mat );
+    mesh.position.y = y * 0.5;
+
+    const pivot = new THREE.Group();
+    pivot.add( mesh );
+
+    return pivot;
+}
+*/
 
 export default Starter;
 export { THREE };

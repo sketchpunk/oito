@@ -1,16 +1,19 @@
+import Quat from "./Quat.js";
+
 type TVec3       = Vec3 | Float32Array | [number,number,number] | number[]
+type TVec4       = Quat | Float32Array | [number,number,number,number] | number[]
 type TVec3Struct = { x: number, y: number, z: number } // Handle Data form ThreeJS
 
 class Vec3 extends Float32Array{
 
     //#region STATIC VALUES
     static UP       = [  0,  1,  0 ];
-    static DOWN		= [  0, -1,  0 ];
-    static LEFT		= [ -1,  0,  0 ];
-    static RIGHT	= [  1,  0,  0 ];
-    static FORWARD	= [  0,  0,  1 ];
-    static BACK		= [  0,  0, -1 ];
-    static ZERO		= [  0,  0,  0 ];
+    static DOWN     = [  0, -1,  0 ];
+    static LEFT     = [ -1,  0,  0 ];
+    static RIGHT    = [  1,  0,  0 ];
+    static FORWARD  = [  0,  0,  1 ];
+    static BACK     = [  0,  0, -1 ];
+    static ZERO     = [  0,  0,  0 ];
     //#endregion ////////////////////////////////////////////////////////
 
     //#region CONSTRUCTORS 
@@ -88,16 +91,16 @@ class Vec3 extends Float32Array{
     isZero() : boolean { return ( this[ 0 ] == 0 && this[ 1 ] == 0 && this[ 2 ] == 0 ); }
 
     /** Generate a random vector. Can choose per axis range */
-	rnd( x0=0, x1=1, y0=0, y1=1, z0=0, z1=1 ) : Vec3 {
+    rnd( x0=0, x1=1, y0=0, y1=1, z0=0, z1=1 ) : Vec3 {
         let t;
         t = Math.random(); this[ 0 ] = x0 * (1-t) + x1 * t;
         t = Math.random(); this[ 1 ] = y0 * (1-t) + y1 * t;
         t = Math.random(); this[ 2 ] = z0 * (1-t) + z1 * t;
         return this;
-	}
+    }
 
     /** Return the Index of which axis has the smallest number */
-	minAxis() : number{
+    minAxis() : number{
         if( this[ 0 ] < this[ 1 ] && this[ 0 ] < this[ 2 ] ) return 0;
         if( this[ 1 ] < this[ 2 ] ) return 1;
         return 2;
@@ -357,25 +360,20 @@ class Vec3 extends Float32Array{
         return this;
     }
 
-
-    /*
-    fromQuat( q, v=Vec3.FORWARD ){
-        //Vec3.transform_quat( dir || Vec3.FORWARD, q, this );
-        let qx = q[0], qy = q[1], qz = q[2], qw = q[3],
-            vx = v[0], vy = v[1], vz = v[2],
-            x1 = qy * vz - qz * vy,
-            y1 = qz * vx - qx * vz,
-            z1 = qx * vy - qy * vx,
-            x2 = qw * x1 + qy * z1 - qz * y1,
-            y2 = qw * y1 + qz * x1 - qx * z1,
-            z2 = qw * z1 + qx * y1 - qy * x1;
-
-        this[0] = vx + 2 * x2;
-        this[1] = vy + 2 * y2;
-        this[2] = vz + 2 * z2;
+    fromQuat( q: TVec4, v: TVec3 ) : Vec3{
+        const qx = q[0], qy = q[1], qz = q[2], qw = q[3],
+              vx = v[0], vy = v[1], vz = v[2],
+              x1 = qy * vz - qz * vy,
+              y1 = qz * vx - qx * vz,
+              z1 = qx * vy - qy * vx,
+              x2 = qw * x1 + qy * z1 - qz * y1,
+              y2 = qw * y1 + qz * x1 - qx * z1,
+              z2 = qw * z1 + qx * y1 - qy * x1;
+        this[ 0 ] = vx + 2 * x2;
+        this[ 1 ] = vy + 2 * y2;
+        this[ 2 ] = vz + 2 * z2;
         return this;
     }
-    */
 
     /** Axis Rotation of a Vector */
     fromAxisAngle( axis: TVec3, rad: number, v=Vec3.FORWARD ) : Vec3{
@@ -576,7 +574,7 @@ class Vec3 extends Float32Array{
         return this;
     }
 
-    transformQuat( q : Array<number> | Float32Array ) : Vec3{ 
+    transformQuat( q : TVec4 ) : Vec3{ 
         const qx = q[ 0 ],    qy = q[ 1 ],    qz = q[ 2 ], qw = q[ 3 ],
               vx = this[ 0 ], vy = this[ 1 ], vz = this[ 2 ],
               x1 = qy * vz - qz * vy,
@@ -613,7 +611,6 @@ class Vec3 extends Float32Array{
         return Math.sqrt( (a[ 0 ]-b[ 0 ]) ** 2 + (a[ 1 ]-b[ 1 ]) ** 2 + (a[ 2 ]-b[ 2 ]) ** 2 );
     }
     
-
     //++++++++++++++++++++++++++++++++++
 
     static dot( a: TVec3, b: TVec3 ) : number { return a[ 0 ] * b[ 0 ] + a[ 1 ] * b[ 1 ] + a[ 2 ] * b[ 2 ]; }    
@@ -656,24 +653,7 @@ class Vec3 extends Float32Array{
         return out;
     }
     
-    static fromQuat( q : Array<number> | Float32Array, v ?: TVec3 ) : Vec3 { 
-        v = v || Vec3.FORWARD;
-
-        const qx = q[ 0 ],    qy = q[ 1 ],    qz = q[ 2 ], qw = q[ 3 ],
-              vx = v[ 0 ],    vy = v[ 1 ],    vz = v[ 2 ],
-              x1 = qy * vz - qz * vy,
-              y1 = qz * vx - qx * vz,
-              z1 = qx * vy - qy * vx,
-              x2 = qw * x1 + qy * z1 - qz * y1,
-              y2 = qw * y1 + qz * x1 - qx * z1,
-              z2 = qw * z1 + qx * y1 - qy * x1;
-
-        const rtn = new Vec3();
-        rtn[ 0 ] = vx + 2 * x2;
-        rtn[ 1 ] = vy + 2 * y2;
-        rtn[ 2 ] = vz + 2 * z2;
-        return rtn;
-    }
+    static fromQuat( q: TVec4, v:TVec3 ) : Vec3{ return new Vec3( v ).transformQuat( q ); }
 
     static fromNorm( x: TVec3 ) : Vec3
     static fromNorm( x: number, y: number, z: number ) : Vec3
