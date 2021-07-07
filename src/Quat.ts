@@ -1,10 +1,5 @@
 import Maths    from "./Maths.js";
-import Vec4     from "./Vec4.js";
 import Vec3     from "./Vec3.js";
-
-type TVec3       = Vec3 | Float32Array | [number,number,number] | number[]
-type TVec4       = Quat | Vec4 | Float32Array | [number,number,number,number] | number[]
-type TVec4Struct = { x: number, y: number, z: number, w: number }
 
 class Quat extends Float32Array{
 
@@ -204,13 +199,13 @@ class Quat extends Float32Array{
     }
 
     toPolar() : Array<number>{
-        const fwd     = Vec3.fromQuat( this );	           // Forward Direction
-        const flat    = Vec3.fromNorm( fwd.x, 0, fwd.z );  // Flatten Direction
-        let lon       = Vec3.angle( Vec3.FORWARD, flat );  // Lon Angle in Rads
-        let lat       = Vec3.angle( flat, fwd );           // Lat Angle in Rads
+        const fwd     = Vec3.fromQuat( this, Vec3.FORWARD );    // Forward Direction
+        const flat    = Vec3.fromNorm( fwd.x, 0, fwd.z );       // Flatten Direction
+        let lon       = Vec3.angle( Vec3.FORWARD, flat );       // Lon Angle in Rads
+        let lat       = Vec3.angle( flat, fwd );                // Lat Angle in Rads
         
-        const d_side = Vec3.dot( fwd, Vec3.RIGHT );        // Right Hemi Test
-        const d_up   = Vec3.dot( fwd, Vec3.UP );           // Top Hemi Test
+        const d_side = Vec3.dot( fwd, Vec3.RIGHT );             // Right Hemi Test
+        const d_up   = Vec3.dot( fwd, Vec3.UP );                // Top Hemi Test
 
         // Negitive Check
         if( d_side < 0 )	lon = -lon;

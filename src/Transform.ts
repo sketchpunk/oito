@@ -3,9 +3,6 @@ import Quat from "./Quat.js";
 
 // http://gabormakesgames.com/blog_transforms_transforms.html
 
-type TVec3 = Vec3 | Float32Array | [number,number,number] | number[]
-type TVec4 = Quat | Float32Array | [number,number,number,number] | number[]
-
 class Transform{
 
     //#region MAIN

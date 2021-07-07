@@ -179,6 +179,38 @@ function OriginCube( x, y, z ){
 
     return pivot;
 }
+
+function geoToWireframe( geo ){
+    let mesh, mat;
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Z
+    // Solid Coloring
+    mat = new THREE.MeshBasicMaterial({
+        color               : 0x000000,
+        opacity             : 0.5,
+        transparent         : true,
+        polygonOffset       : true,    // Help against Z Fighting
+        polygonOffsetFactor : 1, 
+        polygonOffsetUnits  : 1,
+    });
+    
+    mesh = new THREE.Mesh( geo, mat );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Z
+    // Wireframe
+    mat = new THREE.LineBasicMaterial({
+        color       : 0xffffff, 
+        opacity     : 0.2, 
+        transparent : true,
+    });
+
+    let geoEdges    = new THREE.WireframeGeometry( geo );
+    let wireframe   = new THREE.LineSegments( geoEdges, mat );
+    mesh.add( wireframe );
+
+    return mesh;
+}
+
 */
 
 export default Starter;

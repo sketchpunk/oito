@@ -1,6 +1,3 @@
-type TVec4       = Vec4 | Float32Array | [number,number,number,number] | number[]
-type TVec4Struct = { x: number, y: number, z: number, w: number }
-
 class Vec4 extends Float32Array{
 
     //#region CONSTRUCTORS

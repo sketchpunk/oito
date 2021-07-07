@@ -1,9 +1,3 @@
-import Quat from "./Quat.js";
-
-type TVec3       = Vec3 | Float32Array | [number,number,number] | number[]
-type TVec4       = Quat | Float32Array | [number,number,number,number] | number[]
-type TVec3Struct = { x: number, y: number, z: number } // Handle Data form ThreeJS
-
 class Vec3 extends Float32Array{
 
     //#region STATIC VALUES
