@@ -485,11 +485,11 @@ class Vec3 extends Float32Array{
 
     norm() : Vec3{
         let mag = Math.sqrt( this[0]**2 + this[1]**2 + this[2]**2 );
-        if( mag == 0 ){
+        if( mag != 0 ){
             mag      = 1 / mag;
-            this[0] *= mag;
-            this[1] *= mag;
-            this[2] *= mag;
+            this[ 0 ] *= mag;
+            this[ 1 ] *= mag;
+            this[ 2 ] *= mag;
         }
         return this;
     }
