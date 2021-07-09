@@ -1,5 +1,7 @@
 import Vec3 from "../Vec3.js";
 
+/* TODO - Add Loop Mode */
+
 class Point{
     pos = new Vec3();
 	constructor( pos: TVec3 ){ this.pos.copy( pos ); }
@@ -17,6 +19,7 @@ class BezierQuadSpline{
     //#endregion ////////////////////////////////////////////////////////
 
 	//#region MANAGE POINTS
+    /** Add Points to the spline */
 	add( pos: TVec3 ) : BezierQuadSpline{
 		this.points.push( new Point( pos ) );
 		this._point_cnt = this.points.length;
@@ -24,11 +27,13 @@ class BezierQuadSpline{
 		return this;
     }
     
+    /** Update point position using any array based vector object */
     updatePos( idx: number, pos: TVec3 ) : BezierQuadSpline{
         this.points[ idx ].pos.copy( pos );
         return this;
     }
 
+    /** Update point position using a XYZ Struct, make it easier to use THREE.JS */
     updatePosStruct( idx: number, pos: TVec3Struct ) : BezierQuadSpline{
         this.points[ idx ].pos.fromStruct( pos );
         return this;
@@ -36,6 +41,7 @@ class BezierQuadSpline{
 	//#endregion ////////////////////////////////////////////////////////
 
     //#region SPLINE
+    /** Get Position and Dertivates of the Spline at T */
     at( t: number, pos ?: TVec3, dxdy ?: TVec3, dxdy2 ?: TVec3 ): TVec3{
         if( t > 1 )      t = 1;
         else if( t < 0 ) t = 0;
@@ -56,6 +62,8 @@ class BezierQuadSpline{
     //#endregion ////////////////////////////////////////////////////////
 
     //#region COMPUTE
+
+    /** Which Points to use based on T of spline that isn't a loop */
     _non_loop_index( t: number ) : [number,number,number,number]{
         let i, tt;
 
@@ -72,6 +80,7 @@ class BezierQuadSpline{
         return [ i, i+1, i+2, tt ];
     }
 
+    /** Position On Curve */
     _at( a: TVec3, b: TVec3, c: TVec3, t:number, out:TVec3 ) : TVec3{
 		// https://en.wikipedia.org/wiki/B%C3%A9zier_curve
 		// (1-t) * ((1-t) * a + t * b) + t((1-t) * b + t * c)
@@ -82,6 +91,7 @@ class BezierQuadSpline{
 		return out;
 	}
 
+    /** First Derivative On Curve */
 	_dxdy( a: TVec3, b: TVec3, c: TVec3, t:number, out:TVec3 ) : TVec3{
 		// 2 * (1-t) * (b-a) + 2 * t * ( c - b );
 		const s2 = 2 * ( 1-t );
@@ -93,6 +103,7 @@ class BezierQuadSpline{
 		return out;
 	}
 
+    /** Second Derivative On Curve */
 	_dxdy2( a: TVec3, b: TVec3, c: TVec3, t:number, out:TVec3 ) : TVec3{
         // 2 * ( c - 2 * b + a )
         // -4b + 2a + 2c [ Simplifed Version ]
@@ -101,49 +112,6 @@ class BezierQuadSpline{
 		out[ 2 ] = -4 * b[2] + 2 * a[2] + 2 * c[2];
 		return out;
     }
-    //#endregion ////////////////////////////////////////////////////////
-
-    //#region MISC
-    /*
-    debug( draw, steps=10, inc_dxdy=false, inc_dxdy2=false ){
-        let prev = new Vec3();
-        let pos  = new Vec3();
-        let dev  = new Vec3();
-        let t;
-
-        // Draw First Point
-        this.at( 0, prev );
-        draw.pnt( prev, "yellow", 0.05, 1 );
-
-        for( let i=1; i <= steps; i++ ){
-            t = i / steps;
-
-            //------------------------------------
-            // Draw Step
-            this.at( t, pos );
-            draw
-                .ln( prev, pos, "yellow" )
-                .pnt( pos, "yellow", 0.05, 1 );
-
-            //------------------------------------
-            // Draw Forward Direction
-            if( inc_dxdy ){
-                this.at( t, null, dev );
-                draw.ln( pos, dev.norm().scale( 0.4 ).add( pos ), "white" );
-            }
-
-            //------------------------------------
-            // Draw Forward Direction
-            if( inc_dxdy2 ){
-                this.at( t, null, null, dev );
-                draw.ln( pos, dev.norm().scale( 0.4 ).add( pos ), "cyan" );
-            }
-
-            //------------------------------------
-            prev.copy( pos );
-        }
-    }
-    */
     //#endregion ////////////////////////////////////////////////////////
 }
 
