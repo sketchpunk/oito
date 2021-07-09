@@ -1,12 +1,9 @@
 <!DOCTYPE html><html><head><title></title></head><body><script type="module">
 
-import Starter, { THREE }   from "./lib/starter.js";
-
-import PointsMesh   from "./lib/PointsMesh.js";
-import LinesMesh    from "./lib/LinesMesh.js";
-
+import Starter, { THREE }       from "./lib/starter.js";
+import Draggables               from "./lib/Draggables.js";
 let App;
-let ln, pnt;
+let Drag;
 
 window.addEventListener( "load", _=>{
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -14,16 +11,14 @@ window.addEventListener( "load", _=>{
     App.set_camera( 45, 20, 6 ).render();
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    App.add( Starter.facedCube() );
+    let mesh = Starter.facedCube();
+    mesh.scale.set( 0.2, 0.2, 0.2 );
+    App.add( mesh );
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    pnt = new PointsMesh( 10 );
-    pnt.add( [0,1.5,0], 0x00ffff, 5, 1 );
-    App.add( pnt.mesh );
-
-    ln = new LinesMesh( 10 );
-    ln.add( [0,0,0], [0,1.5,0], 0x00ffff, null, true );
-    App.add( ln.mesh );
+    Drag = new Draggables( App );
+    Drag.onMove = ( o )=>{ console.log( o.position ); };
+    Drag.add( mesh );
 });
 
 </script></body></html>
