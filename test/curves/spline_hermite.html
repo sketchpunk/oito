@@ -1,14 +1,14 @@
 <!DOCTYPE html><html><head><title></title></head><body><script type="module">
 
-import Starter, { THREE }   from "./lib/starter.js";
+import Starter, { THREE }   from "../lib/starter.js";
 
-import LinesMesh            from "./lib/LinesMesh.js";
-import Draggables           from "./lib/Draggables.js";
+import LinesMesh            from "../lib/LinesMesh.js";
+import Draggables           from "../lib/Draggables.js";
 
-import Vec3                 from "../dist/Vec3.js";
-import Quat                 from "../dist/Quat.js";
-import BezierCubicSpline    from "../dist/curves/BezierCubicSpline.js";
-import Cycle                from "../dist/animation/Cycle.js";
+import Vec3                 from "../../dist/Vec3.js";
+import Quat                 from "../../dist/Quat.js";
+import HermiteSpline        from "../../dist/curves/HermiteSpline.js";
+import Cycle                from "../../dist/animation/Cycle.js";
 
 //########################################################################################
 
@@ -21,11 +21,10 @@ function onRender( dt, et ){
     // Get Position and Direction from Spline at Animation Type
     let pos = new Vec3();
     let dir = new Vec3();
-    let up  = new Vec3();    
-    RenderCurve.spline.at( gCycle.asSigmoid010( -0.5 ), pos, dir, up );
+    RenderCurve.spline.at( gCycle.asSigmoid01( -0.5 ), pos, dir );
 
     // Apply Data to Actor
-    let rot = Quat.fromLook( dir, up );
+    let rot = Quat.fromLook( dir, Vec3.UP );
     Actor.position.fromArray( pos );
     Actor.quaternion.fromArray( rot );
 }
@@ -34,7 +33,7 @@ window.addEventListener( "load", _=>{
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     App = new Starter( { webgl2:false, grid:true } );
     App.set_camera( 0, 20, 6 );
-    App.add( (ln = new LinesMesh( 60 )).mesh );     // Debugging Lines
+    App.add( (ln = new LinesMesh( 100 )).mesh );     // Debugging Lines
     App.onRender = onRender;
 
     Drag = new Draggables( App );                   // Visual Point that can move spline points
@@ -48,13 +47,13 @@ window.addEventListener( "load", _=>{
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     RenderCurve.generatePoints(
-        [ -3, 0, 1 ], false,
-        [ -2, 1, 0 ], true,
-        [ -1, -1, 0 ], true,
-        [ 0, 0, -1 ], false,
-        [ 1, 1, 0 ], true,
-        [ 2, -1, 0 ], true,
-        [ 3, 0, 1 ], false,
+        [ 0, 0, 1 ], 0,0,    
+        
+        [ 3, 0, 0 ], 0,0,
+        [ 1, 0, -1 ], 0,1,
+        
+        [ -1.5, 0, -1 ], 0,0,
+        [ -3, 0, 1 ], 1,0,
     );
 
     RenderCurve.draw();
@@ -67,29 +66,29 @@ window.addEventListener( "load", _=>{
 
 class RenderCurve{
     static points = [];
-    static spline = new BezierCubicSpline();
+    static spline = new HermiteSpline( true );
 
     static generatePoints( ){
         const scl   = 0.2;
         const geo   = new THREE.BoxGeometry( scl, scl, scl );
-        const mat0  = new THREE.MeshPhongMaterial( { color: 0x00ff00 } );
-        const mat1  = new THREE.MeshPhongMaterial( { color: 0x00ffff } );
-        let mesh, isCtrl, pos;
+        const mat0  = new THREE.MeshPhongMaterial( { color: 0x00ffff } );
+        let mesh, ten, bias, pos;
 
-        for( let i=0; i < arguments.length; i+=2 ){
-            pos     = arguments[ i ];
-            isCtrl  = arguments[ i+1 ];
+        for( let i=0; i < arguments.length; i+=3 ){
+            pos  = arguments[ i ];
+            ten  = arguments[ i+1 ];
+            bias = arguments[ i+2 ];
 
             //............................
             // Create Renderable
-            mesh    = new THREE.Mesh( geo, isCtrl?mat0:mat1 );
+            mesh    = new THREE.Mesh( geo, mat0 );
             mesh.position.fromArray( pos );
 
             //............................
-            App.add( mesh );            // Add to Scene Graph For Rendering
-            Drag.add( mesh );           // For Ray Casting and Translate Gizmo
-            this.points.push( mesh );   // Keep Track of Points that Exist
-            this.spline.add( pos );     // Add Point to Spline
+            App.add( mesh );                    // Add to Scene Graph For Rendering
+            Drag.add( mesh );                   // For Ray Casting and Translate Gizmo
+            this.points.push( mesh );           // Keep Track of Points that Exist
+            this.spline.add( pos, ten, bias );  // Add Point to Spline
         }
     }
 
@@ -104,11 +103,10 @@ class RenderCurve{
     static draw(){
         ln.reset();
 
-        const samp  = 20;           // Sample Count
+        const samp  = 30;           // Sample Count
         const prev  = new Vec3();   // Previous Position
         const curr  = new Vec3();   // Current Position
         const dxdy  = new Vec3();   // First Derivative ( Tangent - Look Direction )
-        const dxdy2 = new Vec3();   // Second Derivative( Normal - Down Directin?? )
         let t, i;
 
         this.spline.at( 0, prev );  // Get the First Point
@@ -116,11 +114,10 @@ class RenderCurve{
         for( i=1; i <= samp; i++ ){
             t = i / samp;
 
-            this.spline.at( t, curr, dxdy, dxdy2 );
+            this.spline.at( t, curr, dxdy );
 
             ln.add( prev, curr, 0x00ffff );
-            ln.add( curr, dxdy.norm().scale( 0.8 ).add( curr ), 0xffff00, null, true );
-            ln.add( curr, dxdy2.norm().scale( 0.6 ).add( curr ), 0xffffff, null, true );
+            ln.add( curr, dxdy.norm().scale( 0.4 ).add( curr ), 0xffff00, null, true );
 
             prev.copy( curr );
         }

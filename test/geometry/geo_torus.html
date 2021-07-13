@@ -1,7 +1,7 @@
 <!DOCTYPE html><html><head><title></title></head><body><script type="module">
 
-import Starter, { THREE }   from "./lib/starter.js";
-import Capsule              from "../dist/geometry/Capsule.js";
+import Starter, { THREE }   from "../lib/starter.js";
+import Torus                from "../../dist/geometry/Torus.js";
 //###################################################################################
 
 let App;
@@ -9,14 +9,14 @@ let App;
 window.addEventListener( "load", _=>{
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     App = new Starter( { webgl2:false, grid:true } );
-    App.set_camera( 0, 20, 6 ).render();
+    App.set_camera( 0, 40, 4 ).render();
 
     //----------------------------------
     // Push Raw Data to GPU Buffers
-    const sGeo      = Capsule.get( 0.5, 1.0, 10, 5 );
+    const sGeo      = Torus.get();
     const bufVert   = new THREE.BufferAttribute( new Float32Array( sGeo.vertices ), 3 );
     const bufNorm   = new THREE.BufferAttribute( new Float32Array( sGeo.normals ),  3 );
-    const bufUV     = new THREE.BufferAttribute( new Float32Array( sGeo.texcoord ), 2 );
+    //const bufUV     = new THREE.BufferAttribute( new Float32Array( sGeo.texcoord ), 2 );
 
     //----------------------------------
     // Define Geometry Object
@@ -24,7 +24,7 @@ window.addEventListener( "load", _=>{
     bGeo.setIndex( sGeo.indices )
     bGeo.setAttribute( "position",  bufVert );
     bGeo.setAttribute( "normal",    bufNorm );
-    bGeo.setAttribute( "uv",        bufUV );
+    //bGeo.setAttribute( "uv",        bufUV );
 
     //----------------------------------
     // Create a Renderable in Engine of choice.
