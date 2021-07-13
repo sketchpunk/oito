@@ -1,0 +1,128 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+
+import Starter, { THREE }   from "./lib/starter.js";
+
+import LinesMesh            from "./lib/LinesMesh.js";
+import Draggables           from "./lib/Draggables.js";
+
+import Vec3                 from "../dist/Vec3.js";
+import Quat                 from "../dist/Quat.js";
+import HermiteSpline        from "../dist/curves/HermiteSpline.js";
+import Cycle                from "../dist/animation/Cycle.js";
+
+//########################################################################################
+
+let App, Drag, ln, gCycle, Actor;
+
+function onRender( dt, et ){
+    // Move Animation Along
+    gCycle.update( dt );
+
+    // Get Position and Direction from Spline at Animation Type
+    let pos = new Vec3();
+    let dir = new Vec3();
+    RenderCurve.spline.at( gCycle.asSigmoid01( -0.5 ), pos, dir );
+
+    // Apply Data to Actor
+    let rot = Quat.fromLook( dir, Vec3.UP );
+    Actor.position.fromArray( pos );
+    Actor.quaternion.fromArray( rot );
+}
+
+window.addEventListener( "load", _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:false, grid:true } );
+    App.set_camera( 0, 20, 6 );
+    App.add( (ln = new LinesMesh( 100 )).mesh );     // Debugging Lines
+    App.onRender = onRender;
+
+    Drag = new Draggables( App );                   // Visual Point that can move spline points
+    Drag.onMove = (o)=>{ RenderCurve.updateSpline().draw(); };
+
+    gCycle = new Cycle( 10 );                       // Handle Animation Time
+
+    App.add( (Actor = Starter.facedCube() ) );      // Animated Item
+    Actor.scale.set( 0.2, 0.2, 0.2 );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    RenderCurve.generatePoints(
+        [ 0, 0, 1 ], 0,0,    
+        
+        [ 3, 0, 0 ], 0,0,
+        [ 1, 0, -1 ], 0,1,
+        
+        [ -1.5, 0, -1 ], 0,0,
+        [ -3, 0, 1 ], 1,0,
+    );
+
+    RenderCurve.draw();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App.render();
+});
+
+//########################################################################################
+
+class RenderCurve{
+    static points = [];
+    static spline = new HermiteSpline( true );
+
+    static generatePoints( ){
+        const scl   = 0.2;
+        const geo   = new THREE.BoxGeometry( scl, scl, scl );
+        const mat0  = new THREE.MeshPhongMaterial( { color: 0x00ffff } );
+        let mesh, ten, bias, pos;
+
+        for( let i=0; i < arguments.length; i+=3 ){
+            pos  = arguments[ i ];
+            ten  = arguments[ i+1 ];
+            bias = arguments[ i+2 ];
+
+            //............................
+            // Create Renderable
+            mesh    = new THREE.Mesh( geo, mat0 );
+            mesh.position.fromArray( pos );
+
+            //............................
+            App.add( mesh );                    // Add to Scene Graph For Rendering
+            Drag.add( mesh );                   // For Ray Casting and Translate Gizmo
+            this.points.push( mesh );           // Keep Track of Points that Exist
+            this.spline.add( pos, ten, bias );  // Add Point to Spline
+        }
+    }
+
+    static updateSpline(){
+        let i, pnt = this.points;
+        for( i=0; i < pnt.length; i++ ){
+            this.spline.updatePosStruct( i, pnt[ i ].position );
+        }
+        return this;
+    }
+
+    static draw(){
+        ln.reset();
+
+        const samp  = 30;           // Sample Count
+        const prev  = new Vec3();   // Previous Position
+        const curr  = new Vec3();   // Current Position
+        const dxdy  = new Vec3();   // First Derivative ( Tangent - Look Direction )
+        let t, i;
+
+        this.spline.at( 0, prev );  // Get the First Point
+
+        for( i=1; i <= samp; i++ ){
+            t = i / samp;
+
+            this.spline.at( t, curr, dxdy );
+
+            ln.add( prev, curr, 0x00ffff );
+            ln.add( curr, dxdy.norm().scale( 0.4 ).add( curr ), 0xffff00, null, true );
+
+            prev.copy( curr );
+        }
+    }
+    
+}
+
+</script></body></html>
