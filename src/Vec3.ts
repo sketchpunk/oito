@@ -647,6 +647,8 @@ class Vec3 extends Float32Array{
         return out;
     }
     
+    static fromStruct( v: TVec3Struct ) : Vec3{ return new Vec3().fromStruct( v ); }
+
     static fromQuat( q: TVec4, v:TVec3 ) : Vec3{ return new Vec3( v ).transformQuat( q ); }
 
     static fromNorm( x: TVec3 ) : Vec3

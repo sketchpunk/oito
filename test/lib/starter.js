@@ -41,7 +41,7 @@ class Starter{
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // LIGHTING
         let light = new THREE.DirectionalLight( 0xffffff, 0.8 );
-        light.position.set( 4, 10, 1 );
+        light.position.set( 4, 10, 4 );
 
         this.scene.add( light );
         this.scene.add( new THREE.AmbientLight( 0x404040 ) );

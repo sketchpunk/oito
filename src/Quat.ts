@@ -924,6 +924,8 @@ class Quat extends Float32Array{
         return rtn;
     }
 
+    static fromLook( dir: TVec3, up: TVec3) : Quat{ return new Quat().fromLook( dir, up ); }
+
     static fromUnitVecs( a: TVec3, b: TVec3 ) : Quat{
         // Using unit vectors, Shortest rotation from Direction A to Direction B
         // http://glmatrix.net/docs/quat.js.html#line548

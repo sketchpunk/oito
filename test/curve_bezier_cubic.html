@@ -1,0 +1,94 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+
+import Starter, { THREE }   from "./lib/starter.js";
+
+import LinesMesh            from "./lib/LinesMesh.js";
+import Draggables           from "./lib/Draggables.js";
+
+import Vec3                 from "../dist/Vec3.js";
+import BezierCubic          from "../dist/curves/BezierCubic.js";
+
+let App, Drag, ln;
+
+
+window.addEventListener( "load", _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:false, grid:true } );
+    App.set_camera( 0, 20, 6 ).render();
+    App.add( (ln = new LinesMesh( 30 )).mesh );
+
+    Drag = new Draggables( App );
+    Drag.onMove = (o)=>{ RenderCurve.draw(); };
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    RenderCurve.generatePoints(
+        [ -2, 0, 0 ], false,
+        [ -1, 1.5, 0 ], true,
+        [ 1, -1.5, 0 ], true,
+        [ 2, 0, 0 ], false,
+    );
+
+    RenderCurve.draw();
+});
+
+class RenderCurve{
+    static points = [];
+
+    static generatePoints( ){
+        const scl   = 0.2;
+        const geo   = new THREE.BoxGeometry( scl, scl, scl );
+        const mat0  = new THREE.MeshPhongMaterial( { color: 0x00ff00 } );
+        const mat1  = new THREE.MeshPhongMaterial( { color: 0x00ffff } );
+        let mesh, isCtrl, pos;
+
+        for( let i=0; i < arguments.length; i+=2 ){
+            pos     = arguments[ i ];
+            isCtrl  = arguments[ i+1 ];
+
+            //............................
+            // Create Renderable
+            mesh    = new THREE.Mesh( geo, isCtrl?mat0:mat1 );
+            mesh.position.fromArray( pos );
+
+            //............................
+            App.add( mesh );            // Add to Scene Graph For Rendering
+            Drag.add( mesh );           // For Ray Casting and Translate Gizmo
+            this.points.push( mesh );   // Keep Track of Points that Exist
+        }
+    }
+
+    static draw(){
+        ln.reset();
+        const samp  = 10;           // Sample Count
+        const prev  = new Vec3();   // Previous Position
+        const curr  = new Vec3();   // Current Position
+        const dxdy  = new Vec3();   // First Derivative ( Tangent - Look Direction )
+        const dxdy2 = new Vec3();   // Second Derivative( Normal - Down Directin?? )
+
+        const a     = Vec3.fromStruct( this.points[ 0 ].position );
+        const b     = Vec3.fromStruct( this.points[ 1 ].position );
+        const c     = Vec3.fromStruct( this.points[ 2 ].position );
+        const d     = Vec3.fromStruct( this.points[ 3 ].position );
+
+        let t, i;
+
+        BezierCubic.at( a, b, c, d, 0, prev ); // Get the First Point
+        for( i=1; i <= samp; i++ ){
+            t = i / samp;
+
+            BezierCubic.at( a, b, c, d,t, curr );
+            BezierCubic.dxdy( a, b, c, d,t, dxdy );
+            BezierCubic.dxdy2( a, b, c, d, t, dxdy2 );
+
+            ln.add( prev, curr, 0x00ffff );
+            ln.add( curr, dxdy.norm().scale( 0.8 ).add( curr ), 0xffff00, null, true );
+            ln.add( curr, dxdy2.norm().scale( 0.6 ).add( curr ), 0xffffff, null, true );
+
+            prev.copy( curr );
+        }
+    }
+    
+}
+
+</script></body></html>
