@@ -7,31 +7,31 @@ class Cycle{
     _speedScale = 1.0;	// Scale the rate of the cycle
     onUpdate    ?: ( c:Cycle )=>void;
 
-	constructor( sec=1 ){
+    constructor( sec=1 ){
         this.setSeconds( sec ); 
-	}
+    }
     // #endregion
 
     // #region METHODS
-	setSeconds( s:number ) : Cycle{ this._cycleInc = Maths.PI_2 / ( s * 1000 ); return this; }
+    setSeconds( s:number ) : Cycle{ this._cycleInc = Maths.PI_2 / ( s * 1000 ); return this; }
 
     /** Change Cycle to Update in a negative direction */
-	backwards() : Cycle{ if( this._speedScale > 0 ) this._speedScale *= -1; return this; }
+    backwards() : Cycle{ if( this._speedScale > 0 ) this._speedScale *= -1; return this; }
 
     /** Change Cycle to Update in a positive direction */
-	forwards() : Cycle{  if( this._speedScale < 0 ) this._speedScale *= -1; return this; }
+    forwards() : Cycle{  if( this._speedScale < 0 ) this._speedScale *= -1; return this; }
 
     /** Update the cycle using a Delta Time value, fractions of a second usually */
     update( dt: number ) : Cycle{
         this._value = ( this._value + ( dt * 1000 * this._speedScale ) * this._cycleInc ) % Maths.PI_2;
         if( this.onUpdate ) this.onUpdate( this );
-		return this;
-	}
+        return this;
+    }
     // #endregion
 
     // #region BASIC GETTERS
     /** Get Cycle Value, 0 to 360 degrees in radians */
-	get( offset=0 ) : number{ return Maths.mod( this._value + offset, Maths.PI_2 ); }
+    get( offset=0 ) : number{ return Maths.mod( this._value + offset, Maths.PI_2 ); }
     
     /** Get Normalized Cycle Value - Range 0:1  */
     asCycle01( offset=0 ) : number{ return this.get( offset ) * Maths.PI_2_INV; }
