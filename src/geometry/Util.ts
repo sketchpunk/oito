@@ -1,8 +1,8 @@
 import Maths from "../Maths.js";
-import Vec3 from "../Vec3.js";
+import Vec3  from "../Vec3.js";
 
 class Util{
-
+    
     // #region INDICES
 
     /** Generate Indices of both a Looped or Unlooped Grid, Backslash Pattern */
@@ -165,21 +165,16 @@ class Util{
         }
     }
 
-    /*
-	static circleVertices( pnt_cnt=6, radius=1 ){
-		let out = new Vec3Buffer( pnt_cnt ),
-			x, y, t, angle;
-
-		for( let i=0; i < pnt_cnt; i++ ){
-			t		= i / pnt_cnt;
-			angle 	= Math.PI * 2 * t;
-			x		= Math.cos( angle ) * radius;
-			y		= Math.sin( angle ) * radius;
-			out.push_raw( x, y, 0 );
+	static circleVertices( out: Array<number>, pntCnt=6, radius=1 ) : void{
+		let t, angle;
+		for( let i=0; i < pntCnt; i++ ){
+			t		= i / pntCnt;
+			angle 	= Maths.PI_2 * t;
+			out.push( Math.cos( angle ) * radius, Math.sin( angle ) * radius, 0 );
 		}
-		return out;
 	}
 
+    /*
 	static square_vertices( out, idx, x_div=1, y_div=1, w=1, h=1, y_pos=0 ){
 		let x_inc		= w / x_div,
 			y_inc		= h / y_div,
@@ -207,6 +202,11 @@ class Util{
     // #endregion ////////////////////////////////////////////////////////////////////////////////
 
     // #region OPERATIONS
+
+    /** Create a new TGeo Type Struct */
+    static newGeo(): TGeo { return { vertices:[], normals:[], indices :[], texcoord:[] }; }
+
+    /** Duplicate a set of vertices while rotating them around an axis */
     static lathe( base: Array<number>, out: Array<number>, steps=2, repeatStart=false, angleRng=Maths.PI_2, rotAxis="y" ) : void{
         const inc   = angleRng / steps;
         const v     = new Vec3();
@@ -234,6 +234,115 @@ class Util{
         }
 
         if( repeatStart ) out.push( ...base );
+    }
+
+    /** SubDivide the 3 points of a triangle and save the results in a TGeo */
+    static subDivideTriangle( out: TGeo, a: TVec3, b: TVec3, c: TVec3, div: number ): void{
+        const irow  = [ [0] ];      // Index of each vert per rowl
+        const seg_a = new Vec3();   // Lerping
+        const seg_b = new Vec3();
+        const seg_c = new Vec3();
+    
+        let i, j, t, row, 
+            idx = 1;                // Running Vertex Index Count
+    
+        out.vertices.push( a[0], a[1], a[2] );  // Add First Point
+    
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Create new Vertices
+        for( i=1; i <= div; i++ ){
+            t = i / div;                // Get Lerp T
+            seg_b.fromLerp( a, b, t );  // Get Position of two sides of the triangle.
+            seg_c.fromLerp( a, c, t );
+    
+            row = [ idx++ ];                                    // Start New Row index Array
+            out.vertices.push( seg_b[0], seg_b[1], seg_b[2] );  // Add First Point in the Row
+    
+            // Loop the Remaining Points of the row
+            for( j=1; j < i; j++ ){
+                t = j / i;
+                seg_a.fromLerp( seg_b, seg_c, t );
+    
+                row.push( idx++ );
+                out.vertices.push( seg_a[0], seg_a[1], seg_a[2] );
+            }
+    
+            // Add Last row point
+            row.push( idx++ );
+            out.vertices.push( seg_c[0], seg_c[1], seg_c[2] );
+    
+            // Save Row indexes for later.
+            irow.push( row );
+        }
+    
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Create Indices
+        let ra: Array<number>, rb: Array<number>;
+        for( i=1; i < irow.length; i++ ){
+            ra = irow[ i-1 ];   // top Row
+            rb = irow[ i ];     // bottom row
+    
+            // Create Quads if possible else just a triangle
+            for( j=0; j < ra.length; j++ ){
+                out.indices.push( rb[ j ], rb[ j+1 ], ra[ j ] );
+                if( j+1 < ra.length ) out.indices.push( ra[ j ], rb[ j+1 ], ra[ j+1 ] );
+            }
+        }
+    }
+
+    /** Compute normals for all the vertices in a TGeo */
+    static appendTriangleNormals( geo: TGeo ): void{
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Make sure there is enough space to for normals for each vertex
+        // if not, append extra space to normals.
+        let i: number;
+        const iAry = geo.indices;
+        const vAry = geo.vertices;
+        const nAry = geo.normals;
+        const vCnt = vAry.length;
+        const nCnt = nAry.length;
+        if( vCnt > nCnt ){
+            for( i=nCnt; i < vCnt; i++ ) nAry.push( 0 );
+        }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Accumlate the normal direction for each vertex.
+        const a     = new Vec3();
+        const b     = new Vec3();
+        const c     = new Vec3();
+        const n     = new Vec3();
+        const aSeg  = new Vec3();
+        const bSeg  = new Vec3();
+        const cSeg  = new Vec3();
+        let ai, bi, ci;
+        
+        for( i=0; i < geo.indices.length; i+=3 ){
+            // Flat Vertex Index from Indices for each triangel face.
+            ai = 3 * iAry[ i ];
+            bi = 3 * iAry[ i+1 ];
+            ci = 3 * iAry[ i+2 ];
+
+            // Grab the vertex position
+            a.fromBuf( vAry, ai );
+            b.fromBuf( vAry, bi );
+            c.fromBuf( vAry, ci );
+
+            // Get two side of a triangle and cross product to get face direction
+            bSeg.fromSub( b, a );
+            cSeg.fromSub( c, a );
+            aSeg.fromCross( bSeg, cSeg );
+
+            // Add new normal to the old ones for each point in triangle.
+            n.fromBuf( nAry, ai ).add( aSeg ).toBuf( nAry, ai );
+            n.fromBuf( nAry, bi ).add( aSeg ).toBuf( nAry, bi );
+            n.fromBuf( nAry, ci ).add( aSeg ).toBuf( nAry, ci );
+        }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Average Out All Normal Values by normalizing it
+        for( i=0; i < nAry.length; i+=3 ){
+            n.fromBuf( nAry, i ).norm().toBuf( nAry, i );
+        }
     }
 
     /*
