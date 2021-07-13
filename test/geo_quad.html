@@ -1,0 +1,44 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+
+import Starter, { THREE }   from "./lib/starter.js";
+import Quad                 from "../dist/geometry/Quad.js";
+let App;
+
+window.addEventListener( "load", _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:false, grid:true } );
+    App.set_camera( 0, 20, 6 ).render();
+
+    //----------------------------------
+    // Push Raw Data to GPU Buffers
+    const sGeo      = Quad.get( 2, 2, false );
+    const bufVert   = new THREE.BufferAttribute( new Float32Array( sGeo.vertices ), 3 );
+    const bufNorm   = new THREE.BufferAttribute( new Float32Array( sGeo.normals ),  3 );
+    const bufUV     = new THREE.BufferAttribute( new Float32Array( sGeo.texcoord ), 2 );
+
+    //----------------------------------
+    // Define Geometry Object
+    const bGeo      = new THREE.BufferGeometry();
+    bGeo.setIndex( sGeo.indices )
+    bGeo.setAttribute( "position",  bufVert );
+    bGeo.setAttribute( "normal",    bufNorm );
+    bGeo.setAttribute( "uv",        bufUV );
+
+    //----------------------------------
+    // Create a Renderable in Engine of choice.
+    const mat       = new THREE.MeshPhongMaterial( { color:0x00ffff, side:THREE.DoubleSide } );
+    const mesh      = new THREE.Mesh( bGeo, mat );
+
+    mesh.add( toWireframe( bGeo ) );
+    
+    App.add( mesh );
+});
+
+
+function toWireframe( geo ){
+    const mat  = new THREE.LineBasicMaterial({ color:0xffffff, opacity:0.6, transparent:true });
+    const wGeo = new THREE.WireframeGeometry( geo );
+    return new THREE.LineSegments( wGeo, mat );
+}
+
+</script></body></html>
