@@ -134,5 +134,11 @@ declare class Vec3 extends Float32Array {
             };
         };
     };
+    /** Loop through a buffer array and use a function to update each vector
+     * @example
+     * let verts = [ 0,0,0, 0,0,0 ];
+     * let dir   = [ 0,1,0 ];
+     * Vec3.bufMap( vertices, (v,i)=>v.add( dir ) ); */
+    static bufMap(buf: Array<number> | Float32Array, fn: (v: Vec3, i: number) => void, startIdx?: number, endIdx?: number): void;
 }
 export default Vec3;

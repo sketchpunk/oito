@@ -345,6 +345,7 @@ class Util{
         }
     }
 
+    /** Flip the winding of the triangles inside of an indices array */
     static reverseWinding( iAry: Array<number> ): void{
         let t, ii;
         for( let i=0; i < iAry.length; i+=3 ){
@@ -356,15 +357,6 @@ class Util{
     }
 
     /*
-    function rev_triangle_winding( idx ){
-        let t;
-        for( let i=0; i < idx.length; i+=3 ){
-            t			= idx[ i ];
-            idx[ i ]	= idx[ i+2 ];
-            idx[ i+2 ]	= t;
-        }
-    }
-
 	// Make a Mirror Copy of Points
 	static mirror( flat_ary, x=1, y=-1, z=1 ){
 		let out = new Array();

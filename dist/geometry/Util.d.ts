@@ -15,6 +15,7 @@ declare class Util {
     static subDivideTriangle(out: TGeo, a: TVec3, b: TVec3, c: TVec3, div: number): void;
     /** Compute normals for all the vertices in a TGeo */
     static appendTriangleNormals(geo: TGeo): void;
+    /** Flip the winding of the triangles inside of an indices array */
     static reverseWinding(iAry: Array<number>): void;
 }
 export default Util;

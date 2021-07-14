@@ -124,6 +124,17 @@ class Maths{
 
     //#endregion ////////////////////////////////////////////////////////
 
+    //#region TRIG
+    static lawcosSSS( aLen: number, bLen: number, cLen: number ): number{
+        // Law of Cosines - SSS : cos(C) = (a^2 + b^2 - c^2) / 2ab
+        // The Angle between A and B with C being the opposite length of the angle.
+        let v = ( aLen*aLen + bLen*bLen - cLen*cLen ) / ( 2 * aLen * bLen );
+        if( v < -1 )		v = -1;	// Clamp to prevent NaN Errors
+        else if( v > 1 )	v = 1;
+        return Math.acos( v );
+    }
+    //#endregion ////////////////////////////////////////////////////////
+
     //#region RANDOM
     
     static rnd( min: number, max: number ) : number{ return Math.random() * (max - min) + min; }
@@ -154,6 +165,18 @@ class Maths{
 
         return uuid;
     }
+
+    /** Loops between 0 and Len, once over len, starts over again at 0, like a sawtooth wave  */
+    static repeat( t: number, len: number ) : number{ return Maths.clamp( t - Math.floor( t / len ) * len, 0, len ); }
+
+    /** Loops back and forth between 0 and len, it functions like a triangle wave. */
+    static pingPong( t: number, len: number ) : number{
+        t = Maths.repeat( t, len * 2 );
+        return len - Math.abs( t - len );
+    }
+
+    /** Remove Negitive Bit, then output binary string of the number */
+    static dec2bin( dec: number ): string{ return ( dec >>> 0 ).toString( 2 ); }
 
     //#endregion ////////////////////////////////////////////////////////
 

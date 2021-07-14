@@ -549,6 +549,28 @@ class Vec3 extends Float32Array {
         };
         return { [Symbol.iterator]() { return { next }; } };
     }
+    /** Loop through a buffer array and use a function to update each vector
+     * @example
+     * let verts = [ 0,0,0, 0,0,0 ];
+     * let dir   = [ 0,1,0 ];
+     * Vec3.bufMap( vertices, (v,i)=>v.add( dir ) ); */
+    static bufMap(buf, fn, startIdx = 0, endIdx = 0) {
+        const end = (endIdx == 0) ? buf.length : endIdx;
+        const v = new Vec3();
+        let i = startIdx;
+        for (i; i < end; i += 3) {
+            // Fill Data
+            v[0] = buf[i];
+            v[1] = buf[i + 1];
+            v[2] = buf[i + 2];
+            // Transform Data
+            fn(v, i);
+            // Save Data Back
+            buf[i] = v[0];
+            buf[i + 1] = v[1];
+            buf[i + 2] = v[2];
+        }
+    }
 }
 //#region STATIC VALUES
 Vec3.UP = [0, 1, 0];

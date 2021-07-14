@@ -312,6 +312,7 @@ class Util {
             n.fromBuf(nAry, i).norm().toBuf(nAry, i);
         }
     }
+    /** Flip the winding of the triangles inside of an indices array */
     static reverseWinding(iAry) {
         let t, ii;
         for (let i = 0; i < iAry.length; i += 3) {
