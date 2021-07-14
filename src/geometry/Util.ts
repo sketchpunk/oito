@@ -345,6 +345,16 @@ class Util{
         }
     }
 
+    static reverseWinding( iAry: Array<number> ): void{
+        let t, ii;
+        for( let i=0; i < iAry.length; i+=3 ){
+            ii          = i + 2;
+            t			= iAry[ i ];
+            iAry[ i ]	= iAry[ ii ];
+            iAry[ ii ]	= t;
+        }
+    }
+
     /*
     function rev_triangle_winding( idx ){
         let t;
@@ -391,5 +401,27 @@ class Util{
 
 }
 
+/*
+	static area( contour ) {
+
+		const n = contour.length;
+		let a = 0.0;
+
+		for ( let p = n - 1, q = 0; q < n; p = q ++ ) {
+
+			a += contour[ p ].x * contour[ q ].y - contour[ q ].x * contour[ p ].y;
+
+		}
+
+		return a * 0.5;
+
+	}
+
+	static isClockWise( pts ) {
+
+		return ShapeUtils.area( pts ) < 0;
+
+	}
+*/
 
 export default Util;
