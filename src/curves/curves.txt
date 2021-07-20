@@ -1,0 +1,30 @@
+	//https://codepen.io/jstrutz/pen/pvXOdz
+	//tAngle 0 -> PI_2
+	// Curves.lissajous(3,1,1,  1,0,1, i*inc , v);
+	// Curves.lissajous(5,2,1,  0,-2,1, i * inc , v);
+	// Curves.lissajous(2,3,1,  0,0.4,1, i * inc, v);
+	static lissajous(xRng, yRng, zRng, xOffset, yOffset, zOffset, tAngle, out=null){
+		out = out || new Vec3();
+
+		out[0] = Math.sin(xRng * tAngle + xOffset);
+		out[1] = Math.sin(yRng * tAngle + yOffset);
+		out[2] = Math.sin(zRng * tAngle + zOffset);
+
+		return out;
+	}
+
+
+	//https://github.com/spite/looper/blob/master/loops/233.js#L124
+	// Curves.lissajous_2(1, 5,4,5,1,2, 0, i/cnt, v);
+	// Curves.lissajous_2(1, 5,1,5,1,2, 0, i/cnt, v);
+	static lissajous_2(radius, a,b,c,d,e, offset, t, out=null){
+		out = out || new Vec3();
+
+		//let tt = Maths.PI_2 - (t * Maths.PI_2 + i * range / cnt + offset * i);
+		let tt = t * Maths.PI_2 + offset;
+		out[0] = radius * Math.cos(a * tt) + radius * Math.cos(b * tt);
+		out[1] = radius * Math.sin(a * tt) + radius * Math.sin(d * tt);
+		out[2] = 2 * radius * Math.sin(e * tt);
+
+		return out
+	}
