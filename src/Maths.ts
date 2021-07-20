@@ -166,6 +166,19 @@ class Maths{
         return uuid;
     }
 
+    static nanoId( t=21 ): string{
+        const r = crypto.getRandomValues( new Uint8Array( t ) );
+        let n: number, e = "";
+            
+        for( ;t--; ){
+            n  = 63 & r[ t ];
+            e += ( n < 36 )? n.toString(36) : 
+                 ( n < 62 )? ( n - 26 ).toString( 36 ).toUpperCase() : 
+                 ( n < 63 )? "_" : "-";
+        }
+        return e;
+    }
+
     /** Loops between 0 and Len, once over len, starts over again at 0, like a sawtooth wave  */
     static repeat( t: number, len: number ) : number{ return Maths.clamp( t - Math.floor( t / len ) * len, 0, len ); }
 
