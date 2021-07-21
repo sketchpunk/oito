@@ -30,6 +30,7 @@ declare class Maths {
     /** t must be in the range of 0 to 1 */
     static smoothTStep(t: number): number;
     static smoothStep(edge1: number, edge2: number, val: number): number;
+    static fade(t: number): number;
     static gradient010(t: number): number;
     static bellCurve(t: number): number;
     /** a = 1.5, 2, 4, 9 */
@@ -48,5 +49,6 @@ declare class Maths {
     static pingPong(t: number, len: number): number;
     /** Remove Negitive Bit, then output binary string of the number */
     static dec2bin(dec: number): string;
+    static negateIf(val: number, b: boolean): number;
 }
 export default Maths;

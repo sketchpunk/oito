@@ -68,6 +68,7 @@ class Maths {
         const x = Math.max(0, Math.min(1, (val - edge1) / (edge2 - edge1)));
         return x * x * (3 - 2 * x);
     }
+    static fade(t) { return t * t * t * (t * (t * 6.0 - 15.0) + 10.0); }
     static gradient010(t) {
         const tt = t * 2;
         return (tt > 1) ? 1 - (tt - 1) : tt;
@@ -147,6 +148,8 @@ class Maths {
     }
     /** Remove Negitive Bit, then output binary string of the number */
     static dec2bin(dec) { return (dec >>> 0).toString(2); }
+    //static select( t:number, f:number, b:boolean ): number{ return b ? t : f; }
+    static negateIf(val, b) { return b ? -val : val; }
 }
 //#region CONSTANTS
 Maths.PI_H = 1.5707963267948966;

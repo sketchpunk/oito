@@ -56,6 +56,8 @@ class Maths{
         return Math.sqrt( a );
     }
 
+
+
     //#endregion ////////////////////////////////////////////////////////
 
     //#region INTERPOLATION / GRADIENTS
@@ -90,6 +92,8 @@ class Maths{
         const x = Math.max( 0, Math.min( 1, (val-edge1) / (edge2-edge1) ) );
         return x * x * ( 3 - 2 * x );
     }
+
+    static fade( t:number ): number{ return t * t * t * (t * (t * 6.0 - 15.0 ) + 10.0 ); }
 
     static gradient010( t: number ) : number{
         const tt = t * 2;
@@ -190,6 +194,9 @@ class Maths{
 
     /** Remove Negitive Bit, then output binary string of the number */
     static dec2bin( dec: number ): string{ return ( dec >>> 0 ).toString( 2 ); }
+
+    //static select( t:number, f:number, b:boolean ): number{ return b ? t : f; }
+    static negateIf( val: number, b: boolean ): number { return b ? -val : val; }
 
     //#endregion ////////////////////////////////////////////////////////
 
