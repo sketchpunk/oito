@@ -16,12 +16,15 @@ declare class Maths {
     static toDeg(v: number): number;
     static dotToDeg(dot: number): number;
     static map(x: number, xMin: number, xMax: number, zMin: number, zMax: number): number;
+    static snap(x: number, step: number): number;
     static norm(min: number, max: number, v: number): number;
     /** Modulas that handles Negatives
      * @example
      * Maths.mod( -1, 5 ) = 4 */
     static mod(a: number, b: number): number;
     static asinc(x0: number): number;
+    static wrap(value: number, min: number, max: number): number;
+    static damp(x: number, y: number, lambda: number, dt: number): number;
     static lerp(a: number, b: number, t: number): number;
     /** CLerp - Circular Lerp - is like lerp but handles the wraparound from 0 to 360.
     This is useful when interpolating eulerAngles and the object crosses the 0/360 boundary. */
@@ -29,7 +32,10 @@ declare class Maths {
     static step(edge: number, x: number): number;
     /** t must be in the range of 0 to 1 */
     static smoothTStep(t: number): number;
-    static smoothStep(edge1: number, edge2: number, val: number): number;
+    static smoothStep(min: number, max: number, v: number): number;
+    static smootherStep(min: number, max: number, v: number): number;
+    /** See: https://www.iquilezles.org/www/articles/smin/smin.htm. */
+    static smoothMin(a: number, b: number, k: number): number;
     static fade(t: number): number;
     static gradient010(t: number): number;
     static bellCurve(t: number): number;

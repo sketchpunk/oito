@@ -409,6 +409,12 @@ class Vec3 extends Float32Array {
         this[2] = Math.min(Math.max(this[2], min[2]), max[2]);
         return this;
     }
+    snap(v) {
+        this[0] = (v[0] != 0) ? Math.floor(this[0] / v[0]) * v[0] : 0;
+        this[1] = (v[1] != 0) ? Math.floor(this[1] / v[1]) * v[1] : 0;
+        this[2] = (v[2] != 0) ? Math.floor(this[2] / v[2]) * v[2] : 0;
+        return this;
+    }
     //#endregion ////////////////////////////////////////////////////////
     //#region TRANSFORM
     axisAngle(axis, rad) {
@@ -510,6 +516,7 @@ class Vec3 extends Float32Array {
         out[2] = to[2] * scl;
         return out;
     }
+    static fromLerp(a, b, t) { return new Vec3().fromLerp(a, b, t); }
     static fromStruct(v) { return new Vec3().fromStruct(v); }
     static fromQuat(q, v) { return new Vec3(v).transformQuat(q); }
     static fromNorm(x, y, z) {

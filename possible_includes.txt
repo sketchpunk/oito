@@ -1,0 +1,17 @@
+https://www.iquilezles.org/www/index.htm
+
+https://www.iquilezles.org/www/articles/morenoise/morenoise.htm
+-- 3d Value Noise n(x,y,z) + derivatives
+-- Fbm derivatives
+
+https://www.iquilezles.org/www/articles/warp/warp.htm
+
+https://www.iquilezles.org/www/articles/gradientnoise/gradientnoise.htm
+
+https://www.iquilezles.org/www/articles/noacos/noacos.htm
+-- Rotating Vectors without Cos/Sin
+
+
+https://github.com/mrdoob/three.js/blob/master/src/math/Euler.js
+https://github.com/mrdoob/three.js/blob/master/src/math/Color.js
+https://github.com/mrdoob/three.js/blob/master/src/math/Frustum.js

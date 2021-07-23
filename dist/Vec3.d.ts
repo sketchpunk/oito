@@ -96,6 +96,7 @@ declare class Vec3 extends Float32Array {
     negate(): Vec3;
     norm(): Vec3;
     clamp(min: TVec3, max: TVec3): Vec3;
+    snap(v: TVec3): Vec3;
     axisAngle(axis: TVec3, rad: number): Vec3;
     rotate(rad: number, axis?: string): Vec3;
     transformMat3(m: Array<number> | Float32Array): Vec3;
@@ -115,6 +116,7 @@ declare class Vec3 extends Float32Array {
     static dot(a: TVec3, b: TVec3): number;
     static angle(a: TVec3, b: TVec3): number;
     static project(from: TVec3, to: TVec3, out?: TVec3): TVec3;
+    static fromLerp(a: TVec3, b: TVec3, t: number): Vec3;
     static fromStruct(v: TVec3Struct): Vec3;
     static fromQuat(q: TVec4, v: TVec3): Vec3;
     static fromNorm(x: TVec3): Vec3;

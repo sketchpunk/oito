@@ -501,6 +501,13 @@ class Vec3 extends Float32Array{
         return this;
     }
 
+    snap( v: TVec3 ) : Vec3 {
+        this[ 0 ] = ( v[ 0 ] != 0 )? Math.floor( this[ 0 ] / v[ 0 ] ) * v[ 0 ] : 0;
+        this[ 1 ] = ( v[ 1 ] != 0 )? Math.floor( this[ 1 ] / v[ 1 ] ) * v[ 1 ] : 0;
+        this[ 2 ] = ( v[ 2 ] != 0 )? Math.floor( this[ 2 ] / v[ 2 ] ) * v[ 2 ] : 0;
+        return this;
+    }
+
     //#endregion ////////////////////////////////////////////////////////
 
     //#region TRANSFORM
@@ -647,6 +654,8 @@ class Vec3 extends Float32Array{
         return out;
     }
     
+    static fromLerp( a: TVec3, b: TVec3, t: number ) : Vec3{ return new Vec3().fromLerp( a, b, t ); }
+
     static fromStruct( v: TVec3Struct ) : Vec3{ return new Vec3().fromStruct( v ); }
 
     static fromQuat( q: TVec4, v:TVec3 ) : Vec3{ return new Vec3( v ).transformQuat( q ); }

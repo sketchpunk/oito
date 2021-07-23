@@ -1,5 +1,7 @@
 
 // https://en.wikipedia.org/wiki/List_of_prime_numbers#The_first_1000_prime_numbers
+// https://www.iquilezles.org/www/articles/dontflip/dontflip.htm
+
 
 class Maths{
     //#region CONSTANTS
@@ -30,6 +32,8 @@ class Maths{
         return (x - xMin) / (xMax - xMin) * (zMax-zMin) + zMin;
     }
     
+    static snap( x: number, step: number ): number { return Math.floor( x / step ) * step; }
+
     static norm( min: number, max: number, v: number ): number { return (v-min) / (max-min); }
 
     /** Modulas that handles Negatives
@@ -56,7 +60,17 @@ class Maths{
         return Math.sqrt( a );
     }
 
+    /* Adapted from GODOT-engine math_funcs.h. */
+    static wrap( value: number, min: number, max: number ): number{
+        const range = max - min;
+        return ( range != 0 )? value - ( range * Math.floor( (value-min) / range) ) : min;
+    }
 
+    // http://www.rorydriscoll.com/2016/03/07/frame-rate-independent-damping-using-lerp/
+    static damp( x: number, y: number, lambda: number, dt: number ): number {
+        const ti = Math.exp( - lambda * dt );
+        return x * ti + y * ( 1 - ti );
+    }
 
     //#endregion ////////////////////////////////////////////////////////
 
@@ -88,9 +102,25 @@ class Maths{
     /** t must be in the range of 0 to 1 */
     static smoothTStep( t: number ): number{ return t * t * ( 3 - 2 * t ); }
     
-    static smoothStep( edge1: number, edge2: number, val: number ) : number { //https://en.wikipedia.org/wiki/Smoothstep
-        const x = Math.max( 0, Math.min( 1, (val-edge1) / (edge2-edge1) ) );
-        return x * x * ( 3 - 2 * x );
+    static smoothStep( min: number, max: number, v: number ) : number { //https://en.wikipedia.org/wiki/Smoothstep
+        v = Math.max( 0, Math.min( 1, (v-min) / (max-min) ) );
+        return v * v * ( 3 - 2 * v );
+    }
+
+    static smootherStep( min: number, max: number, v: number ) : number {
+        if ( v <= min ) return 0;
+        if ( v >= max ) return 1;
+    
+        v = ( v - min ) / ( max - min );
+        return v * v * v * ( v * ( v * 6 - 15 ) + 10 );
+    }
+
+    /** See: https://www.iquilezles.org/www/articles/smin/smin.htm. */
+    static smoothMin( a: number, b: number, k: number ): number{
+        if( k != 0 ){
+            const h = Math.max( k - Math.abs( a - b ), 0.0 ) / k;
+            return Math.min( a, b ) - h * h * h * k * ( 1 / 6 );
+        }else return Math.min(a, b);
     }
 
     static fade( t:number ): number{ return t * t * t * (t * (t * 6.0 - 15.0 ) + 10.0 ); }
@@ -191,6 +221,8 @@ class Maths{
         t = Maths.repeat( t, len * 2 );
         return len - Math.abs( t - len );
     }
+    //static pingPong( a: number, b: number ){ return ( b != 0 ) ? Math.abs( Maths.fract( (a - b) / ( b * 2) ) * b * 2 - b) : 0.0; }
+
 
     /** Remove Negitive Bit, then output binary string of the number */
     static dec2bin( dec: number ): string{ return ( dec >>> 0 ).toString( 2 ); }
@@ -203,5 +235,15 @@ class Maths{
     // static parabola( x, k ){ return Math.pow( 4 * x * ( 1 - x ), k ); }
 
 }
+
+/*
+    https://github.com/godotengine/godot/blob/master/core/math/math_funcs.h
+	static _ALWAYS_INLINE_ float lerp_angle(float p_from, float p_to, float p_weight) {
+		float difference = fmod(p_to - p_from, (float)Math_TAU);
+		float distance = fmod(2.0f * difference, (float)Math_TAU) - difference;
+		return p_from + distance * p_weight;
+	}
+*/
+
 
 export default Maths;
