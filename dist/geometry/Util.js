@@ -1,7 +1,7 @@
 import Maths from "../Maths.js";
 import Vec3 from "../Vec3.js";
 class Util {
-    // #region INDICES
+    // #region GEN INDICES
     /** Generate Indices of both a Looped or Unlooped Grid, Backslash Pattern */
     static gridIndices(out, row_size, row_cnt, start_idx = 0, do_loop = false, rev_quad = false) {
         const row_stop = (do_loop) ? row_cnt : row_cnt - 1, col_stop = row_size - 1;
@@ -120,7 +120,7 @@ class Util {
     }
     */
     // #endregion ////////////////////////////////////////////////////////////////////////////////
-    // #region VERTICES
+    // #region GEN VERTICES
     static arcVertices(out, angle_a, angle_b, div, radius = 1, offset = [0, 0, 0]) {
         const inc = 1 / (div - 1);
         let x, y, t, angle;
@@ -171,7 +171,7 @@ class Util {
     }
     */
     // #endregion ////////////////////////////////////////////////////////////////////////////////
-    // #region UVs
+    // #region GEN UVs
     static gridTexcoord(out, xLen, yLen) {
         let x, y, yt;
         for (y = 0; y <= yLen; y++) {
