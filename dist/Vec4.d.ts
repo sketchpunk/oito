@@ -1,5 +1,8 @@
 declare class Vec4 extends Float32Array {
-    constructor(v?: TVec4);
+    constructor();
+    constructor(v: TVec4);
+    constructor(v: number);
+    constructor(x: number, y: number, z: number, w: number);
     xyzw(x: number, y: number, z: number, w: number): Vec4;
     get x(): number;
     set x(v: number);
@@ -34,5 +37,36 @@ declare class Vec4 extends Float32Array {
     toBuf(ary: Array<number> | Float32Array, idx: number): Vec4;
     /** Push quaternion components onto an array */
     pushTo(ary: Array<number>): Vec4;
+    /** Add two vectors together */
+    fromAdd(a: TVec4, b: TVec4): Vec4;
+    /** Subtract two vectors together */
+    fromSub(a: TVec4, b: TVec4): Vec4;
+    /** Multiply two vectors together */
+    fromMul(a: TVec4, b: TVec4): Vec4;
+    /** Divide two vectors together */
+    fromDiv(a: TVec4, b: TVec4): Vec4;
+    /** Scale a vector */
+    fromScale(a: TVec4, s: number): Vec4;
+    /** Divide vector by a scalar value */
+    fromDivScale(a: TVec4, s: number): Vec4;
+    fromNorm(v: TVec4): Vec4;
+    fromNegate(a: TVec4): Vec4;
+    /** Add vector to current vector */
+    add(a: TVec4): Vec4;
+    sub(v: TVec4): Vec4;
+    mul(v: TVec4): Vec4;
+    div(v: TVec4): Vec4;
+    divScale(v: number): Vec4;
+    preDivScale(v: number): Vec4;
+    scale(v: number): Vec4;
+    abs(): Vec4;
+    floor(): Vec4;
+    ceil(): Vec4;
+    /** When values are very small, like less then 0.000001, just make it zero */
+    nearZero(): Vec4;
+    negate(): Vec4;
+    norm(): Vec4;
+    clamp(min: TVec4, max: TVec4): Vec4;
+    snap(v: TVec4): Vec4;
 }
 export default Vec4;
