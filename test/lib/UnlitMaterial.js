@@ -1,7 +1,8 @@
-import * as THREE from "../node_modules/three/build/three.module.js";
+import * as THREE from "../../node_modules/three/build/three.module.js";
 
-function UnlitMaterial( baseColor="cyan", useLowPoly=false ){
+function UnlitMaterial( baseColor="cyan", useLowPoly=false, isDoubleSide=false ){
     let mat = new THREE.ShaderMaterial({
+    side        : (isDoubleSide)? THREE.DoubleSide : THREE.FrontSide,
 		uniforms		:  {
             color   : { type :'vec3', value:new THREE.Color( baseColor ) },
             color_x : { type :'vec3', value:new THREE.Color( "#878FA3" ) }, // Each axis gets a Grayscaled Value, used as strength of baseColor

@@ -89,6 +89,10 @@ class HermiteSpline {
     /** Compute the indexes of the curve if the spline isn't a closed loop */
     _nonLoopIndex(t) {
         let i, tt;
+        if (t > 1)
+            t = 1;
+        if (t < 0)
+            t = 0;
         if (t != 1) {
             tt = t * this._curve_cnt; // Using Curve count as a way to get the Index and the remainder is the T of the curve
             i = tt | 0; // Curve index by stripping out the decimal, BitwiseOR 0 same op as Floor
@@ -104,6 +108,10 @@ class HermiteSpline {
     /** Compute the indexes of the curve if the spline is a closed loop */
     _loopIndex(t) {
         let i, tt;
+        if (t > 1)
+            t = 1;
+        if (t < 0)
+            t = 0;
         if (t != 1) {
             tt = t * this._point_cnt; // Find the starting point for a curve.
             i = tt | 0; // Curve index by stripping out the decimal, BitwiseOR 0 same op as Floor

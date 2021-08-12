@@ -63,7 +63,7 @@ class Cylinder {
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         const topLoop = []; // Top Side
         d.fromScale(dir, h); // How much to Move the Top Verts
-        for (i = 0; i <= steps; i++) {
+        for (i = 0; i <= steps; i++) { // Create Circle of Verts
             ang = (i / steps) * Math.PI * 2;
             v[a] = Math.cos(ang) * radius;
             v[b] = 0;

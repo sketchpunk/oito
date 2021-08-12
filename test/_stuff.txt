@@ -1,0 +1,113 @@
+Promise with a Timeout
+
+async function withTimeout<T>(promise: Promise<T>, timeoutInMs: number, errorMessage: string): Promise<T> {
+  let timeoutHandle: any
+
+  const timeout = new Promise<never>((resolve, reject) => {
+    timeoutHandle = setTimeout(() => reject(Error(errorMessage)), timeoutInMs)
+  })
+  const result = await Promise.race([
+    promise,
+    timeout
+  ])
+
+  clearTimeout(timeoutHandle)
+  return result
+}
+
+//#################################################
+https://discourse.threejs.org/t/functions-to-calculate-the-visible-width-height-at-a-given-z-depth-from-a-perspective-camera/269/19
+Compute FOV and Distance for the camera to make
+screen space coordinates work in a way
+
+const perspective = 800
+
+// this equation
+const fov = 180 * ( 2 * Math.atan( innerHeight / 2 / perspective ) ) / Math.PI
+
+// then align the Three.js perspective with the CSS3D perspective:
+camera = new THREE.PerspectiveCamera( fov, window.innerWidth / window.innerHeight, 1, 10000 );
+camera.position.set( 0, 0, perspective );
+document.body.style.perspective = `${perspective}px`
+
+
+height = f(depth) = 2 * tan( vFOV / 2 ) * depth
+depth = g(height) = height / ( 2 * tan( vFOV / 2 ) )
+
+//#################################################
+
+In case it helps anyone, here’s how to fit an object (most likely a flat plane) on the screen so that it “fits” depending on aspect ratio. For example, if we have an object taller than it is wide we want the Y dimension (the tall dimension) to fit within the view, but if the object is wider than it is tall we want the X dimension (the width dimension) to fit within view.
+
+The following distanceToFitObjectToView function will tell you at what distance to place the object so that it fits within view regardless which dimension is bigger:
+
+/**
+ * Convert vertical field of view to horizontal field of view, given an aspect
+ * ratio. See https://arstechnica.com/civis/viewtopic.php?f=6&t=37447
+ *
+ * @param vfov - The vertical field of view.
+ * @param aspect - The aspect ratio, which is generally width/height of the viewport.
+ * @returns - The horizontal field of view.
+ */
+function vfovToHfov(vfov: number, aspect: number): number {
+  const {tan, atan} = Math
+  return atan(aspect * tan(vfov / 2)) * 2
+}
+
+/**
+ * Get the distance from the camera to fit an object in view by either its
+ * horizontal or its vertical dimension.
+ *
+ * @param size - This should be the width or height of the object to fit.
+ * @param fov - If `size` is the object's width, `fov` should be the horizontal
+ * field of view of the view camera. If `size` is the object's height, then
+ * `fov` should be the view camera's vertical field of view.
+ * @returns - The distance from the camera so that the object will fit from
+ * edge to edge of the viewport.
+ */
+function _distanceToFitObjectInView(size: number, fov: number): number {
+  const {tan} = Math
+  return size / (2 * tan(fov / 2))
+}
+
+function distanceToFitObjectToView(
+  cameraAspect: number,
+  cameraVFov: number,
+  objWidth: number,
+  objHeight: number
+): number {
+  const objAspect = objWidth / objHeight
+  const cameraHFov = vfovToHfov(cameraVFov, cameraAspect)
+
+  let distance: number = 0
+
+  if (objAspect > cameraAspect) {
+    distance = _distanceToFitObjectInView(objHeight, cameraVFov)
+  } else if (objAspect <= cameraAspect) {
+    distance = _distanceToFitObjectInView(objWidth, cameraHFov)
+  }
+
+  return distance
+}
+
+//#################################################
+
+// MATH OBJECTS
+https://www.keithschwarz.com/interesting/code/?dir=alias-method
+https://gist.github.com/TheHans255/7a072162ec171e72f766ea954c5f11b3
+
+// Web Workers
+https://github.com/blittle/bridged-worker
+https://briangrinstead.com/blog/load-web-workers-without-a-javascript-file/
+
+// RANDOM MATH
+https://www.shadertoy.com/view/NlXXzs  // Closest Point to Box exterior
+https://github.com/jackunion/tooloud#general // AMAZING COLLECTION / EXAMPLES OF NOISE IN JS
+
+
+// RANDOM OBJECTS
+https://css-tricks.com/build-a-state-management-system-with-vanilla-javascript/
+
+// 3D
+https://threejsfundamentals.org/threejs/lessons/threejs-primitives.html  Extrude+Bevel Example
+
+https://www.decarpentier.nl/lens-distortion  Change Projection Distortion, Fix it kinda

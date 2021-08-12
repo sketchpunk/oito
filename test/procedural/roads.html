@@ -1,0 +1,370 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+
+import Starter, { THREE }   from "../lib/starter.js";
+import PointsMesh           from "../lib/PointsMesh.js";
+import LinesMesh            from "../lib/LinesMesh.js";
+import UnlitMaterial        from "../lib/UnlitMaterial.js";
+import DynamicMesh          from "../lib/DynamicMesh.js";
+import Draggables           from "../lib/Draggables.js";
+
+import Vec3                 from "../../dist/Vec3.js";
+import Quat                 from "../../dist/Quat.js";
+import BezierCubicSpline    from "../../dist/curves/BezierCubicSpline.js";
+import GeoUtil              from "../../dist/geometry/Util.js";
+
+let App, Curve, Shape, DMesh, GDrag;
+let ln, pnt;
+
+window.addEventListener( "load", _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:false, grid:true } );
+    App.set_camera( 0, 30, 8 ).render();
+
+    //App.add( ( pnt = new PointsMesh( 200 ) ).mesh );  // pnt.add( [0,1.5,0], 0x00ffff, 5, 1 );
+    //App.add( ( ln = new LinesMesh( 100 ) ).mesh );    // ln.add( [0,0,0], [0,1.5,0], 0x00ffff, null, true );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Shape       = new BaseShape().setSizes( 2, 0.1, 1.6, -0.09 );  //debugPnt( Shape.points );
+    Curve       = new BezierCubicSpline();
+    Curve
+        .add( [0,0.1,-5] )
+        .add( [-1.5,0.1,-4] )
+        .add( [1.5,0.1,1] )
+        .add( [0,0.1,2] );
+
+    //debugCurvePnts( Curve );
+    //debugCurve( Curve, 5 );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    GDrag = new Draggables( App );
+    GDrag.onStop = onDragStop;
+    initDragPoints();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    const mat   = getRawShader(); // UnlitMaterial( "cyan", true, true ); //
+    DMesh       = new DynamicMesh( mat );
+    App.add( DMesh.mesh );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    reGen();
+    loadUI();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //const bGeo = new THREE.BufferGeometry();
+    //bGeo.setIndex( geo.indices );
+    //bGeo.setAttribute( "position", new THREE.BufferAttribute( new Float32Array( geo.vertices ), 3 ) );
+
+    //const mat   = UnlitMaterial( "cyan", true, true );
+    //const mesh  = new THREE.Mesh( bGeo, mat );
+    //App.add( mesh );
+});
+
+// #region DEBUGGING
+function debugPnt( ary ){ let p; for( p of ary ){ pnt.add( p, 0x00ffff, 4, 1 ); } }
+
+function debugCurvePnts( curve ){ 
+    let p; 
+    for( p of curve.points ){ 
+        pnt.add( p.pos, 0x00ffff, 4, 1 );
+    }
+}
+
+function debugCurve( curve, samp=10 ){ 
+    let prev    = new Vec3();
+    let pos     = new Vec3();
+    let dxdy    = new Vec3();
+    let v       = new Vec3();
+    let t;
+
+    curve.at( 0, prev )
+    for( let i=1; i <= samp; i++ ){
+        t = i / samp;
+        curve.at( t, pos, dxdy );
+
+        //pnt.add( pos, 0x00ff00, 3, 1 );
+        ln.add( prev, pos, 0x606060 );
+        //ln.add( pos, v.fromScale( dxdy, 0.1 ).add( pos ), 0x00ffff );
+
+        prev.copy( pos );
+    }
+}
+// #endregion
+
+// #region MAIN
+function reGen(){
+    DMesh.reset();
+    SplineExtruder.make( DMesh, Curve, Shape, 30 );
+    DMesh.rebuild();
+    App.render();
+}
+
+class BaseShape{
+    constructor(){
+        // 1 - 2     5 - 6
+        // |   |     |   |
+        // 0   3 --- 4   7
+        this.points = [
+            new Vec3( -1, 0, 0 ),
+            new Vec3( -1, 1, 0 ),
+            new Vec3( -0.8, 1, 0 ),
+            new Vec3( -0.8, 0, 0 ),
+            new Vec3( 0.8, 0, 0 ),
+            new Vec3( 0.8, 1, 0 ),
+            new Vec3( 1, 1, 0 ),
+            new Vec3( 1, 0, 0 ),
+        ];
+    }
+
+    setSizes( totalWidth=2, totalHeight=0.2, roadWidth=1.6, curbOffset=-0.09 ){
+        let wh = totalWidth * 0.5;
+        let we = ( totalWidth - roadWidth ) * 0.5;
+
+        this.points[ 0 ].x = -wh;
+        this.points[ 1 ].x = -wh;
+        this.points[ 6 ].x = wh;
+        this.points[ 7 ].x = wh;
+
+        this.points[ 1 ].y = totalHeight;
+        this.points[ 2 ].y = totalHeight;
+        this.points[ 5 ].y = totalHeight;
+        this.points[ 6 ].y = totalHeight;
+
+        this.points[ 2 ].x = -wh + we + curbOffset;
+        this.points[ 3 ].x = -wh + we;
+        this.points[ 4 ].x = wh - we;
+        this.points[ 5 ].x = wh - we - curbOffset;
+
+        return this;
+    }
+}
+
+class SplineExtruder{
+    static make( geo, curve, shape, samp=5 ){
+        this.pathExtrude( geo, curve, shape, samp );
+        GeoUtil.gridIndices( geo.indices, shape.points.length, samp+1, 0, false, true );
+    }
+
+    static pathExtrude( geo, curve, shape, samp=5 ){
+        let pos     = new Vec3();
+        let fwd     = new Vec3();
+        let up      = new Vec3();
+        let lft     = new Vec3();
+        let v       = new Vec3();
+        let q       = new Quat();
+        let shLen   = shape.points.length;
+        let t, i, j, cu, cv;
+
+        for( i=0; i <= samp; i++ ){
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            t = i / samp;
+            curve.at( t, pos, fwd );
+
+            cu = t;
+            
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            fwd.norm();
+            lft.fromCross( Vec3.UP, fwd ).norm();
+            up.fromCross( fwd, lft ).norm();
+            q.fromAxis( lft, up, fwd );
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            for( j=0; j < shLen; j++ ){
+                v.fromQuat( q, shape.points[j] ).add( pos );
+                //pnt.add( v, 0x00ff00, 2, 1 );
+                geo.vertices.push( v[0], v[1], v[2] );
+
+                cv = j / ( shLen - 1 );
+                geo.texcoord.push( cu, cv );
+            }
+
+            //ln.add( pos, v.fromScale( fwd, 0.2 ).add( pos ), 0x00ff00 );
+            //ln.add( pos, v.fromScale( up, 0.2 ).add( pos ), 0x00ffff );
+            //ln.add( pos, v.fromScale( lft, 0.2 ).add( pos ), 0xff00ff );
+        }
+    }
+}
+// #endregion 
+
+// #region DRAGGABLES
+function initDragPoints(){
+    const scl   = 0.2;
+    const geo   = new THREE.SphereGeometry( 0.1, 8, 8 ); //new THREE.BoxGeometry( scl, scl, scl );
+    const mat0  = new THREE.MeshPhongMaterial( { color: 0x00ff00 } );
+    const mat1  = new THREE.MeshPhongMaterial( { color: 0x00ffff } );
+    let mesh, isCtrl, pos;
+
+    for( let i=0; i < Curve.points.length; i++ ){
+        //............................
+        // Create Renderable
+        isCtrl  = ( ( i % 4 ) == 3 || ( i % 4 ) == 0 );
+        mesh    = new THREE.Mesh( geo, isCtrl? mat0:mat1 );
+        mesh.position.fromArray( Curve.points[i].pos );
+        mesh.userData = i;
+
+        //............................
+        App.add( mesh );  // Add to Scene Graph For Rendering
+        GDrag.add( mesh ); // For Ray Casting and Translate Gizmo
+    }
+}
+
+function onDragStop( o ){
+    Curve.updatePos( o.userData, o.position.toArray() );
+    reGen();
+}
+// #endregion
+
+// #region SHADER
+function getRawShader(){
+    const mat = new THREE.RawShaderMaterial({ 
+		vertexShader	: VERT_SRC, 
+		fragmentShader	: FRAG_SRC, 
+		transparent 	: true,
+        side            : THREE.DoubleSide,
+        extensions      : { derivatives : true },
+		uniforms 		: {
+            color   : { value : [0,1,1] },
+        } 
+	});
+
+    return mat;
+}
+
+const VERT_SRC = `#version 300 es
+in vec3 position;
+in vec2 uv;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+
+out vec3 frag_wpos;
+out vec2 frag_uv;
+
+void main(){
+    vec4 ws_pos	= modelViewMatrix * vec4( position, 1.0 );
+
+    frag_wpos   = ws_pos.xyz;
+    frag_uv     = uv;
+    gl_Position	= projectionMatrix * ws_pos;	
+}
+`;
+
+const FRAG_SRC = `#version 300 es
+precision mediump float;
+
+out     vec4 out_color;
+in      vec2 frag_uv;
+in      vec3 frag_wpos;
+in      vec3 frag_norm;
+uniform vec3 color;
+
+//////////////////////////////////////////////////////////////////////
+
+vec3 rgb( int c ){
+	return vec3(
+		float( ( c >> 16 ) & 0xff ) * 0.00392156863,
+		float( ( c >> 8 ) & 0xff ) * 0.00392156863,
+		float( c & 0xff ) * 0.00392156863
+	);
+}
+
+#define RAMPLEN 5
+vec3 step_ramp( float t, vec3 step_val[RAMPLEN], float step_wgt[RAMPLEN], int i ){
+  for( i; i > 0; i-- ){
+    if( step_wgt[ i ] <= t ){
+        return step_val[ i ];
+    }
+  }
+  return step_val[ 0 ];
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void main(){
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Base color is a Step Ramp
+    vec3 step_val[RAMPLEN]	= vec3[]( rgb( 0x808080 ), rgb( 0x303030 ), rgb( 0x606060 ), rgb( 0x0 ), rgb( 0x0 ) );
+    float step_wgt[RAMPLEN]	= float[]( 0.0, 0.425, 0.575, 9.0, 9.0 );
+
+    out_color.a   = 1.0;
+    out_color.rgb = step_ramp( frag_uv.y, step_val, step_wgt, 2 );
+
+    //------------------------------------
+    // Middle Dashed Lines
+    float gradWhite = 
+        step( 0.497, frag_uv.y )                    // Min Border
+        * ( 1.0 - step( 0.505, frag_uv.y ) )        // Max Border
+        * step( fract( frag_uv.x / 0.1 ), 0.3 );    // Cut Solid line into dashes
+
+    out_color.rgb = mix( out_color.rgb, vec3(1.0), gradWhite );
+
+    //------------------------------------
+    // Candy Cane Stripes Down the Sides
+    float gradFlip = step( fract( frag_uv.x / 0.1 ), 0.5 );
+
+    float gradSideA = 
+        step( 0.29, frag_uv.y )                    // Min Border
+        * ( 1.0 - step( 0.425, frag_uv.y ) );      // Max Border
+    
+    float gradSideB = 
+        step( 0.575, frag_uv.y )                   // Min Border
+        * ( 1.0 - step( 0.716, frag_uv.y ) );      // Max Border
+    
+    out_color.rgb = mix( out_color.rgb, mix( vec3(1.0), vec3(1.0,0.0,0.0), gradFlip ), gradSideA );
+    out_color.rgb = mix( out_color.rgb, mix( vec3(1.0), vec3(1.0,0.0,0.0), gradFlip ), gradSideB );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Diffuse With Low Poly
+    vec3 norm       = normalize( cross( dFdx(frag_wpos), dFdy(frag_wpos) ) );
+    float diffuse   = dot( norm, normalize( vec3( 5.0, 10.0, 3.0 ) - frag_wpos  ) );
+    diffuse         = clamp( diffuse, 0.3, 1.0 );
+    out_color.rgb   *= diffuse;
+}`;
+// #endregion
+
+// #region UI
+const GEN_INFO = {
+    totalWidth  : 2,
+    totalHeight : 0.1,
+    roadWidth   : 1.6,
+    edgeOffset  : -0.09,
+};
+
+function loadUI(){
+    onElmChg( "rngWidth", v=>GEN_INFO.totalWidth=v );
+    onElmChg( "rngHeight", v=>GEN_INFO.totalHeight=v );
+    onElmChg( "rngRoadWidth", v=>GEN_INFO.roadWidth=v );
+    onElmChg( "rngEdgeOffset", v=>GEN_INFO.edgeOffset=v );
+}
+
+function onElmChg( id, fn ){
+    let elm = document.getElementById( id );
+    elm.addEventListener( "input", (e)=>{
+        fn( parseFloat( e.srcElement.value ) );
+        Shape.setSizes( 
+            GEN_INFO.totalWidth,
+            GEN_INFO.totalHeight,
+            GEN_INFO.roadWidth,
+            GEN_INFO.edgeOffset,
+        );
+        reGen();
+    } );
+}
+
+// #endregion
+</script>
+
+<div style="position:fixed; top:10px; left:10px; width:200px;">
+    <label>Total Width</label><br>
+    <input id="rngWidth" type="range" min="1" max="3" step="0.1" value="2"><br>
+    
+    <label>Total Height</label><br>
+    <input id="rngHeight" type="range" min="0.01" max="1" step="0.01" value="0.1"><br>
+
+    <label>Road Width</label><br>
+    <input id="rngRoadWidth" type="range" min="0.1" max="2.9" step="0.1" value="1.6"><br>
+
+    <label>Edge Offset</label><br>
+    <input id="rngEdgeOffset" type="range" min="-0.2" max="0.2" step="0.01" value="-0.09"><br>
+</div>
+
+</body></html>

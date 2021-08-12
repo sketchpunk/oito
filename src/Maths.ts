@@ -126,6 +126,7 @@ class Maths{
     static fade( t:number ): number{ return t * t * t * (t * (t * 6.0 - 15.0 ) + 10.0 ); }
 
     static gradient010( t: number ) : number{
+        // Alt : f(x) = 1 - abs( 2x-1 ) should generate 010 without the condition
         const tt = t * 2;
         return ( tt > 1 )? 1 - (tt - 1) : tt;
     }

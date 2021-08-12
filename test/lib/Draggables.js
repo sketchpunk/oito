@@ -2,23 +2,44 @@ import * as THREE               from "../../node_modules/three/build/three.modul
 import { TransformControls }    from './TransformControls.js';
 
 class Draggables{
-    constructor( app ){
-        this.app    = app;
+    constructor( app=null ){
+        this.app    = null;
         this.items  = [];
         this.onMove = null;
+        this.onStop = null;
+        if( app ) this.init( app );
+    }
 
+    init( app ){
+        this.app = app;
         document.addEventListener( "pointerdown", this.onDown.bind( this ), false );
 
         this.gizmo = new TransformControls( app.camera, app.renderer.domElement );
         this.gizmo.addEventListener( "change", this.onGizmoChange.bind( this ) );
         this.gizmo.addEventListener( "dragging-changed", this.onGizmoDragChange.bind( this ) );
-
         app.add( this.gizmo );
+        return this;
     }
 
     add(){ this.items.push( ...arguments ); return this }
+    remove( o ){
+        let i = this.items.indexOf( o );
 
-    onGizmoDragChange( e ){ this.app.orbit.enabled = !e.value; }
+        if( i < 0 ) console.log( "Draggables.remove : Mesh not found in items list. ", o );
+        else        this.items.splice( i, 1 );
+
+        return this;
+    }
+
+    deselect(){ this.gizmo.detach(); return this; }
+
+    getSelected(){ return this.gizmo.object; }
+
+    onGizmoDragChange( e ){
+        this.app.orbit.enabled = !e.value;
+        if( !e.value && this.onStop && this.gizmo.object ) this.onStop( this.gizmo.object );
+    }
+
     onGizmoChange(){
         if( this.gizmo.object ){
             if( this.gizmo.dragging && this.onMove ) this.onMove( this.gizmo.object );
