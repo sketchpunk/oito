@@ -1131,6 +1131,12 @@ export default Quat;
 
 /*
 
+	angleTo( q ) {
+
+		return 2 * Math.acos( Math.abs( MathUtils.clamp( this.dot( q ), - 1, 1 ) ) );
+
+	}
+
 // Rotation Axis, The length of the vector determines how much to rotate around that axis.
 // The math is very much from_axis_angle
 public static Quaternion FromAngularVector( Vector3 v ){

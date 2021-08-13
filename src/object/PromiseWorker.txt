@@ -1,0 +1,56 @@
+class PromiseWorker{
+    constructor( fn ){
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        const blob = new Blob(
+            [`self.onmessage = (e)=>{
+                const rtn = __WORKER_FN__( e.data.value );
+                if( rtn != undefined ) self.postMessage( { id:e.data.id, value:rtn } );
+            }; `, 'const __WORKER_FN__=', fn.toString() ], 
+            { type:'text/javascript' }
+        );
+        
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        const url = window.URL.createObjectURL( blob );
+        window.URL.revokeObjectURL( blob );
+        
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        this._promises  = new Map();
+        this._worker    = new Worker( url );
+        this._worker.addEventListener( "message", this._onMsg.bind( this ) );
+    }
+
+    _onMsg( e ){
+        //console.log( "MSG", e.data );
+        const p = this._promises.get( e.data.id );
+        if( p ){
+            this._promises.delete( e.data.id );
+            p.resolve( e.data.value );
+        }else{
+            console.warn( 'Worker Promise ID not found in map' );
+        }        
+    }
+
+    _nanoId( t=21 ){
+        const r = crypto.getRandomValues( new Uint8Array( t ) );
+        let n, e = "";
+        for( ;t--; ){
+            n  = 63 & r[ t ];
+            e += ( n < 36 )? n.toString(36) : 
+                 ( n < 62 )? ( n - 26 ).toString( 36 ).toUpperCase() : 
+                 ( n < 63 )? "_" : "-";
+        }
+        return e;
+    }
+
+    post( value, fnThen=null ){
+        const id = this._nanoId( 8 );
+        const p  = new Promise(( resolve, reject )=>{
+            this._promises.set( id, {resolve,reject} );
+            this._worker.postMessage( { id, value } );
+        });
+
+        return ( fnThen )? p.then( fnThen ) : p;
+    }
+}
+
+export default PromiseWorker;

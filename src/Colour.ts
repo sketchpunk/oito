@@ -40,6 +40,8 @@ class Colour extends Float32Array{
     get b() : number{ return this[ 2 ]; }   set b( v: number ){ this[ 2 ] = v; }
     get a() : number{ return this[ 3 ]; }   set a( v: number ){ this[ 3 ] = v; }
 
+    //get rgbSlice(){ return new Float32Array( this.buffer, 0, 3*4 ); } // See if can create new F32 from buf but maybe just the 3 floats instead of 4.
+
     fromName( s: string ) : Colour{
         if( COLORS[ s ] !== undefined ) this.fromNumber( COLORS[ s ] );
         else                            this.fromNumber( 0xff0000 );

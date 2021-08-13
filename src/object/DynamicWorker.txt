@@ -1,0 +1,23 @@
+class DynamicWorker{
+    constructor( fn ){
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        const blob = new Blob(
+            [ "self.onmessage=", fn.toString() ], 
+            { type:'text/javascript' }
+        );
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        const url  = window.URL.createObjectURL( blob );
+        window.URL.revokeObjectURL(blob);
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        this._worker = new Worker( url );
+    }
+
+    post( data ){ this._worker.postMessage( data ); return this; }
+
+    once( fn ){ this._worker.addEventListener( "message", fn, { once:true } ); return this; }
+    on( fn ){ this._worker.addEventListener( "message", fn ); return this; }
+}
+
+export default DynamicWorker;
