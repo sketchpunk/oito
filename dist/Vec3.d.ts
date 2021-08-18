@@ -11,6 +11,7 @@ declare class Vec3 extends Float32Array {
     constructor(v: number);
     constructor(x: number, y: number, z: number);
     /** Set the vector components */
+    xyz(x: number): Vec3;
     xyz(x: number, y: number, z: number): Vec3;
     get x(): number;
     set x(v: number);
@@ -121,6 +122,7 @@ declare class Vec3 extends Float32Array {
     static fromQuat(q: TVec4, v: TVec3): Vec3;
     static fromNorm(x: TVec3): Vec3;
     static fromNorm(x: number, y: number, z: number): Vec3;
+    static transformQuat(v: TVec3, q: TVec4, out?: TVec3): TVec3;
     /** Create an array filled with Vec3 Objects */
     static createAarray(len: number): Array<Vec3>;
     /** Create an Iterator Object that allows an easy way to loop a Float32Buffer

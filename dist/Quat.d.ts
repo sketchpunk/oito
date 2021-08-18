@@ -42,7 +42,7 @@ declare class Quat extends Float32Array {
     fromAxis(xAxis: TVec3, yAxis: TVec3, zAxis: TVec3): Quat;
     fromLook(vDir: TVec3, vUp: TVec3): Quat;
     fromInvert(q: TVec4): Quat;
-    /** Axis must be normlized  */
+    /** Axis must be normlized, Angle is in Rads  */
     fromAxisAngle(axis: TVec3, angle: number): Quat;
     /** Using unit vectors, Shortest rotation from Direction A to Direction B  */
     fromUnitVecs(a: TVec3, b: TVec3): Quat;

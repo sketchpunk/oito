@@ -17,13 +17,14 @@ class Vec3 extends Float32Array {
             this[2] = v;
         }
     }
-    //#endregion ////////////////////////////////////////////////////////
-    //#region SETTERS / GETTERS
-    /** Set the vector components */
     xyz(x, y, z) {
-        this[0] = x;
-        this[1] = y;
-        this[2] = z;
+        if (y != undefined && z != undefined) {
+            this[0] = x;
+            this[1] = y;
+            this[2] = z;
+        }
+        else
+            this[0] = this[1] = this[2] = x;
         return this;
     }
     get x() { return this[0]; }
@@ -528,6 +529,14 @@ class Vec3 extends Float32Array {
             rtn.xyz(x, y, z);
         }
         return rtn.norm();
+    }
+    static transformQuat(v, q, out) {
+        const qx = q[0], qy = q[1], qz = q[2], qw = q[3], vx = v[0], vy = v[1], vz = v[2], x1 = qy * vz - qz * vy, y1 = qz * vx - qx * vz, z1 = qx * vy - qy * vx, x2 = qw * x1 + qy * z1 - qz * y1, y2 = qw * y1 + qz * x1 - qx * z1, z2 = qw * z1 + qx * y1 - qy * x1;
+        out = out || v;
+        out[0] = vx + 2 * x2;
+        out[1] = vy + 2 * y2;
+        out[2] = vz + 2 * z2;
+        return out;
     }
     //++++++++++++++++++++++++++++++++++
     /** Create an array filled with Vec3 Objects */

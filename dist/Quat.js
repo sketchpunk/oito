@@ -298,7 +298,7 @@ class Quat extends Float32Array {
         this[3] = a3 * invDot;
         return this;
     }
-    /** Axis must be normlized  */
+    /** Axis must be normlized, Angle is in Rads  */
     fromAxisAngle(axis, angle) {
         const half = angle * .5, s = Math.sin(half);
         this[0] = axis[0] * s;
@@ -895,6 +895,12 @@ class Quat extends Float32Array {
 }
 export default Quat;
 /*
+
+    angleTo( q ) {
+
+        return 2 * Math.acos( Math.abs( MathUtils.clamp( this.dot( q ), - 1, 1 ) ) );
+
+    }
 
 // Rotation Axis, The length of the vector determines how much to rotate around that axis.
 // The math is very much from_axis_angle

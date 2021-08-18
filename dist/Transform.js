@@ -41,7 +41,7 @@ class Transform {
         return this;
     }
     clone() { return new Transform(this); }
-    add(cr, cp, cs) {
+    mul(cr, cp, cs) {
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // If just passing in Tranform Object
         if (cr instanceof Transform) {
@@ -63,7 +63,7 @@ class Transform {
         }
         return this;
     }
-    preAdd(pr, pp, ps) {
+    pmul(pr, pp, ps) {
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // If just passing in Tranform Object
         if (pr instanceof Transform) {
@@ -97,7 +97,7 @@ class Transform {
     }
     //#endregion ////////////////////////////////////////////////////////
     //#region FROM OPERATORS
-    fromAdd(tp, tc) {
+    fromMul(tp, tc) {
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // POSITION - parent.position + ( parent.rotation * ( parent.scale * child.position ) )
         const v = Vec3.mul(tp.scl, tc.pos).transformQuat(tp.rot); // parent.scale * child.position;
@@ -135,7 +135,7 @@ class Transform {
     }
     //#endregion ////////////////////////////////////////////////////////
     //#region STATICS
-    static add(tp, tc) { return new Transform().fromAdd(tp, tc); }
+    static mul(tp, tc) { return new Transform().fromMul(tp, tc); }
     static invert(t) { return new Transform().fromInvert(t); }
     static fromPos(x, y, z) {
         const t = new Transform();

@@ -33,7 +33,7 @@ class Starter{
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // MAIN
         this.scene				= new THREE.Scene();
-        this.camera				= new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+        this.camera				= new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.01, 2000 );
         this.camera.position.set( 0, 10, 20 );
         
         this.clock 				= new THREE.Clock();
@@ -103,7 +103,7 @@ class Starter{
     add( o ){ this.scene.add( o ); return this; }
     remove( o ){ this.scene.remove( o ); return this; }
 
-    set_camera( lon, lat, radius ){
+    set_camera( lon, lat, radius, target ){
         let phi     = ( 90 - lat ) * Math.PI / 180,
             theta   = ( lon + 180 ) * Math.PI / 180;
 
@@ -112,6 +112,8 @@ class Starter{
             radius * Math.cos( phi ),
             -(radius * Math.sin( phi ) * Math.cos(theta))
         );
+        
+        if( target ) this.orbit.target.fromArray( target );
 
         this.orbit.update();
         return this;

@@ -37,10 +37,15 @@ class Vec3 extends Float32Array{
     //#region SETTERS / GETTERS
 
     /** Set the vector components */
-    xyz( x: number, y: number, z: number ) : Vec3 {
-        this[ 0 ] = x;
-        this[ 1 ] = y;
-        this[ 2 ] = z;
+    xyz( x: number ) : Vec3     // Great for using Vec3 for scaling
+    xyz( x: number, y: number, z: number ) : Vec3
+    xyz( x: number, y?: number, z?: number ) : Vec3 {
+        if( y != undefined && z != undefined ){
+            this[ 0 ] = x;
+            this[ 1 ] = y;
+            this[ 2 ] = z;
+        } else this[ 0 ] = this[ 1 ] = this[ 2 ] = x;
+
         return this;
     }
 
@@ -672,6 +677,22 @@ class Vec3 extends Float32Array{
         }
 
         return rtn.norm();
+    }
+
+    static transformQuat( v: TVec3, q: TVec4, out ?: TVec3 ) : TVec3{ 
+        const qx = q[ 0 ], qy = q[ 1 ], qz = q[ 2 ], qw = q[ 3 ],
+              vx = v[ 0 ], vy = v[ 1 ], vz = v[ 2 ],
+              x1 = qy * vz - qz * vy,
+              y1 = qz * vx - qx * vz,
+              z1 = qx * vy - qy * vx,
+              x2 = qw * x1 + qy * z1 - qz * y1,
+              y2 = qw * y1 + qz * x1 - qx * z1,
+              z2 = qw * z1 + qx * y1 - qy * x1;
+        out      = out || v;
+        out[ 0 ] = vx + 2 * x2;
+        out[ 1 ] = vy + 2 * y2;
+        out[ 2 ] = vz + 2 * z2;
+        return out;
     }
 
     //++++++++++++++++++++++++++++++++++

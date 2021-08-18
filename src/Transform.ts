@@ -56,9 +56,9 @@ class Transform{
     //#region OPERATORS
 
     // Computing Transforms, Parent -> Child
-    add( tran: Transform ) : Transform
-    add( cr: TVec4, cp: TVec3, cs ?: TVec3 ) : Transform
-    add( cr: TVec4 | Transform, cp ?: TVec3, cs ?: TVec3 ) : Transform{
+    mul( tran: Transform ) : Transform
+    mul( cr: TVec4, cp: TVec3, cs ?: TVec3 ) : Transform
+    mul( cr: TVec4 | Transform, cp ?: TVec3, cs ?: TVec3 ) : Transform{
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // If just passing in Tranform Object
         if( cr instanceof Transform ){
@@ -85,9 +85,9 @@ class Transform{
     }
 
     // Computing Transforms in reverse, Child - > Parent
-    preAdd( tran: Transform ) : Transform
-    preAdd( pr: TVec4, pp: TVec3, ps: TVec3 ) : Transform
-    preAdd( pr: TVec4 | Transform, pp ?: TVec3, ps ?: TVec3 ) : Transform{
+    pmul( tran: Transform ) : Transform
+    pmul( pr: TVec4, pp: TVec3, ps: TVec3 ) : Transform
+    pmul( pr: TVec4 | Transform, pp ?: TVec3, ps ?: TVec3 ) : Transform{
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // If just passing in Tranform Object
         if( pr instanceof Transform ){
@@ -124,7 +124,7 @@ class Transform{
     //#endregion ////////////////////////////////////////////////////////
 
     //#region FROM OPERATORS
-    fromAdd( tp: Transform, tc: Transform ) : Transform{
+    fromMul( tp: Transform, tc: Transform ) : Transform{
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // POSITION - parent.position + ( parent.rotation * ( parent.scale * child.position ) )
         const v = Vec3.mul( tp.scl, tc.pos ).transformQuat( tp.rot ); // parent.scale * child.position;
@@ -171,7 +171,7 @@ class Transform{
     //#endregion ////////////////////////////////////////////////////////
 
     //#region STATICS
-    static add( tp: Transform, tc: Transform ) : Transform{ return new Transform().fromAdd( tp, tc ); }
+    static mul( tp: Transform, tc: Transform ) : Transform{ return new Transform().fromMul( tp, tc ); }
     static invert( t: Transform ) : Transform{ return new Transform().fromInvert( t ); }
 
     static fromPos( v: TVec3 ) : Transform

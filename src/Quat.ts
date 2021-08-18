@@ -343,7 +343,7 @@ class Quat extends Float32Array{
         return this;
     }
 
-    /** Axis must be normlized  */
+    /** Axis must be normlized, Angle is in Rads  */
     fromAxisAngle( axis: TVec3, angle: number ) : Quat{ 
         const half = angle * .5,
               s    = Math.sin( half );

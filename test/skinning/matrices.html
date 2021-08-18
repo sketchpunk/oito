@@ -1,0 +1,354 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+    
+import Starter, { THREE }   from "../lib/starter.js";
+import Gltf                 from "../lib/Gltf.js";
+import PointsMesh           from "../lib/PointsMesh.js";
+
+import Transform            from "../../dist/Transform.js";
+import Vec3                 from "../../dist/Vec3.js";
+import Quat                 from "../../dist/Quat.js";
+import Mat4                 from "../../dist/Mat4.js";
+
+let App, gArm, gMesh;
+
+window.addEventListener( "load", async _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:true, grid:true } );
+    App.set_camera( -30, 40, 4, [0,0.8,1] ).render();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    const [ json, bin ] = await Promise.all([
+        fetch( "./Nabba.gltf" ).then( r=>r.json() ),
+        fetch( "./Nabba.bin" ).then( r=>r.arrayBuffer() ),
+    ]);
+
+    loadMesh( json, bin );
+    loadSkin( json );
+
+    gMesh.material.uniforms.pose.value = gArm.offsetBuf;
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    useTestPose();
+});
+
+
+//#region LOADERS
+function loadMesh( json, bin ){
+    let data    = Gltf.get_mesh( "Body", json, bin, true )[0];
+    let geo     = new THREE.BufferGeometry();
+    geo.setIndex( new THREE.BufferAttribute( data.indices.data, 1 ) );
+    geo.setAttribute( "position", new THREE.BufferAttribute( data.vertices.data, data.vertices.component_len ) );
+    geo.setAttribute( "normal",   new THREE.BufferAttribute( data.normal.data, data.normal.component_len ) );
+    geo.setAttribute( "weights",  new THREE.BufferAttribute( data.weights.data, data.weights.component_len ) );
+    geo.setAttribute( "joints",   new THREE.BufferAttribute( data.joints.data, data.joints.component_len ) );
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    const mat   = skinningShader();
+    gMesh       = new THREE.Mesh( geo, mat );
+    App.add( gMesh );
+}
+
+function loadSkin( json ){
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Bone Array from GTLF are always in order to Joint Data PLUS, Parents Elements exists before child elements.
+    // So can easily keep bones in an array and reference parent by Index.
+    // Plus its important to keep the correct order since the JOINTs data for each
+    // vertice points to bones using that specific index.
+    let skin    = Gltf.get_skin_by_nodes( json, "Armature" );
+    gArm        = new Armature( skin.length );
+
+    for( let b of skin ) gArm.addBone( b );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Prepare Data to transform Mesh in relation to the armature data 
+    gArm.computeWorldSpacePose();    // Step 1: Need World Space Transform of all the bones
+    gArm.computeBindPose();          // Step 2: Invert WS Data, Its used as are starting point to compute offsets
+    gArm.updateOffsetBuffers();      // Step 3: Compute Offset WorldSpace Data of how much the bone move in relation to its initial pose
+}
+
+function useTestPose(){
+    gArm.posBone( "Hips", [0,0,1] );
+
+    gArm.rotBone( "UpperArm_L", [0,0,1], 20 );
+    gArm.rotBone( "UpperArm_L", [0,1,0], 50 );
+    gArm.rotlBone( "ForeArm_L", [1,0,0], -60 );
+    
+    gArm.rotBone( "UpperArm_R", [0,0,1], -20 );
+    gArm.rotBone( "UpperArm_R", [0,1,0], -50 );
+    gArm.rotlBone( "ForeArm_R", [1,0,0], -60 );
+
+    gArm.rotBone( "Thigh_L", [1,0,0], -90 );
+    gArm.rotBone( "Shin_L", [1,0,0], 120 );
+    gArm.rotlBone( "Foot_L", [1,0,0], -40 );
+
+    gArm.rotBone( "Spine1", [1,0,0], -20 );
+    gArm.rotBone( "Spine2", [1,0,0], -20 );
+    gArm.rotBone( "Neck", [1,0,0], -20 );
+    gArm.rotBone( "Head", [1,0,0], -20 );
+
+    gArm.sclBone( "Head", 0.8 );
+    gArm.sclBone( "Hand_R", 1.3 );
+    gArm.sclBone( "Hand_L", 1.3 );
+    gArm.sclBone( "Spine2", 1.8 );
+    gArm.sclBone( "Foot_R", 1.3 );
+    
+    gArm.computeWorldSpacePose();
+    gArm.updateOffsetBuffers();
+}
+//#endregion ////////////////////////////////////////////////////
+
+
+//#region SKINNING
+function skinningShader(){
+    let mat = new THREE.RawShaderMaterial({
+        side     : THREE.DoubleSide,
+        uniforms : {
+            color   : { type :'vec3', value:new THREE.Color( "cyan" ) },
+            pose    : { value: null },
+        },
+
+        vertexShader : `#version 300 es
+        in vec3 position;   // Vertex Position
+        in vec3 normal;     // Vertex Position
+        in vec4 weights;    // Bone Weights
+        in vec4 joints;     // Bone Indices
+
+        #define MAXBONES 90             // Arrays can not be dynamic, so must set a size
+        uniform mat4 pose[ MAXBONES ];
+
+        uniform mat4 modelMatrix;       // Matrices should be filled in by THREE.JS Automatically.
+        uniform mat4 viewMatrix;
+        uniform mat4 projectionMatrix;
+
+        out vec3 frag_wpos;             // Fragment World Space Position
+        out vec3 frag_norm;             // Fragment Normal
+
+        ////////////////////////////////////////////////////////////////////////
+
+        mat4 getBoneMatrix( mat4[ MAXBONES ] pose, vec4 idx, vec4 wgt ){
+            /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            NORMALIZE BONE WEIGHT VECTOR - INCASE MODEL WASN'T PREPARED LIKE THAT
+            If Weights are not normalized, Merging the Bone Offsets will create artifacts */
+            int a = int( idx.x ),
+                b = int( idx.y ),
+                c = int( idx.z ),
+                d = int( idx.w );
+            
+            wgt *= 1.0 / ( wgt.x + wgt.y + wgt.z + wgt.w );
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            // MERGE THE BONE OFFSETS BASED ON WEIGHT
+            mat4 bone_wgt =
+                pose[ a ] * wgt.x +  
+                pose[ b ] * wgt.y +
+                pose[ c ] * wgt.z +
+                pose[ d ] * wgt.w;
+
+            return bone_wgt;
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+
+        void main() {
+            mat4 boneMatrix = getBoneMatrix( pose, joints, weights );               // Get the Skinning Matrix
+            mat4 mbMatrix   = modelMatrix * boneMatrix;                             // Merge Model and Bone Matrices togethr
+
+            vec4 wpos       = mbMatrix * vec4( position, 1.0 );                     // Use new Matrix to Transform Vertices
+            frag_wpos       = wpos.xyz;                                             // Save WorldSpace Position for Fragment Shader
+            frag_norm       = mat3( transpose( inverse( mbMatrix ) ) ) * normal;    // Transform Normals using bone + model matrix
+
+            gl_Position     = projectionMatrix * viewMatrix * wpos; 
+        }`,
+        
+        fragmentShader	: `#version 300 es
+        precision mediump float;
+        
+        ////////////////////////////////////////////////////////////////////////
+        
+        out     vec4 out_color;
+        in      vec3 frag_wpos;
+        in      vec3 frag_norm;
+
+        uniform vec3 color;
+
+        ////////////////////////////////////////////////////////////////////////
+        
+        #define LITCNT 2
+        const vec3[] light_pos = vec3[](
+            vec3( 0.0, 2.5, 1.0 ),
+            vec3( -1.0, 0.0, 1.0 )
+        );
+
+        float computePointLights( vec3[LITCNT] lights, vec3 norm ){
+            vec3 light_vec;
+            vec3 light_dir;
+
+            float dist;
+            float attenuation;
+            float diffuse     = 0.0;
+            float constant    = 0.5;
+            float linear      = 0.5;
+            float quadratic   = 0.5;
+            
+            for( int i=0; i < LITCNT; i++ ){
+                light_vec       = lights[i].xyz - frag_wpos;
+                light_dir       = normalize( light_vec );
+                dist            = length( light_vec );
+                attenuation     = 1.0 / ( constant + linear * dist + quadratic * (dist * dist) );
+                diffuse        += max( dot( norm, light_dir ), 0.0 ) * attenuation;
+            }
+
+            return diffuse;
+        }
+
+        void main(){
+            //vec3 norm   = normalize( cross( dFdx(frag_wpos), dFdy(frag_wpos) ) ); // Low Poly Normals
+            vec3 norm     = normalize( frag_norm ); // Model's Normals            
+            float diffuse = computePointLights( light_pos, norm );
+            out_color     = vec4( color * diffuse, 1.0 );
+        }`,
+    });
+
+    // If not using WebGL2.0 and Want to use dfdx or fwidth, Need to load extension
+    mat.extensions = { derivatives : true };
+
+    return mat;
+}
+
+class Bone{
+    constructor( bi ){
+        this.idx        = bi.idx;   // Bone Index : Important since its in relation to the Joints Attribute Buffer of vertices
+        this.pIdx       = bi.p_idx; // Index to Parent Bone : Good to know when doing World Space Math    
+        this.name       = bi.name;  // Bone's Name, easier to find a bone by name then index.
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Local and World Transform
+        this.world      = new Transform();          // World Space Transform
+        this.local      = new Transform();          // Local Space Transform
+        
+        if( bi.pos ) this.local.pos.copy( bi.pos ); // Set Initial LS Tranform from Model
+        if( bi.rot ) this.local.rot.copy( bi.rot );
+        if( bi.scl ) this.local.scl.copy( bi.scl );
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Skinning Data
+        this.bindPose   = new Mat4();
+    }
+}
+
+class Armature{
+    constructor( size=0 ){
+        this.names      = new Map();                        // Name to Index Map Reference
+        this.bones      = new Array( size );                // All the Bones in the Armature
+        this.offsetBuf  = new Float32Array( size * 16 );    // Flat Array of Matrices
+    }
+
+    //#region GETTERS / SETTERS
+    // Get Bone by Name
+    get( n ){ return this.bones[ this.names.get( n ) ]; }
+
+    // Add New Bone to Armature using Bone Information from GLTF File
+    addBone( bi ){
+        this.bones[ bi.idx ] = new Bone( bi );
+        this.names.set( bi.name, bi.idx );
+        //console.log( "Bone %s - %s", bi.idx, bi.name );
+    }
+
+    // Add to Local Space of a Bone
+    posBone( name, pos ){ this.get( name ).local.pos.add( pos ); }
+
+    // Apply WS Rotation to a Bone's WS Rotation, Then Save the data as local space rotation back to the bone.local
+    rotBone( name, axis, ang ){
+        let [ p, c ] = this.parentWSRot( name );        // Get Parent + Child WS Rotation
+        let b        = this.get( name );                // Starting Bone, Which we'll call child.
+        let q        = new Quat()
+            .fromAxisAngle( axis, ang * Math.PI / 180 ) // Create Requested Rotation
+            .mul( c )                                   // PreMul with Current WS Rotation
+            .pmulInvert( p )                            // PreMul Inverted Parent WS Rotation to get Child Local Space Rotation
+            .copyTo( b.local.rot );                     // Save Results back to the Bone
+    }
+
+    // Apply Rotation at the Local Space Level
+    rotlBone( name, axis, ang ){
+        let b = this.get( name );
+        let q = new Quat().fromAxisAngle( axis, ang * Math.PI / 180 );
+        b.local.rot.pmul( q );
+    }
+
+    sclBone( name, num ){
+        let b = this.get( name );
+        b.local.scl.xyz( num );
+    }
+    //#endregion
+
+    //#region COMPUTATIONS
+    // Go threw the bone array filled with Local Space Transform and
+    // compute each bone's World Space Transform.
+    computeWorldSpacePose(){
+        let b, p;
+        for( b of this.bones ){
+            if( b.pIdx != null ){
+                p = this.bones[ b.pIdx ];               // Parent Bone
+                b.world.fromMul( p.world, b.local );    // Has Parent : Child.World = Parent.World * Child.Local 
+            }else{
+                b.world.copy( b.local );                // No Parent  : Child.World == Child.Local
+            }
+        }
+    }
+
+    // Create a Bind Pose out of the current World Pose
+    computeBindPose(){
+        let b, m = new Mat4();
+        for( b of this.bones ){
+            // BindPose = Matrix.invert( Bone.WorldMatrix )
+            b.bindPose
+                .fromQuatTranScale( b.world.rot, b.world.pos, b.world.scl )
+                .invert();
+        }
+    }
+
+    // Compute the WorldSpace and Offset matrix, saving results in flat buffer.
+    updateOffsetBuffers(){
+        let i, b, m = new Mat4;
+        for( [ i, b ] of this.bones.entries() ){
+            // OffsetMatrix = Bone.WorldMatrix * Bone.BindMatrix 
+            m   .fromQuatTranScale( b.world.rot, b.world.pos, b.world.scl )
+                .mul( b.bindPose )
+                .toBuf( this.offsetBuf, i * 16 );
+        }
+    }
+    
+    // Get WorldSpace Transform of Parent, Including Requested Bone in Tuple
+    parentWSTransform( name ){
+        let b = this.get( name );           // Starting Bone, Which we'll call child.
+        let c = new Transform( b.local );   // Child Transform
+        let p = new Transform();            // Parent Tranform
+        
+        while( b.pIdx != null ){
+            b = this.bones[ b.pIdx ];       // Get Parent Bone
+            p.pmul( b.local );              // Add its Local to Total
+        }
+
+        c.pmul( p );                        // Add Parent WS to Child LS to get Child WS
+        return [ p, c ];
+    }
+
+    // Get WorldSpace Rotation of Parent, Includes Requested Bone in Tuple
+    parentWSRot( name ){
+        let b = this.get( name );           // Starting Bone, Which we'll call child.
+        let c = new Quat( b.local.rot );    // Child Transform
+        let p = new Quat();                 // Parent Tranform
+        
+        while( b.pIdx != null ){
+            b = this.bones[ b.pIdx ];       // Get Parent Bone
+            p.pmul( b.local.rot );          // Add its Local to Total
+        }
+
+        c.pmul( p );                        // Add Parent WS to Child LS to get Child WS
+        return [ p, c ];
+    }
+    //#endregion
+}
+//#endregion ////////////////////////////////////////////////////
+
+</script></body></html>

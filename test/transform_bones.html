@@ -107,7 +107,7 @@ class BoneChain{
 
             // If root Local == World, else Parent.World + Child.Local
             if( i == 0 ) b.world.copy( b.local );
-            else         b.world.fromAdd( this.bones[ i-1 ].world, b.local );
+            else         b.world.fromMul( this.bones[ i-1 ].world, b.local );
 
             b.update();
         }
