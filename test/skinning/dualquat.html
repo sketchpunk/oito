@@ -1,0 +1,406 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+    
+import Starter, { THREE }   from "../lib/starter.js";
+import Gltf                 from "../lib/Gltf.js";
+
+import Transform            from "../../dist/Transform.js";
+import Vec3                 from "../../dist/Vec3.js";
+import Quat                 from "../../dist/Quat.js";
+import DualQuat             from "../../dist/DualQuat.js";
+
+let App, gArm, gMesh;
+
+window.addEventListener( "load", async _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:true, grid:true } );
+    App.set_camera( 0, 40, 4, [0,0.8,1] ).render();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    const [ json, bin ] = await Promise.all([
+        fetch( "./Nabba.gltf" ).then( r=>r.json() ),
+        fetch( "./Nabba.bin" ).then( r=>r.arrayBuffer() ),
+    ]);
+
+    loadMesh( json, bin );
+    loadSkin( json );
+
+    gMesh.material.uniforms.pose.value = gArm.offsetBuf;
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    useTestPose();
+});
+
+
+//#region LOADERS
+function loadMesh( json, bin ){
+    let data    = Gltf.get_mesh( "Body", json, bin, true )[0];
+    let geo     = new THREE.BufferGeometry();
+    geo.setIndex( new THREE.BufferAttribute( data.indices.data, 1 ) );
+    geo.setAttribute( "position", new THREE.BufferAttribute( data.vertices.data, data.vertices.component_len ) );
+    geo.setAttribute( "normal",   new THREE.BufferAttribute( data.normal.data,   data.normal.component_len ) );
+    geo.setAttribute( "weights",  new THREE.BufferAttribute( data.weights.data,  data.weights.component_len ) );
+    geo.setAttribute( "joints",   new THREE.BufferAttribute( data.joints.data,   data.joints.component_len ) );
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    const mat   = skinningShader();
+    gMesh       = new THREE.Mesh( geo, mat );
+    App.add( gMesh );
+}
+
+function loadSkin( json ){
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Bone Array from GTLF are always in order to Joint Data PLUS, Parents Elements exists before child elements.
+    // So can easily keep bones in an array and reference parent by Index.
+    // Plus its important to keep the correct order since the JOINTs data for each
+    // vertice points to bones using that specific index.
+    let skin    = Gltf.get_skin_by_nodes( json, "Armature" );
+    gArm        = new Armature( skin.length );
+
+    for( let b of skin ) gArm.addBone( b );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Prepare Data to transform Mesh in relation to the armature data 
+    gArm.computeWorldSpacePose();    // Step 1: Need World Space Transform of all the bones
+    gArm.computeBindPose();          // Step 2: Invert WS Data, Its used as are starting point to compute offsets
+    gArm.updateOffsetBuffers();      // Step 3: Compute Offset WorldSpace Data of how much the bone move in relation to its initial pose
+}
+
+function useTestPose(){
+    gArm.posBone( "Hips", [0,0,1] );
+
+    gArm.rotBone( "UpperArm_L", [0,0,1], 20 );
+    gArm.rotBone( "UpperArm_L", [0,1,0], 50 );
+    gArm.rotlBone( "ForeArm_L", [1,0,0], -60 );
+    
+    gArm.rotBone( "UpperArm_R", [0,0,1], -20 );
+    gArm.rotBone( "UpperArm_R", [0,1,0], -50 );
+    gArm.rotlBone( "ForeArm_R", [1,0,0], -60 );
+
+    gArm.rotBone( "Thigh_L", [1,0,0], -90 );
+    gArm.rotBone( "Shin_L", [1,0,0], 120 );
+    gArm.rotlBone( "Foot_L", [1,0,0], -40 );
+   
+    gArm.rotBone( "Spine1", [1,0,0], -20 );
+    gArm.rotBone( "Spine2", [1,0,0], -20 );
+    gArm.rotBone( "Neck", [1,0,0], -20 );
+    gArm.rotBone( "Head", [1,0,0], -20 );
+    
+    //gArm.sclBone( "Head", 0.8 );      // Scaling doesn't work in DQ, 
+    //gArm.sclBone( "Hand_R", 1.3 );    // doing so causes Deformation Errors,
+    //gArm.sclBone( "Hand_L", 1.3 );    // Try it out to see what I mean
+    //gArm.sclBone( "Spine2", 1.8 );
+    //gArm.sclBone( "Foot_R", 1.3 );
+
+    gArm.computeWorldSpacePose();
+    gArm.updateOffsetBuffers();
+}
+//#endregion ////////////////////////////////////////////////////
+
+
+//#region SKINNING
+function skinningShader(){
+    let mat = new THREE.RawShaderMaterial({
+        side     : THREE.DoubleSide,
+        uniforms : {
+            color   : { type :'vec3', value:new THREE.Color( "cyan" ) },
+            pose    : { type :'mat2x4', value: new Float32Array( 8 ) },
+        },
+
+        vertexShader : `#version 300 es
+        in vec3 position;   // Vertex Position
+        in vec3 normal;     // Vertex Position
+        in vec4 weights;    // Bone Weights
+        in vec4 joints;     // Bone Indices
+
+        #define MAXBONES 90                 // Arrays can not be dynamic, so must set a size
+        //uniform mat2x4 pose[ MAXBONES ];  // Works in WebGL 2.0
+        uniform mat4 pose[ MAXBONES ];      // BUT... ThreeJS doesn't support it, So Mat4 :(
+        
+        uniform mat4 modelMatrix;       // Matrices should be filled in by THREE.JS Automatically.
+        uniform mat4 viewMatrix;
+        uniform mat4 projectionMatrix;
+
+        out vec3 frag_wpos;             // Fragment World Space Position
+        out vec3 frag_norm;             // Fragment Normal
+
+        ////////////////////////////////////////////////////////////////////////
+
+        // DQ * Vev3 - Rotates the Vec3 then Translates it.
+        vec3 dq_mul_vec( mat2x4 dq, vec3 v ){
+            vec4 Qr 	= dq[0].xyzw; // real (rot)
+            vec4 Qd 	= dq[1].xyzw; // dual (trans)
+            vec3 pos    = v + cross( 2.0 * Qr.xyz, cross(Qr.xyz, v) + Qr.w * v );	        // Quaternion Rotation of a Vector            
+            vec3 tran   = 2.0 * ( Qr.w * Qd.xyz - Qd.w * Qr.xyz + cross( Qr.xyz, Qd.xyz ));	// Pull out Translation from DQ
+            return pos + tran;
+        }
+
+        // Quat * Vec3 - Rotates Vec3
+        vec3 q_mul_vec( vec4 q, vec3 v ){
+            //return v + cross( 2.0 * q.xyz, cross( q.xyz, v) + q.w * v );  // Either Seems to Work, not sure which is the correct way to handle transformation
+            return v + 2.0 * cross( q.xyz, cross( q.xyz, v ) + q.w * v );
+        } 
+
+        mat2x4 getBoneDualQuat( mat4[90] pose, vec4 idx, vec4 wgt ){
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            // NORMALIZE BONE WEIGHTS
+            // If the Geometery already has this done to the Weights Data, then there is
+            // no Need for it here. For example with Blender, you need to explicitly go into bone
+            // weights and run a function to normalize all weights, but most people dont realize to do that.
+            // If not normalized, you will see artificts in transforming the vertices... sometimes VERY SCARY deformations
+            int a = int( idx.x ),
+                b = int( idx.y ),
+                c = int( idx.z ),
+                d = int( idx.w );
+            wgt *= 1.0 / ( wgt.x + wgt.y + wgt.z + wgt.w );
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            // THREE.JS Can't handle Mat2x4 as uniforms even though WebGL 2.0 supports it.
+            // Only Mat4 in uniforms works, Its a waste of memory but no other simplier solution for now
+            // We need to convert Mat4 to Mat2x4 till ThreeJS ever updates itself to let users use Mat2x4
+            mat2x4 qa = mat2x4( pose[ a ] );
+            mat2x4 qb = mat2x4( pose[ b ] );
+            mat2x4 qc = mat2x4( pose[ c ] );
+            mat2x4 qd = mat2x4( pose[ d ] );
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            // Optional Checks and Corrections. Quaternions can cause
+            // artifacts multiplying together two on opposite hemispheres.
+            // In the year I've used DQ for my animation system I never needed
+            // To actually use these sort of checks in Shader Code, but I do these
+            // sort of corrections in Javascript when blending poses together. I've
+            // actually seen these GLSL corrects cause artifiacts in one model once, so I comment them out
+            // Its here just incase I need to test something in the future and for completeness.
+
+            // Antipodality correction
+            //if( dot( qa[0], qb[0] ) < 0.0 ) qb *= -1.0;
+            //if( dot( qa[0], qc[0] ) < 0.0 ) qc *= -1.0;
+            //if( dot( qa[0], qd[0] ) < 0.0 ) qd *= -1.0;
+
+            // Neightborhood all of the weights correctly
+            //if( dot( qa[0], qb[0] ) < 0.0 ) wgt.y *= -1.0; 
+            //if( dot( qa[0], qc[0] ) < 0.0 ) wgt.z *= -1.0; 
+            //if( dot( qa[0], qd[0] ) < 0.0 ) wgt.w *= -1.0;
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            // Merge DQ by the use of Weights
+            mat2x4 dq = qa * wgt.x +  
+                        qb * wgt.y + 
+                        qc * wgt.z +  
+                        qd * wgt.w;
+
+            // Normalize Using the Quaternion Part of the DQ. 
+            // VERT IMPORTANT, not doing it can cause artifacts, 
+            // Took me a long while to realize this when errors starting showing up
+            dq *= 1.0 / length( dq[ 0 ] ); 
+  
+            return dq;
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+
+        void main(){
+            mat2x4 boneDQ   = getBoneDualQuat( pose, joints, weights );     // Compute the Bone's Dual Quaternion
+
+            vec4 wpos       = modelMatrix * vec4( dq_mul_vec( boneDQ, position ), 1.0 );
+            frag_wpos       = wpos.xyz;                                     // Save WorldSpace Position for Fragment Shader
+
+            frag_norm       = mat3( transpose( inverse( modelMatrix ) ) ) * 
+                              q_mul_vec( boneDQ[ 0 ], normal );             // Use the Quaternion Part to Rotate the Normal, Then the ModelMatrix
+
+            gl_Position     = projectionMatrix * viewMatrix * wpos; 
+        }`,
+        
+        fragmentShader	: `#version 300 es
+        precision mediump float;
+        
+        ////////////////////////////////////////////////////////////////////////
+        
+        out     vec4 out_color;
+        in      vec3 frag_wpos;
+        in      vec3 frag_norm;
+
+        uniform vec3 color;
+
+        ////////////////////////////////////////////////////////////////////////
+        
+        #define LITCNT 2
+        const vec3[] light_pos = vec3[](
+            vec3( 0.0, 2.5, 1.0 ),
+            vec3( -1.0, 0.0, 1.0 )
+        );
+
+        float computePointLights( vec3[LITCNT] lights, vec3 norm ){
+            vec3 light_vec;
+            vec3 light_dir;
+
+            float dist;
+            float attenuation;
+            float diffuse     = 0.0;
+            float constant    = 0.5;
+            float linear      = 0.5;
+            float quadratic   = 0.5;
+            
+            for( int i=0; i < LITCNT; i++ ){
+                light_vec       = lights[i].xyz - frag_wpos;
+                light_dir       = normalize( light_vec );
+                dist            = length( light_vec );
+                attenuation     = 1.0 / ( constant + linear * dist + quadratic * (dist * dist) );
+                diffuse        += max( dot( norm, light_dir ), 0.0 ) * attenuation;
+            }
+
+            return diffuse;
+        }
+
+        void main(){
+            //vec3 norm   = normalize( cross( dFdx(frag_wpos), dFdy(frag_wpos) ) ); // Low Poly Normals
+            vec3 norm     = normalize( frag_norm ); // Model's Normals            
+            float diffuse = computePointLights( light_pos, norm );
+            out_color     = vec4( color * diffuse, 1.0 );
+        }`,
+    });
+
+    // If not using WebGL2.0 and Want to use dfdx or fwidth, Need to load extension
+    mat.extensions = { derivatives : true };
+
+    return mat;
+}
+
+class Bone{
+    constructor( bi ){
+        this.idx        = bi.idx;   // Bone Index : Important since its in relation to the Joints Attribute Buffer of vertices
+        this.pIdx       = bi.p_idx; // Index to Parent Bone : Good to know when doing World Space Math    
+        this.name       = bi.name;  // Bone's Name, easier to find a bone by name then index.
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Local and World Transform
+        this.world      = new Transform();          // World Space Transform
+        this.local      = new Transform();          // Local Space Transform
+        
+        if( bi.pos ) this.local.pos.copy( bi.pos ); // Set Initial LS Tranform from Model
+        if( bi.rot ) this.local.rot.copy( bi.rot );
+        if( bi.scl ) this.local.scl.copy( bi.scl );
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Skinning Data
+        this.bindPose   = new DualQuat();
+    }
+}
+
+class Armature{
+    constructor( size=0 ){
+        this.names      = new Map();                        // Name to Index Map Reference
+        this.bones      = new Array( size );                // All the Bones in the Armature
+        //this.offsetBuf  = new Float32Array( size * 8 );   // Flat Array of Dual Quaternions
+        this.offsetBuf  = new Float32Array( size * 16 );    // THREE.JS can't handle Mat2x4 even though WebGL2 has support for it.
+                                                            // So I have no choice but to switch to Mat4, then parse out the Mat2x4 in the shader.
+    }
+
+    //#region GETTERS / SETTERS
+    // Get Bone by Name
+    get( n ){ return this.bones[ this.names.get( n ) ]; }
+
+    // Add New Bone to Armature using Bone Information from GLTF File
+    addBone( bi ){
+        this.bones[ bi.idx ] = new Bone( bi );
+        this.names.set( bi.name, bi.idx );
+        //console.log( "Bone %s - %s", bi.idx, bi.name );
+    }
+
+    // Add to Local Space of a Bone
+    posBone( name, pos ){ this.get( name ).local.pos.add( pos ); }
+
+    // Apply WS Rotation to a Bone's WS Rotation, Then Save the data as local space rotation back to the bone.local
+    rotBone( name, axis, ang ){
+        let [ p, c ] = this.parentWSRot( name );        // Get Parent + Child WS Rotation
+        let b        = this.get( name );                // Starting Bone, Which we'll call child.
+        let q        = new Quat()
+            .fromAxisAngle( axis, ang * Math.PI / 180 ) // Create Requested Rotation
+            .mul( c )                                   // PreMul with Current WS Rotation
+            .pmulInvert( p )                            // PreMul Inverted Parent WS Rotation to get Child Local Space Rotation
+            .copyTo( b.local.rot );                     // Save Results back to the Bone
+    }
+
+    // Apply Rotation at the Local Space Level
+    rotlBone( name, axis, ang ){
+        let b = this.get( name );
+        let q = new Quat().fromAxisAngle( axis, ang * Math.PI / 180 );
+        b.local.rot.pmul( q );
+    }
+
+    sclBone( name, num ){
+        let b = this.get( name );
+        b.local.scl.xyz( num );
+    }
+    //#endregion
+
+    //#region COMPUTATIONS
+    // Go threw the bone array filled with Local Space Transform and
+    // compute each bone's World Space Transform.
+    computeWorldSpacePose(){
+        let b, p;
+        for( b of this.bones ){
+            if( b.pIdx != null ){
+                p = this.bones[ b.pIdx ];               // Parent Bone
+                b.world.fromMul( p.world, b.local );    // Has Parent : Child.World = Parent.World * Child.Local 
+            }else{
+                b.world.copy( b.local );                // No Parent  : Child.World == Child.Local
+            }
+        }
+    }
+
+    // Create a Bind Pose out of the current World Pose
+    computeBindPose(){
+        let b;
+        for( b of this.bones ){
+            // BindPose = Matrix.invert( Bone.WorldMatrix )
+            b.bindPose
+                .fromQuatTran( b.world.rot, b.world.pos )
+                .invert();
+        }
+    }
+
+    // Compute the WorldSpace and Offset matrix, saving results in flat buffer.
+    updateOffsetBuffers(){
+        let i, b, dq = new DualQuat;
+        for( [ i, b ] of this.bones.entries() ){
+            // OffsetMatrix = Bone.WorldDQ * Bone.BindDQ 
+            dq  .fromQuatTran( b.world.rot, b.world.pos )
+                .mul( b.bindPose )
+                .toBuf( this.offsetBuf, i * 16 ); // TODO, Once Mat2x4 works in THREE.JS, fix it to i*8;
+        }
+    }
+    
+    // Get WorldSpace Transform of Parent, Including Requested Bone in Tuple
+    parentWSTransform( name ){
+        let b = this.get( name );           // Starting Bone, Which we'll call child.
+        let c = new Transform( b.local );   // Child Transform
+        let p = new Transform();            // Parent Tranform
+        
+        while( b.pIdx != null ){
+            b = this.bones[ b.pIdx ];       // Get Parent Bone
+            p.pmul( b.local );              // Add its Local to Total
+        }
+
+        c.pmul( p );                        // Add Parent WS to Child LS to get Child WS
+        return [ p, c ];
+    }
+
+    // Get WorldSpace Rotation of Parent, Includes Requested Bone in Tuple
+    parentWSRot( name ){
+        let b = this.get( name );           // Starting Bone, Which we'll call child.
+        let c = new Quat( b.local.rot );    // Child Transform
+        let p = new Quat();                 // Parent Tranform
+        
+        while( b.pIdx != null ){
+            b = this.bones[ b.pIdx ];       // Get Parent Bone
+            p.pmul( b.local.rot );          // Add its Local to Total
+        }
+
+        c.pmul( p );                        // Add Parent WS to Child LS to get Child WS
+        return [ p, c ];
+    }
+    //#endregion
+}
+//#endregion ////////////////////////////////////////////////////
+
+</script></body></html>
