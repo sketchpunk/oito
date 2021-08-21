@@ -1,7 +1,8 @@
 import Vec3 from "./Vec3.js";
 import Quat from "./Quat.js";
 
-// http://gabormakesgames.com/blog_transforms_transforms.html
+// https://gabormakesgames.com/blog_transforms_transforms.html
+// https://gabormakesgames.com/blog_transforms_transform_world.html
 
 class Transform{
 
@@ -146,11 +147,12 @@ class Transform{
         this.rot.fromInvert( t.rot );
 
         // Invert Scale
-        this.scl.x = ( t.scl.x != 0 )? 1 / t.scl.x : 0;
-        this.scl.y = ( t.scl.y != 0 )? 1 / t.scl.y : 0;
-        this.scl.z = ( t.scl.z != 0 )? 1 / t.scl.z : 0;
+        //this.scl.x = ( t.scl.x != 0 )? 1 / t.scl.x : 0;
+        //this.scl.y = ( t.scl.y != 0 )? 1 / t.scl.y : 0;
+        //this.scl.z = ( t.scl.z != 0 )? 1 / t.scl.z : 0;
+        this.scl.fromInvert( t.scl );
 
-        // Invert Position : rotInv * ( invScl * invPos )
+        // Invert Position : rotInv * ( invScl * -Pos )
         this.pos
             .fromNegate( t.pos )
             .mul( this.scl )

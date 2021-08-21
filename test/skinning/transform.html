@@ -13,7 +13,7 @@ let App, gArm, gMesh;
 window.addEventListener( "load", async _=>{
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     App = new Starter( { webgl2:true, grid:true } );
-    App.set_camera( 0, 40, 4, [0,0.8,1] ).render();
+    App.set_camera( 45, 40, 4, [0,0.8,1] ).render();
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     const [ json, bin ] = await Promise.all([
@@ -24,7 +24,9 @@ window.addEventListener( "load", async _=>{
     loadMesh( json, bin );
     loadSkin( json );
 
-    gMesh.material.uniforms.pose.value = gArm.offsetBuf;
+    gMesh.material.uniforms.poserot.value = gArm.offsetRot;
+    gMesh.material.uniforms.posepos.value = gArm.offsetPos;
+    gMesh.material.uniforms.posescl.value = gArm.offsetScl;
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     useTestPose();
@@ -66,7 +68,7 @@ function loadSkin( json ){
 }
 
 function useTestPose(){
-    gArm.posBone( "Hips", [0,0,1] );
+    gArm.posBone( "Hips", [0,0.2,1] );
 
     gArm.rotBone( "UpperArm_L", [0,0,1], 20 );
     gArm.rotBone( "UpperArm_L", [0,1,0], 50 );
@@ -80,16 +82,20 @@ function useTestPose(){
     gArm.rotBone( "Shin_L", [1,0,0], 120 );
     gArm.rotlBone( "Foot_L", [1,0,0], -40 );
    
+    gArm.rotBone( "Thigh_R", [1,0,0], -20 );
+    gArm.rotBone( "Shin_R", [1,0,0], 40 );
+    gArm.rotlBone( "Foot_R", [1,0,0], -45 );
+
     gArm.rotBone( "Spine1", [1,0,0], -20 );
     gArm.rotBone( "Spine2", [1,0,0], -20 );
     gArm.rotBone( "Neck", [1,0,0], -20 );
     gArm.rotBone( "Head", [1,0,0], -20 );
     
-    //gArm.sclBone( "Head", 0.8 );      // Scaling doesn't work in DQ, 
-    //gArm.sclBone( "Hand_R", 1.3 );    // doing so causes Deformation Errors,
-    //gArm.sclBone( "Hand_L", 1.3 );    // Try it out to see what I mean
-    //gArm.sclBone( "Spine2", 1.8 );
-    //gArm.sclBone( "Foot_R", 1.3 );
+    gArm.sclBone( "Head", 0.8 );
+    gArm.sclBone( "Hand_R", 1.3 );
+    gArm.sclBone( "Hand_L", 1.3 );
+    gArm.sclBone( "Spine2", 1.8 );
+    gArm.sclBone( "Foot_R", 1.3 );
 
     gArm.computeWorldSpacePose();
     gArm.updateOffsetBuffers();
@@ -102,8 +108,10 @@ function skinningShader(){
     let mat = new THREE.RawShaderMaterial({
         side     : THREE.DoubleSide,
         uniforms : {
-            color   : { type :'vec3', value:new THREE.Color( "cyan" ) },
-            pose    : { type :'mat2x4', value: new Float32Array( 8 ) },
+            color       : { type :'vec3', value:new THREE.Color( "cyan" ) },
+            poserot    : { type :'vec4', value: new Float32Array( 4 ) },
+            posepos    : { type :'vec3', value: new Float32Array( 3 ) },
+            posescl    : { type :'vec3', value: new Float32Array( 3 ) },
         },
 
         vertexShader : `#version 300 es
@@ -113,8 +121,9 @@ function skinningShader(){
         in vec4 joints;     // Bone Indices
 
         #define MAXBONES 90                 // Arrays can not be dynamic, so must set a size
-        //uniform mat2x4 pose[ MAXBONES ];  // Works in WebGL 2.0
-        uniform mat4 pose[ MAXBONES ];      // BUT... ThreeJS doesn't support it, So Mat4 :(
+        uniform vec4 poserot[ MAXBONES ];
+        uniform vec3 posepos[ MAXBONES ];
+        uniform vec3 posescl[ MAXBONES ];
         
         uniform mat4 modelMatrix;       // Matrices should be filled in by THREE.JS Automatically.
         uniform mat4 viewMatrix;
@@ -125,13 +134,37 @@ function skinningShader(){
 
         ////////////////////////////////////////////////////////////////////////
 
-        // DQ * Vev3 - Rotates the Vec3 then Translates it.
-        vec3 dq_mul_vec( mat2x4 dq, vec3 v ){
-            vec4 Qr 	= dq[0].xyzw; // real (rot)
-            vec4 Qd 	= dq[1].xyzw; // dual (trans)
-            vec3 pos    = v + cross( 2.0 * Qr.xyz, cross(Qr.xyz, v) + Qr.w * v );	        // Quaternion Rotation of a Vector            
-            vec3 tran   = 2.0 * ( Qr.w * Qd.xyz - Qd.w * Qr.xyz + cross( Qr.xyz, Qd.xyz ));	// Pull out Translation from DQ
-            return pos + tran;
+        // Only compute the Dual part of the Dual Quaternion 
+        vec4 dualfromQuatTran( vec4 q, vec3 t ){
+            float ax = t.x * 0.5, ay = t.y * 0.5, az = t.z * 0.5,
+                  bx = q.x,       by = q.y,       bz = q.z,       bw = q.w;
+
+            //this[0] = bx;
+            //this[1] = by;
+            //this[2] = bz;
+            //this[3] = bw;
+            //this[4] =  ax * bw + ay * bz - az * by;
+            //this[5] =  ay * bw + az * bx - ax * bz;
+            //this[6] =  az * bw + ax * by - ay * bx;
+            //this[7] = -ax * bx - ay * by - az * bz;
+            return vec4( 
+                ax * bw + ay * bz - az * by,
+                ay * bw + az * bx - ax * bz,
+                az * bw + ax * by - ay * bx,
+               -ax * bx - ay * by - az * bz
+            );
+        }
+
+        // Using a Quaternion and Dual then Convert the Dual back into a Position
+        vec3 dualToPos( vec4 q, vec4 t ){
+            float ax =  t.x, ay =  t.y, az =  t.z, aw = t.w,
+                  bx = -q.x, by = -q.y, bz = -q.z, bw = q.w;
+
+            return vec3(
+                ( ax * bw + aw * bx + ay * bz - az * by ) * 2.0,
+                ( ay * bw + aw * by + az * bx - ax * bz ) * 2.0,
+                ( az * bw + aw * bz + ax * by - ay * bx ) * 2.0
+            );
         }
 
         // Quat * Vec3 - Rotates Vec3
@@ -139,73 +172,96 @@ function skinningShader(){
             //return v + cross( 2.0 * q.xyz, cross( q.xyz, v) + q.w * v );  // Either Seems to Work, not sure which is the correct way to handle transformation
             return v + 2.0 * cross( q.xyz, cross( q.xyz, v ) + q.w * v );
         } 
-
-        mat2x4 getBoneDualQuat( mat4[90] pose, vec4 idx, vec4 wgt ){
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            // NORMALIZE BONE WEIGHTS
-            // If the Geometery already has this done to the Weights Data, then there is
-            // no Need for it here. For example with Blender, you need to explicitly go into bone
-            // weights and run a function to normalize all weights, but most people dont realize to do that.
-            // If not normalized, you will see artificts in transforming the vertices... sometimes VERY SCARY deformations
+        
+        void getBoneTransform( vec4 idx, vec4 wgt, out vec4 rot, out vec3 pos, out vec3 scl ){
+            // NORMALIZE BONE WEIGHT VECTOR
             int a = int( idx.x ),
                 b = int( idx.y ),
                 c = int( idx.z ),
                 d = int( idx.w );
             wgt *= 1.0 / ( wgt.x + wgt.y + wgt.z + wgt.w );
 
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            // THREE.JS Can't handle Mat2x4 as uniforms even though WebGL 2.0 supports it.
-            // Only Mat4 in uniforms works, Its a waste of memory but no other simplier solution for now
-            // We need to convert Mat4 to Mat2x4 till ThreeJS ever updates itself to let users use Mat2x4
-            mat2x4 qa = mat2x4( pose[ a ] );
-            mat2x4 qb = mat2x4( pose[ b ] );
-            mat2x4 qc = mat2x4( pose[ c ] );
-            mat2x4 qd = mat2x4( pose[ d ] );
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            // WEIGHT POSITION AND SCALE
+            scl = posescl[ a ] * wgt.x +  
+                  posescl[ b ] * wgt.y +
+                  posescl[ c ] * wgt.z +
+                  posescl[ d ] * wgt.w;
 
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            // Optional Checks and Corrections. Quaternions can cause
-            // artifacts multiplying together two on opposite hemispheres.
-            // In the year I've used DQ for my animation system I never needed
-            // To actually use these sort of checks in Shader Code, but I do these
-            // sort of corrections in Javascript when blending poses together. I've
-            // actually seen these GLSL corrects cause artifiacts in one model once, so I comment them out
-            // Its here just incase I need to test something in the future and for completeness.
+            /*  THIS DOESN'T WORK RIGHT like 20% of the model, can't weight the position like this
+            pos = posepos[ a ] * wgt.x +  
+                  posepos[ b ] * wgt.y +
+                  posepos[ c ] * wgt.z +
+                  posepos[ d ] * wgt.w;
+            */
 
-            // Antipodality correction
-            //if( dot( qa[0], qb[0] ) < 0.0 ) qb *= -1.0;
-            //if( dot( qa[0], qc[0] ) < 0.0 ) qc *= -1.0;
-            //if( dot( qa[0], qd[0] ) < 0.0 ) qd *= -1.0;
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            // WEIGHT QUATERNION
+   
+            vec4 qa = poserot[ a ];
+            vec4 qb = poserot[ b ];
+            vec4 qc = poserot[ c ];
+            vec4 qd = poserot[ d ];
 
             // Neightborhood all of the weights correctly
-            //if( dot( qa[0], qb[0] ) < 0.0 ) wgt.y *= -1.0; 
-            //if( dot( qa[0], qc[0] ) < 0.0 ) wgt.z *= -1.0; 
-            //if( dot( qa[0], qd[0] ) < 0.0 ) wgt.w *= -1.0;
+            /*
+            if( dot( qa, qb ) < 0.0 ) wgt.y *= -1.0;
+	        if( dot( qa, qc ) < 0.0 ) wgt.z *= -1.0;
+        	if( dot( qa, qd ) < 0.0 ) wgt.w *= -1.0;
+            */
+            
+            // Antipodality correction
+            /*
+            if( dot( qa, qb ) < 0.0 ) qb *= -1.0;
+            if( dot( qa, qc ) < 0.0 ) qc *= -1.0;
+            if( dot( qa, qd ) < 0.0 ) qd *= -1.0;
+            */
 
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            // Merge DQ by the use of Weights
-            mat2x4 dq = qa * wgt.x +  
-                        qb * wgt.y + 
-                        qc * wgt.z +  
-                        qd * wgt.w;
+            rot = qa * wgt.x +  
+                  qb * wgt.y +
+                  qc * wgt.z +
+                  qd * wgt.w;
 
-            // Normalize Using the Quaternion Part of the DQ. 
-            // VERT IMPORTANT, not doing it can cause artifacts, 
-            // Took me a long while to realize this when errors starting showing up
-            dq *= 1.0 / length( dq[ 0 ] ); 
-  
-            return dq;
-        }
+            //rot = normalize( rot );
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            // POSITION WEIGHTING THAT WORKS
+            // Using the Quat of the transfrom to turn Position into the Dual 
+            // Part of a Dual Quaternion. Applying weight to it, then using
+            // the weighted Quaternion as its other half to convert it back
+            // into position is the secret to getting this to work right.
+            // Honestly, I didn't expect this to work... Im shocked
+            vec4 pa = dualfromQuatTran( qa, posepos[ a ] ); 
+            vec4 pb = dualfromQuatTran( qb, posepos[ b ] );
+            vec4 pc = dualfromQuatTran( qc, posepos[ c ] );
+            vec4 pd = dualfromQuatTran( qd, posepos[ d ] );
+
+            float norm = 1.0 / length( rot );
+            vec4 dual  = pa * wgt.x +  
+                         pb * wgt.y +
+                         pc * wgt.z +
+                         pd * wgt.w;
+
+            dual *= norm; // NORMALIZE OUR DUAL AND QUAT
+            rot  *= norm;
+            pos   = dualToPos( rot, dual ); // Convert to Position
+        }   
 
         ////////////////////////////////////////////////////////////////////////
 
         void main(){
-            mat2x4 boneDQ   = getBoneDualQuat( pose, joints, weights );     // Compute the Bone's Dual Quaternion
-
-            vec4 wpos       = modelMatrix * vec4( dq_mul_vec( boneDQ, position ), 1.0 );
+            // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            vec4 prot;
+            vec3 ppos, pscl;
+            getBoneTransform( joints, weights, prot, ppos, pscl );
+            vec3 pos        = q_mul_vec( prot, position * pscl ) + ppos;
+            
+            // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            vec4 wpos       = modelMatrix * vec4( pos, 1.0 );
             frag_wpos       = wpos.xyz;                                     // Save WorldSpace Position for Fragment Shader
 
             frag_norm       = mat3( transpose( inverse( modelMatrix ) ) ) * 
-                              q_mul_vec( boneDQ[ 0 ], normal );             // Use the Quaternion Part to Rotate the Normal, Then the ModelMatrix
+                              q_mul_vec( prot, normal );
 
             gl_Position     = projectionMatrix * viewMatrix * wpos; 
         }`,
@@ -282,7 +338,7 @@ class Bone{
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Skinning Data
-        this.bindPose   = new DualQuat();
+        this.bindPose   = new Transform();
     }
 }
 
@@ -291,8 +347,10 @@ class Armature{
         this.names      = new Map();                        // Name to Index Map Reference
         this.bones      = new Array( size );                // All the Bones in the Armature
         //this.offsetBuf  = new Float32Array( size * 8 );   // Flat Array of Dual Quaternions
-        this.offsetBuf  = new Float32Array( size * 16 );    // THREE.JS can't handle Mat2x4 even though WebGL2 has support for it.
-                                                            // So I have no choice but to switch to Mat4, then parse out the Mat2x4 in the shader.
+
+        this.offsetRot  = new Float32Array( size * 4 );
+        this.offsetPos  = new Float32Array( size * 3 );
+        this.offsetScl  = new Float32Array( size * 3 );
     }
 
     //#region GETTERS / SETTERS
@@ -352,21 +410,19 @@ class Armature{
     computeBindPose(){
         let b;
         for( b of this.bones ){
-            // BindPose = DualQuat.invert( Bone.WorldTransform )
-            b.bindPose
-                .fromQuatTran( b.world.rot, b.world.pos )
-                .invert();
+            // BindPose = Bone.WorldTransform.invert()
+            b.bindPose.fromInvert( b.world );
         }
     }
 
     // Compute the WorldSpace and Offset DQs, saving results in flat buffer.
     updateOffsetBuffers(){
-        let i, b, dq = new DualQuat;
+        let i, b, t = new Transform();
         for( [ i, b ] of this.bones.entries() ){
-            // OffsetDQ = Bone.WorldDQ * Bone.BindDQ 
-            dq  .fromQuatTran( b.world.rot, b.world.pos )
-                .mul( b.bindPose )
-                .toBuf( this.offsetBuf, i * 16 ); // TODO, Once Mat2x4 works in THREE.JS, fix it to i*8;
+            t.fromMul( b.world, b.bindPose );      // OffsetTransform = Bone.WorldTransform * Bone.BindTransform
+            t.rot.toBuf( this.offsetRot, i * 4 );
+            t.pos.toBuf( this.offsetPos, i * 3 );
+            t.scl.toBuf( this.offsetScl, i * 3 );
         }
     }
     

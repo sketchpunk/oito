@@ -6,7 +6,9 @@ declare class DualQuat extends Float32Array {
     clone(): DualQuat;
     copy(a: TVec8): DualQuat;
     lenSqr(): number;
+    /** DUAL Part of DQ */
     getTranslation(out?: TVec3): TVec3;
+    /** REAL Part of DQ */
     getQuat(out?: TVec4): TVec4;
     /** Used to get data from a flat buffer of dualquat */
     fromBuf(ary: Array<number> | Float32Array, idx: number): DualQuat;

@@ -77,6 +77,7 @@ declare class Vec3 extends Float32Array {
     fromDivScale(a: TVec3, s: number): Vec3;
     fromNorm(v: TVec3): Vec3;
     fromNegate(a: TVec3): Vec3;
+    fromInvert(a: TVec3): Vec3;
     fromCross(a: TVec3, b: TVec3): Vec3;
     fromQuat(q: TVec4, v: TVec3): Vec3;
     /** Axis Rotation of a Vector */
@@ -89,6 +90,7 @@ declare class Vec3 extends Float32Array {
     divScale(v: number): Vec3;
     preDivScale(v: number): Vec3;
     scale(v: number): Vec3;
+    invert(): Vec3;
     abs(): Vec3;
     floor(): Vec3;
     ceil(): Vec3;

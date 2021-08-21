@@ -50,6 +50,7 @@ class DualQuat extends Float32Array {
     }
     lenSqr() { return this[0] * this[0] + this[1] * this[1] + this[2] * this[2] + this[3] * this[3]; }
     //----------------------------------------------------
+    /** DUAL Part of DQ */
     getTranslation(out) {
         const ax = this[4], ay = this[5], az = this[6], aw = this[7], bx = -this[0], by = -this[1], bz = -this[2], bw = this[3];
         out = out || new Array(3);
@@ -58,6 +59,7 @@ class DualQuat extends Float32Array {
         out[2] = (az * bw + aw * bz + ax * by - ay * bx) * 2;
         return out;
     }
+    /** REAL Part of DQ */
     getQuat(out) {
         out = out || [0, 0, 0, 0];
         out[0] = this[0];

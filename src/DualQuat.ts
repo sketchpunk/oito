@@ -59,7 +59,7 @@ class DualQuat extends Float32Array{
     lenSqr() : number{ return this[0]*this[0] + this[1]*this[1] + this[2]*this[2] + this[3]*this[3]; }
 
     //----------------------------------------------------
-
+    /** DUAL Part of DQ */
     getTranslation( out ?: TVec3 ) : TVec3{
         const ax =  this[4], ay =  this[5], az =  this[6], aw = this[7],
               bx = -this[0], by = -this[1], bz = -this[2], bw = this[3];
@@ -71,6 +71,7 @@ class DualQuat extends Float32Array{
         return out;
     }
 
+    /** REAL Part of DQ */
     getQuat( out ?: TVec4 ) : TVec4{
         out      = out || [0,0,0,0];
         out[ 0 ] = this[ 0 ];

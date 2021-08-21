@@ -283,6 +283,12 @@ class Vec3 extends Float32Array {
         this[2] = -a[2];
         return this;
     }
+    fromInvert(a) {
+        this[0] = (a[0] != 0) ? 1 / a[0] : 0;
+        this[1] = (a[1] != 0) ? 1 / a[1] : 0;
+        this[2] = (a[2] != 0) ? 1 / a[2] : 0;
+        return this;
+    }
     fromCross(a, b) {
         const ax = a[0], ay = a[1], az = a[2], bx = b[0], by = b[1], bz = b[2];
         this[0] = ay * bz - az * by;
@@ -357,6 +363,12 @@ class Vec3 extends Float32Array {
         this[0] *= v;
         this[1] *= v;
         this[2] *= v;
+        return this;
+    }
+    invert() {
+        this[0] = (this[0] != 0) ? 1 / this[0] : 0;
+        this[1] = (this[1] != 0) ? 1 / this[1] : 0;
+        this[2] = (this[2] != 0) ? 1 / this[2] : 0;
         return this;
     }
     //++++++++++++++++++++++++++++++++++
