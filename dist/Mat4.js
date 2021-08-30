@@ -1,4 +1,5 @@
 class Mat4 extends Float32Array {
+    //#endregion ////////////////////////////////////////////////////////
     //#region CONSTRUCTORS 
     constructor() {
         super(16);
@@ -851,6 +852,40 @@ class Mat4 extends Float32Array {
         this[15] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
         return this;
     }
+    pmul(b) {
+        const a00 = b[0], a01 = b[1], a02 = b[2], a03 = b[3], a10 = b[4], a11 = b[5], a12 = b[6], a13 = b[7], a20 = b[8], a21 = b[9], a22 = b[10], a23 = b[11], a30 = b[12], a31 = b[13], a32 = b[14], a33 = b[15];
+        // Cache only the current line of the second matrix
+        let b0 = this[0], b1 = this[1], b2 = this[2], b3 = this[3];
+        this[0] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+        this[1] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+        this[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+        this[3] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+        b0 = this[4];
+        b1 = this[5];
+        b2 = this[6];
+        b3 = this[7];
+        this[4] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+        this[5] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+        this[6] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+        this[7] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+        b0 = this[8];
+        b1 = this[9];
+        b2 = this[10];
+        b3 = this[11];
+        this[8] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+        this[9] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+        this[10] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+        this[11] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+        b0 = this[12];
+        b1 = this[13];
+        b2 = this[14];
+        b3 = this[15];
+        this[12] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
+        this[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
+        this[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
+        this[15] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+        return this;
+    }
     invert() {
         const a00 = this[0], a01 = this[1], a02 = this[2], a03 = this[3], a10 = this[4], a11 = this[5], a12 = this[6], a13 = this[7], a20 = this[8], a21 = this[9], a22 = this[10], a23 = this[11], a30 = this[12], a31 = this[13], a32 = this[14], a33 = this[15], b00 = a00 * a11 - a01 * a10, b01 = a00 * a12 - a02 * a10, b02 = a00 * a13 - a03 * a10, b03 = a01 * a12 - a02 * a11, b04 = a01 * a13 - a03 * a11, b05 = a02 * a13 - a03 * a12, b06 = a20 * a31 - a21 * a30, b07 = a20 * a32 - a22 * a30, b08 = a20 * a33 - a23 * a30, b09 = a21 * a32 - a22 * a31, b10 = a21 * a33 - a23 * a31, b11 = a22 * a33 - a23 * a32;
         let det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06; // Calculate the determinant
@@ -1094,5 +1129,11 @@ class Mat4 extends Float32Array {
         out[3] = this[3] * x + this[7] * y + this[11] * z + this[15] * w;
         return out;
     }
+    //#endregion ////////////////////////////////////////////////////////
+    //#region STATIC
+    static mul(a, b) { return new Mat4().fromMul(a, b); }
+    static invert(a) { return new Mat4().fromInvert(a); }
 }
+//#region STATIC VALUES
+Mat4.BYTESIZE = 16 * Float32Array.BYTES_PER_ELEMENT;
 export default Mat4;

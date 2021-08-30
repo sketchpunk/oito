@@ -601,6 +601,7 @@ class Vec3 extends Float32Array {
     }
 }
 //#region STATIC VALUES
+Vec3.BYTESIZE = 3 * Float32Array.BYTES_PER_ELEMENT;
 Vec3.UP = [0, 1, 0];
 Vec3.DOWN = [0, -1, 0];
 Vec3.LEFT = [-1, 0, 0];

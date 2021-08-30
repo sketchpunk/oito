@@ -333,4 +333,6 @@ class Vec4 extends Float32Array {
         return this;
     }
 }
+//#region STATIC VALUES
+Vec4.BYTESIZE = 4 * Float32Array.BYTES_PER_ELEMENT;
 export default Vec4;

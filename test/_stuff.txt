@@ -91,6 +91,32 @@ function distanceToFitObjectToView(
 
 //#################################################
 
+distance is camera to center of view when used with planet stuff
+    public static double computePixelSizeAtDistance(double distance, Angle fieldOfView, java.awt.Rectangle viewport)
+    {
+        if (fieldOfView == null)
+        {
+            String message = Logging.getMessage("nullValue.AngleIsNull");
+            Logging.logger().severe(message);
+            throw new IllegalArgumentException(message);
+        }
+        if (viewport == null)
+        {
+            String message = Logging.getMessage("nullValue.RectangleIsNull");
+            Logging.logger().severe(message);
+            throw new IllegalArgumentException(message);
+        }
+
+        // If the viewport width is zero, than replace it with 1, which effectively ignores the viewport width.
+        double viewportWidth = viewport.getWidth();
+        double pixelSizeScale = 2 * fieldOfView.tanHalfAngle() / (viewportWidth <= 0 ? 1d : viewportWidth);
+
+        return Math.abs(distance) * pixelSizeScale;
+    }
+
+
+//#################################################
+
 // MATH OBJECTS
 https://www.keithschwarz.com/interesting/code/?dir=alias-method
 https://gist.github.com/TheHans255/7a072162ec171e72f766ea954c5f11b3
@@ -111,3 +137,18 @@ https://css-tricks.com/build-a-state-management-system-with-vanilla-javascript/
 https://threejsfundamentals.org/threejs/lessons/threejs-primitives.html  Extrude+Bevel Example
 
 https://www.decarpentier.nl/lens-distortion  Change Projection Distortion, Fix it kinda
+
+
+// Verlet Physics
+https://github.com/anuraghazra/Verly.js
+http://jsfiddle.net/odestcj/g72MA/ Verley Springs
+https://www.gamedev.net/tutorials/_/technical/math-and-physics/a-simple-time-corrected-verlet-integration-method-r2200/
+https://stackoverflow.com/questions/10139670/time-corrected-verlet-integration-and-too-big-timesteps
+https://www.algorithm-archive.org/contents/verlet_integration/verlet_integration.html
+https://www.youtube.com/watch?v=0uDInWEr_z4  Sling Shot Using Verlet Intergration
+https://www.gamedev.net/articles/programming/math-and-physics/a-verlet-based-approach-for-2d-game-physics-r2714/
+https://www.youtube.com/watch?v=g55QvpAev0I
+
+// Rigid Body
+https://www.toptal.com/game/video-game-physics-part-i-an-introduction-to-rigid-body-dynamics
+https://www.youtube.com/watch?v=suaJz-zWt3A

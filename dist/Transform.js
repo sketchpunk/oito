@@ -4,6 +4,7 @@ import Quat from "./Quat.js";
 // https://gabormakesgames.com/blog_transforms_transform_world.html
 class Transform {
     constructor(rot, pos, scl) {
+        //#endregion ////////////////////////////////////////////////////////
         //#region MAIN
         /** Quaternion Rotation */
         this.rot = new Quat();
@@ -150,6 +151,8 @@ class Transform {
         return t;
     }
 }
+//#region STATIC VALUES
+Transform.BYTESIZE = 10 * Float32Array.BYTES_PER_ELEMENT;
 /*
     World Space Position to Local Space.
     V	.copy( gBWorld.eye_lid_upper_mid_l.pos ) // World Space Postion

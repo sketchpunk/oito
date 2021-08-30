@@ -1,4 +1,5 @@
 declare class Vec4 extends Float32Array {
+    static BYTESIZE: number;
     constructor();
     constructor(v: TVec4);
     constructor(v: number);

@@ -5,6 +5,9 @@ import Quat from "./Quat.js";
 // https://gabormakesgames.com/blog_transforms_transform_world.html
 
 class Transform{
+    //#region STATIC VALUES
+    static BYTESIZE = 10 * Float32Array.BYTES_PER_ELEMENT;
+    //#endregion ////////////////////////////////////////////////////////
 
     //#region MAIN
 

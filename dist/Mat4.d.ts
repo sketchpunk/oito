@@ -1,4 +1,5 @@
 declare class Mat4 extends Float32Array {
+    static BYTESIZE: number;
     constructor();
     identity(): Mat4;
     clearTranslation(): Mat4;
@@ -37,6 +38,7 @@ declare class Mat4 extends Float32Array {
     add(b: TMat4): Mat4;
     sub(b: TMat4): Mat4;
     mul(b: TMat4): Mat4;
+    pmul(b: TMat4): Mat4;
     invert(): Mat4;
     translate(x: TVec3): Mat4;
     translate(x: number, y: number, z: number): Mat4;
@@ -51,5 +53,7 @@ declare class Mat4 extends Float32Array {
     rotAxisAngle(axis: TVec3, rad: number): Mat4;
     transformVec3(v: TVec3, out?: TVec3): TVec3;
     transformVec4(v: TVec4, out?: TVec4): TVec4;
+    static mul(a: TMat4, b: TMat4): Mat4;
+    static invert(a: TMat4): Mat4;
 }
 export default Mat4;

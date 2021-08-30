@@ -430,4 +430,6 @@ class DualQuat extends Float32Array {
         return out;
     }
 }
+//#region STATIC VALUES
+DualQuat.BYTESIZE = 8 * Float32Array.BYTES_PER_ELEMENT;
 export default DualQuat;

@@ -1,4 +1,5 @@
 declare class Vec3 extends Float32Array {
+    static BYTESIZE: number;
     static UP: number[];
     static DOWN: number[];
     static LEFT: number[];

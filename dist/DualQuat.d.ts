@@ -1,4 +1,5 @@
 declare class DualQuat extends Float32Array {
+    static BYTESIZE: number;
     constructor();
     constructor(q: TVec4);
     constructor(q: TVec4, t: TVec3);

@@ -1,6 +1,7 @@
 import Vec3 from "./Vec3.js";
 import Quat from "./Quat.js";
 declare class Transform {
+    static BYTESIZE: number;
     /** Quaternion Rotation */
     rot: Quat;
     /** Vector3 Position */

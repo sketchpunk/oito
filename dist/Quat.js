@@ -1,6 +1,7 @@
 import Maths from "./Maths.js";
 import Vec3 from "./Vec3.js";
 class Quat extends Float32Array {
+    //#endregion ////////////////////////////////////////////////////////
     //#region CONSTRUCTORS
     constructor(v) {
         super(4);
@@ -733,6 +734,54 @@ class Quat extends Float32Array {
         this[3] = aw * bw - ax * bx - ay * by - az * bz;
         return this;
     }
+    /** Apply Unit Vector Rotation to Quaternion */
+    mulUnitVecs(a, b) {
+        // fromUnitVecs
+        const dot = Vec3.dot(a, b);
+        const ax = this[0], // A of mul
+        ay = this[1], az = this[2], aw = this[3];
+        let bx, by, bz, bw;
+        if (dot < -0.999999) {
+            const axis = Vec3.cross(Vec3.LEFT, a);
+            if (axis.len() < 0.000001)
+                axis.fromCross(Vec3.UP, a);
+            axis.norm();
+            // fromAxisAngle
+            const half = Math.PI * .5, s = Math.sin(half);
+            bx = axis[0] * s;
+            by = axis[1] * s;
+            bz = axis[2] * s;
+            bw = Math.cos(half);
+        }
+        else if (dot > 0.999999) {
+            bx = 0;
+            by = 0;
+            bz = 0;
+            bw = 1;
+        }
+        else {
+            const v = Vec3.cross(a, b);
+            bx = v[0];
+            by = v[1];
+            bz = v[2];
+            bw = 1 + dot;
+            // Norm
+            let len = bx ** 2 + by ** 2 + bz ** 2 + bw ** 2;
+            if (len > 0) {
+                len = 1 / Math.sqrt(len);
+                bx *= len;
+                by *= len;
+                bz *= len;
+                bw *= len;
+            }
+        }
+        // Quat.mul( a, b );
+        this[0] = ax * bw + aw * bx + ay * bz - az * by;
+        this[1] = ay * bw + aw * by + az * bx - ax * bz;
+        this[2] = az * bw + aw * bz + ax * by - ay * bx;
+        this[3] = aw * bw - ax * bx - ay * by - az * bz;
+        return this;
+    }
     //#endregion ////////////////////////////////////////////////////////
     //#region STATIC
     static dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]; }
@@ -893,6 +942,8 @@ class Quat extends Float32Array {
         return out;
     }
 }
+//#region STATIC VALUES
+Quat.BYTESIZE = 4 * Float32Array.BYTES_PER_ELEMENT;
 export default Quat;
 /*
 

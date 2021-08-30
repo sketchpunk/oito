@@ -1,4 +1,7 @@
 class Vec4 extends Float32Array{
+    //#region STATIC VALUES
+    static BYTESIZE = 4 * Float32Array.BYTES_PER_ELEMENT;
+    //#endregion ////////////////////////////////////////////////////////
 
     //#region CONSTRUCTORS 
     constructor()

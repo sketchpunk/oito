@@ -1,5 +1,6 @@
 import Vec3 from "./Vec3.js";
 declare class Quat extends Float32Array {
+    static BYTESIZE: number;
     constructor(v?: TVec4);
     xyzw(x: number, y: number, z: number, w: number): Quat;
     get x(): number;
@@ -81,6 +82,8 @@ declare class Quat extends Float32Array {
     pmulAxisAngle(axis: TVec3, angle: number): Quat;
     /** Inverts the quaternion passed in, then pre multiplies to this quaternion. */
     pmulInvert(q: TVec4): Quat;
+    /** Apply Unit Vector Rotation to Quaternion */
+    mulUnitVecs(a: TVec3, b: TVec3): Quat;
     static dot(a: TVec4, b: TVec4): number;
     static lenSqr(a: TVec4, b: TVec4): number;
     static mul(a: TVec4, b: TVec4): Quat;
