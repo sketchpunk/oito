@@ -42,20 +42,20 @@ class Colour extends Float32Array{
 
     //get rgbSlice(){ return new Float32Array( this.buffer, 0, 3*4 ); } // See if can create new F32 from buf but maybe just the 3 floats instead of 4.
 
-    fromName( s: string ) : Colour{
+    fromName( s: string ) : this{
         if( COLORS[ s ] !== undefined ) this.fromNumber( COLORS[ s ] );
         else                            this.fromNumber( 0xff0000 );
         return this
     }
 
-    fromNumber( c: number) : Colour{
+    fromNumber( c: number) : this{
         this[ 0 ] = ( c >> 16 & 255 )	* NORMALIZE_RGB;
         this[ 1 ] = ( c >> 8 & 255 )	* NORMALIZE_RGB;
         this[ 2 ] = ( c & 255 )		    * NORMALIZE_RGB;
         return this;
     }
 
-    fromHex( c: string ) : Colour{
+    fromHex( c: string ) : this{
         if( !c || c.charAt(0) != "#" ){ console.error( "Missing Pound Symbol: ", c ); return this; }
 
         this[ 0 ] = parseInt( c[1] + c[2], 16 ) * NORMALIZE_RGB;

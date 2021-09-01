@@ -34,7 +34,7 @@ declare class Vec3 extends Float32Array {
     minAxis(): number;
     fromPolar(lon: number, lat: number): Vec3;
     /** Length / Magnitude squared of the vector. Good for quick simple testing */
-    get lenSqr(): number;
+    lenSqr(): number;
     /** Length / Magnitude of the vector */
     len(): number;
     /** Set the Length / Magnitude of the vector */
@@ -83,6 +83,8 @@ declare class Vec3 extends Float32Array {
     fromQuat(q: TVec4, v: TVec3): Vec3;
     /** Axis Rotation of a Vector */
     fromAxisAngle(axis: TVec3, rad: number, v?: number[]): Vec3;
+    fromOrthogonal(v: TVec3): this;
+    fromReflect(dir: TVec3, norm: TVec3): this;
     /** Add vector to current vector */
     add(a: TVec3): Vec3;
     sub(v: TVec3): Vec3;
@@ -112,20 +114,18 @@ declare class Vec3 extends Float32Array {
     static divScale(a: TVec3, s: number): Vec3;
     static scale(a: TVec3, s: number): Vec3;
     static equal(a: TVec3, b: TVec3): boolean;
-    static norm(v: TVec3): Vec3;
     static cross(a: TVec3, b: TVec3): Vec3;
     static lenSqr(a: TVec3, b: TVec3): number;
     static len(a: TVec3): number;
     static len(a: TVec3, b: TVec3): number;
+    static norm(x: TVec3): Vec3;
+    static norm(x: number, y: number, z: number): Vec3;
     static dot(a: TVec3, b: TVec3): number;
     static angle(a: TVec3, b: TVec3): number;
     static project(from: TVec3, to: TVec3, out?: TVec3): TVec3;
-    static fromLerp(a: TVec3, b: TVec3, t: number): Vec3;
+    static lerp(a: TVec3, b: TVec3, t: number): Vec3;
     static fromStruct(v: TVec3Struct): Vec3;
     static fromQuat(q: TVec4, v: TVec3): Vec3;
-    static fromNorm(x: TVec3): Vec3;
-    static fromNorm(x: number, y: number, z: number): Vec3;
-    static transformQuat(v: TVec3, q: TVec4, out?: TVec3): TVec3;
     /** Create an array filled with Vec3 Objects */
     static createAarray(len: number): Array<Vec3>;
     /** Create an Iterator Object that allows an easy way to loop a Float32Buffer

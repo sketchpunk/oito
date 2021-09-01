@@ -125,7 +125,7 @@ class Vec3 extends Float32Array{
     //++++++++++++++++++++++++++++++++++
     
     /** Length / Magnitude squared of the vector. Good for quick simple testing */
-    get lenSqr() : number{ return this[0]**2 + this[1]**2 + this[2]**2; }
+    lenSqr() : number{ return this[0]**2 + this[1]**2 + this[2]**2; }
 
     /** Length / Magnitude of the vector */
     len() : number
@@ -399,6 +399,33 @@ class Vec3 extends Float32Array{
         return this;
     }
 
+    /*
+    OrthogonalBasis( v )
+    a = Orthogonal( v );
+    b = Cross( a, v );
+    */
+    fromOrthogonal( v: TVec3 ) : this{
+        if( v[0] >= 0.57735026919 ){
+            this[ 0 ] =  v[ 1 ];
+            this[ 1 ] = -v[ 0 ];
+            this[ 2 ] =  0;
+        }else{
+            this[ 0 ] =  0;
+            this[ 1 ] =  v[ 2 ];
+            this[ 2 ] = -v[ 1 ];
+        }
+        return this;
+    }
+
+    // https://github.com/Unity-Technologies/UnityCsReference/blob/master/Runtime/Export/Math/Vector3.cs
+    fromReflect( dir: TVec3, norm: TVec3 ) : this{
+        const factor = -2 * Vec3.dot( norm, dir );
+        this[ 0 ] = factor * norm[ 0 ] + dir[ 0 ];
+        this[ 1 ] = factor * norm[ 1 ] + dir[ 1 ];
+        this[ 2 ] = factor * norm[ 2 ] + dir[ 2 ];
+        return this;
+    }
+
     //#endregion ////////////////////////////////////////////////////////
 
     //#region OPERATORS
@@ -621,7 +648,6 @@ class Vec3 extends Float32Array{
     static divScale( a: TVec3, s: number ) : Vec3 { return new Vec3().fromDivScale( a, s ); }
     static scale( a: TVec3, s: number ) : Vec3 { return new Vec3().fromScale( a, s ); }
     static equal( a: TVec3, b: TVec3 ) : boolean{ return ( a[ 0 ] == b[ 0 ] && a[ 1 ] == b[ 1 ] && a[ 2 ] == b[ 2 ] ); }
-    static norm( v: TVec3 ) : Vec3 { return new Vec3().fromNorm( v ); }
     static cross( a: TVec3, b: TVec3 ) : Vec3 { return new Vec3().fromCross( a, b ); }
 
     static lenSqr( a: TVec3, b: TVec3 ): number{ return (a[ 0 ]-b[ 0 ]) ** 2 + (a[ 1 ]-b[ 1 ]) ** 2 + (a[ 2 ]-b[ 2 ]) ** 2; }
@@ -631,6 +657,20 @@ class Vec3 extends Float32Array{
     static len( a: TVec3, b ?: TVec3 ) : number{ 
         if( b === undefined ) return Math.sqrt( a[ 0 ]**2 + a[ 1 ]**2 + a[ 2 ]** 2 );
         return Math.sqrt( (a[ 0 ]-b[ 0 ]) ** 2 + (a[ 1 ]-b[ 1 ]) ** 2 + (a[ 2 ]-b[ 2 ]) ** 2 );
+    }
+
+    static norm( x: TVec3 ) : Vec3
+    static norm( x: number, y: number, z: number ) : Vec3
+    static norm( x: number | TVec3, y ?: number, z ?: number ) : Vec3{
+        const rtn = new Vec3();
+
+        if( x instanceof Vec3 || x instanceof Float32Array || ( x instanceof Array && x.length == 3 )){
+            rtn.copy( x );
+        }else if( typeof x === "number" && typeof y === "number" && typeof z === "number" ){
+            rtn.xyz( x, y, z );
+        }
+
+        return rtn.norm();
     }
     
     //++++++++++++++++++++++++++++++++++
@@ -675,41 +715,11 @@ class Vec3 extends Float32Array{
         return out;
     }
     
-    static fromLerp( a: TVec3, b: TVec3, t: number ) : Vec3{ return new Vec3().fromLerp( a, b, t ); }
+    static lerp( a: TVec3, b: TVec3, t: number ) : Vec3{ return new Vec3().fromLerp( a, b, t ); }
 
     static fromStruct( v: TVec3Struct ) : Vec3{ return new Vec3().fromStruct( v ); }
 
     static fromQuat( q: TVec4, v:TVec3 ) : Vec3{ return new Vec3( v ).transformQuat( q ); }
-
-    static fromNorm( x: TVec3 ) : Vec3
-    static fromNorm( x: number, y: number, z: number ) : Vec3
-    static fromNorm( x: number | TVec3, y ?: number, z ?: number ) : Vec3{
-        const rtn = new Vec3();
-
-        if( x instanceof Vec3 || x instanceof Float32Array || ( x instanceof Array && x.length == 3 )){
-            rtn.copy( x );
-        }else if( typeof x === "number" && typeof y === "number" && typeof z === "number" ){
-            rtn.xyz( x, y, z );
-        }
-
-        return rtn.norm();
-    }
-
-    static transformQuat( v: TVec3, q: TVec4, out ?: TVec3 ) : TVec3{ 
-        const qx = q[ 0 ], qy = q[ 1 ], qz = q[ 2 ], qw = q[ 3 ],
-              vx = v[ 0 ], vy = v[ 1 ], vz = v[ 2 ],
-              x1 = qy * vz - qz * vy,
-              y1 = qz * vx - qx * vz,
-              z1 = qx * vy - qy * vx,
-              x2 = qw * x1 + qy * z1 - qz * y1,
-              y2 = qw * y1 + qz * x1 - qx * z1,
-              z2 = qw * z1 + qx * y1 - qy * x1;
-        out      = out || v;
-        out[ 0 ] = vx + 2 * x2;
-        out[ 1 ] = vy + 2 * y2;
-        out[ 2 ] = vz + 2 * z2;
-        return out;
-    }
 
     //++++++++++++++++++++++++++++++++++
 

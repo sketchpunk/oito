@@ -1,0 +1,370 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+
+import Starter, { THREE }       from "../lib/starter.js";
+import Draggables               from "../lib/Draggables.js";
+import LinesMesh                from "../lib/LinesMesh.js";
+import Vec3                     from "../../dist/Vec3.js";
+
+let App;
+let Drag;
+let ln;
+
+let gBody;
+
+window.addEventListener( "load", _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:false, grid:true } );
+    App.set_camera( 0, 20, 6, [0,1,0] ).render();
+    
+    ln = new LinesMesh( 100 );
+    App.add( ln.mesh );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Drag = new Draggables( App );
+    Drag.onMove = onDragMove; // ( o )=>{ console.log( o.position ); };
+    //Drag.onStop = onDragStop;
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    gBody = new VerletBody()
+        .newTri( "chest", [0, 1.3, 0.0], [0.3, 1.7, 0.0], [-0.3, 1.7, 0.0] )
+        .extChainTo( "chest", 1, "lefthand", 1, [1.3, 1.7, 0.0] )
+        .extChainTo( "chest", 2, "rightarm", 2, [-0.8, 1.7, 0.0], [-1.3, 1.7, 0.0] )
+
+        .extTriTo( "chest", 0, "hip", [0.2, 1.0, 0.0 ], [-0.2, 1.0, 0.0] )
+        .extChainTo( "hip", 1, "leftfoot", 1, [0.2, 0.0, 0.0] )
+        .extChainTo( "hip", 2, "rightleg", 1, [-0.2, 0.5, 0.0], [-0.2, 0.0, 0.0] )
+    ;
+
+    gBody.distConstraint( "chest", "hip", "rightarm", "rightleg" );
+    gBody.maxDistConstraint( "leftfoot", "lefthand" );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    buildDraggables();
+    runVerlet();
+});
+
+function buildDraggables(){
+    let p, m, i=0;
+    const scl = 0.2;
+    const geo = new THREE.SphereGeometry( 0.08, 7, 4 ); // new THREE.BoxGeometry( scl, scl, scl );
+    const mat = new THREE.MeshPhongMaterial( { color: 0x00ff00 } );
+
+    for( p of gBody.points ){
+        m = new THREE.Mesh( geo, mat );
+        m.position.fromArray( p.pos );
+        m.userData = i++;
+
+        App.add( m );
+        Drag.add( m );
+    }
+}
+
+function onDragMove( o ){
+    const idx = o.userData;
+    gBody.points[ idx ].pos.fromStruct( o.position );
+    runVerlet();
+}
+
+function onDragStop( o ){
+    runVerlet();
+}
+
+function runVerlet(){
+    gBody.run();
+
+    // Update Drag Points with new Position
+    for( let i=0; i < gBody.points.length; i++ ){
+        Drag.items[ i ].position.fromArray( gBody.points[ i ].pos );
+    }
+
+    visualize();
+}
+
+function visualize(){
+    ln.reset();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    let a, b, c, v = new Vec3(), w = new Vec3(), x = new Vec3(), y = new Vec3();
+
+    //-----------------
+    a = gBody.getPos( "lefthand", 0 );
+    b = gBody.getPos( "lefthand", 1 );
+    ln.add( a, v.fromSub( b, a ).norm().add( a ), 0xffffff, null, true );
+    
+    //-----------------
+    a = gBody.getPos( "leftfoot", 0 );
+    b = gBody.getPos( "leftfoot", 1 );
+    ln.add( a, v.fromSub( b, a ).norm().add( a ), 0xffffff, null, true );
+
+    //-----------------
+    a = gBody.getPos( "chest", 0 );
+    b = gBody.getPos( "chest", 1 );
+    c = gBody.getPos( "chest", 2 );
+
+    v.fromAdd( a, b ).add( c ).divScale( 3 );
+    w.fromCross( x.fromSub( b, a ), y.fromSub( c, a ) ).norm().scale( 0.2 ).add( v );
+    ln.add( v, w, 0xffff00, null, false );
+
+    //-----------------
+    a = gBody.getPos( "hip", 0 );
+    b = gBody.getPos( "hip", 2 );
+    c = gBody.getPos( "hip", 1 );
+    
+    v.fromAdd( a, b ).add( c ).divScale( 3 );
+    w.fromCross( x.fromSub( b, a ), y.fromSub( c, a ) ).norm().scale( 0.2 ).add( v );
+    ln.add( v, w, 0xffff00, null, false );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Draw Basic Lines
+    for( let i of gBody.distCon ){
+        ln.add( i.a.pos, i.b.pos, 0x00ff00 );
+    }
+}
+
+//####################################################################################
+
+// Main Points that will moving and constrainted
+class Point{
+    constructor( p, mass=1 ){
+        this.pos        = new Vec3( p );
+        this.mass       = mass;
+        this.isPinned   = false;
+    }
+}
+
+// Group Of Points
+class Group{
+    constructor( type, idxAry ){
+        this.idx     = idxAry;
+        this.type    = type;
+        this.len     = idxAry.length;
+    }
+}
+
+class VerletBody{
+    groups      = {};   // Grouped Points
+    points      = [];   // All points live here
+    distCon     = [];   // List of all Distance Constraints of Points
+    iteration   = 10;   // How many iterations to run the Constraints
+
+    run(){
+        let i, j;
+        for( i=0; i < this.iteration; i++ ){
+            for( j of this.distCon ) j.apply();
+        }
+    }
+
+    getPos( name, idx ){ return this.points[ this.groups[ name ].idx[ idx ] ].pos; }
+
+    //#region CREATE POINT GROUPS
+
+    newTri( name, a, b, c, mass=1 ){
+        let idx = this.points.length;
+        
+        this.groups[ name ] = new Group( "tri", [ idx, idx+1, idx+2 ] );
+        this.points.push( 
+            new Point( a, mass ),
+            new Point( b, mass ),
+            new Point( c, mass ),
+        );
+
+        return this;
+    }
+
+    extTriTo( toName, toIdx, name, b, c, mass=1 ){
+        let idx = this.points.length;
+        this.points.push( 
+            new Point( b, mass ),
+            new Point( c, mass ),
+        );
+
+        this.groups[ name ] =  new Group( "tri", 
+            [ this.groups[ toName ].idx[ toIdx ], idx, idx + 1 ]
+        );
+        return this;
+    }
+
+    extChainTo( toName, toIdx, name, mass, ...pnts ){
+        let p, idx, grp = [ this.groups[ toName ].idx[ toIdx ] ];
+
+        for( let pp of pnts ){
+            p   = new Point( pp, 1 );
+            idx = this.points.length;
+
+            this.points.push( p );
+            grp.push( idx );
+        }
+
+        this.groups[ name ] = new Group( "chain", grp );
+        return this;
+    }
+
+    //#endregion //////////////////////////////////////////////////////////////
+
+    //#region CONSTRAINTS
+    distConstraint( ...names ){
+        let n, i, ii, g;
+        for( n of names ){
+            g = this.groups[ n ];
+
+            switch( g.type ){
+
+                //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                case "tri":
+                    // Must add constraints for the full triangle loop
+                    for( i=0; i < g.len; i++ ){
+                        ii = ( i + 1 ) % g.len;
+                        this.distCon.push(
+                            new DistConstraint(
+                                this.points[ g.idx[ i ] ],
+                                this.points[ g.idx[ ii ] ],
+                            )
+                        );
+                    }
+                break;
+                
+                //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                case "chain":
+                    for( i=0; i < g.len-1; i++ ){
+                        this.distCon.push(
+                            new DistConstraint(
+                                this.points[ g.idx[ i ] ],
+                                this.points[ g.idx[ i+1 ] ],
+                            )
+                        );
+                    }
+                break;
+            }
+        }
+    }
+
+    maxDistConstraint( ...names ){
+        let n, i, ii, g;
+        for( n of names ){
+            g = this.groups[ n ];
+
+            switch( g.type ){
+
+                //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                case "tri":
+                    // Must add constraints for the full triangle loop
+                    for( i=0; i < g.len; i++ ){
+                        ii = ( i + 1 ) % g.len;
+                        this.distCon.push(
+                            new MaxDistConstraint(
+                                this.points[ g.idx[ i ] ],
+                                this.points[ g.idx[ ii ] ],
+                            )
+                        );
+                    }
+                break;
+                
+                //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                case "chain":
+                    for( i=0; i < g.len-1; i++ ){
+                        this.distCon.push(
+                            new MaxDistConstraint(
+                                this.points[ g.idx[ i ] ],
+                                this.points[ g.idx[ i+1 ] ],
+                            )
+                        );
+                    }
+                break;
+            }
+        }
+    }
+    //#endregion //////////////////////////////////////////////////////////////
+}
+
+class DistConstraint{
+    constructor( pa, pb ){
+        this.a      = pa;
+        this.b      = pb;
+        this.len    = Vec3.len( pa.pos, pb.pos );
+
+        this.dir    = new Vec3();   // Reuse, so not reallocating them.
+        this.v      = new Vec3();
+    }
+
+    apply(){
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if( this.a.isPinned && this.b.isPinned ) return;
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        this.dir.fromSub( this.a.pos, this.b.pos );
+
+        const stiffness = 1.0; // Max Total Ratio
+        const curLen    = this.dir.len();
+        const delta     = ( curLen == 0 )? this.len : ( this.len - curLen ) / curLen; // Normalize LenConstraint in relation to current distance of DIR
+        
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Create A & B Ration of how to divide the moment toward eachother.
+        // If a Point is pinned, then the other point gets 100% of the movement
+        // else the movement is based on the difference of mass each point represents.
+
+        let aScl, bScl;                     
+        if( this.a.isPinned && !this.b.isPinned ){        aScl = 0;           bScl = stiffness; }
+        else if( !this.a.isPinned && this.b.isPinned ){   aScl = stiffness;   bScl = 0; }
+        else{
+            // Compute the Weight between the Two Points using its mass
+            aScl = ( this.a.mass / (this.a.mass + this.b.mass) ) * stiffness;
+            bScl = stiffness - aScl;    // Since Stiffness is the Max Weight value, Use that to get the inverse of A's Weight Ratio
+        }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Move Points closer or further appart to reach its ideal distance
+        if( !this.a.isPinned ) this.a.pos.add( this.v.fromScale( this.dir, aScl * delta ) );
+        if( !this.b.isPinned ) this.b.pos.sub( this.v.fromScale( this.dir, bScl * delta ) );
+    }
+}
+
+class MaxDistConstraint{
+    constructor( pa, pb ){
+        this.a      = pa;
+        this.b      = pb;
+        this.lenSqr = Vec3.lenSqr( pa.pos, pb.pos );
+        this.len    = Math.sqrt( this.lenSqr );
+
+        this.dir    = new Vec3();   // Reuse, so not reallocating them.
+        this.v      = new Vec3();
+    }
+
+    apply(){
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // CHECKS
+        if( this.a.isPinned && this.b.isPinned ) return;
+
+        // If distance is less then, then dont bother.
+        // Apply constraint when its over the max length.
+        this.dir.fromSub( this.a.pos, this.b.pos );
+        const curLenSqr = this.dir.lenSqr();
+        if( curLenSqr <= this.lenSqr ) return;
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        const stiffness = 1.0; // Max Total Ratio
+        const curLen    = Math.sqrt( curLenSqr );
+        const delta     = ( curLen == 0 )? this.len : ( this.len - curLen ) / curLen; // Normalize LenConstraint in relation to current distance of DIR
+        
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Create A & B Ration of how to divide the moment toward eachother.
+        // If a Point is pinned, then the other point gets 100% of the movement
+        // else the movement is based on the difference of mass each point represents.
+
+        let aScl, bScl;                     
+        if( this.a.isPinned && !this.b.isPinned ){        aScl = 0;           bScl = stiffness; }
+        else if( !this.a.isPinned && this.b.isPinned ){   aScl = stiffness;   bScl = 0; }
+        else{
+            // Compute the Weight between the Two Points using its mass
+            aScl = ( this.a.mass / (this.a.mass + this.b.mass) ) * stiffness;
+            bScl = stiffness - aScl;    // Since Stiffness is the Max Weight value, Use that to get the inverse of A's Weight Ratio
+        }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Move Points closer or further appart to reach its ideal distance
+        if( !this.a.isPinned ) this.a.pos.add( this.v.fromScale( this.dir, aScl * delta ) );
+        if( !this.b.isPinned ) this.b.pos.sub( this.v.fromScale( this.dir, bScl * delta ) );
+    }
+}
+
+
+</script></body></html>

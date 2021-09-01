@@ -10,9 +10,9 @@ declare class Colour extends Float32Array {
     set b(v: number);
     get a(): number;
     set a(v: number);
-    fromName(s: string): Colour;
-    fromNumber(c: number): Colour;
-    fromHex(c: string): Colour;
+    fromName(s: string): this;
+    fromNumber(c: number): this;
+    fromHex(c: string): this;
 }
 /**
  * Convert HSV spectrum to RGB.

@@ -121,6 +121,8 @@ distance is camera to center of view when used with planet stuff
 https://www.keithschwarz.com/interesting/code/?dir=alias-method
 https://gist.github.com/TheHans255/7a072162ec171e72f766ea954c5f11b3
 
+https://github.com/shakiba/planck.js/blob/master/src/common/Rot.ts
+
 // Web Workers
 https://github.com/blittle/bridged-worker
 https://briangrinstead.com/blog/load-web-workers-without-a-javascript-file/

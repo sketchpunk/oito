@@ -192,6 +192,7 @@ Maths.PI_270 = Math.PI + 1.5707963267948966;
 Maths.DEG2RAD = 0.01745329251; // PI / 180
 Maths.RAD2DEG = 57.2957795131; // 180 / PI
 Maths.EPSILON = 1e-6;
+Maths.PHI = 1.618033988749895; // Goldren Ratio, (1 + sqrt(5)) / 2
 /*
     https://github.com/godotengine/godot/blob/master/core/math/math_funcs.h
     static _ALWAYS_INLINE_ float lerp_angle(float p_from, float p_to, float p_weight) {

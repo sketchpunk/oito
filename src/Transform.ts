@@ -32,21 +32,21 @@ class Transform{
 
     //#region SETTERS / GETTERS
 
-    reset() : Transform{
+    reset() : this{
         this.rot.xyzw( 0, 0, 0, 1 );
         this.pos.xyz( 0, 0, 0 );
         this.scl.xyz( 1, 1, 1 );
         return this;
     }
 
-    copy( t: Transform ) : Transform{
+    copy( t: Transform ) : this{
         this.rot.copy( t.rot );
         this.pos.copy( t.pos );
         this.scl.copy( t.scl );
         return this;
     }
 
-    set( r ?: TVec4, p ?: TVec3, s ?: TVec3 ) : Transform{
+    set( r ?: TVec4, p ?: TVec3, s ?: TVec3 ) : this{
         if( r )	this.rot.copy( r );
         if( p )	this.pos.copy( p );
         if( s )	this.scl.copy( s );
@@ -60,9 +60,9 @@ class Transform{
     //#region OPERATORS
 
     // Computing Transforms, Parent -> Child
-    mul( tran: Transform ) : Transform
-    mul( cr: TVec4, cp: TVec3, cs ?: TVec3 ) : Transform
-    mul( cr: TVec4 | Transform, cp ?: TVec3, cs ?: TVec3 ) : Transform{
+    mul( tran: Transform ) : this
+    mul( cr: TVec4, cp: TVec3, cs ?: TVec3 ) : this
+    mul( cr: TVec4 | Transform, cp ?: TVec3, cs ?: TVec3 ) : this{
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // If just passing in Tranform Object
         if( cr instanceof Transform ){
@@ -89,9 +89,9 @@ class Transform{
     }
 
     // Computing Transforms in reverse, Child - > Parent
-    pmul( tran: Transform ) : Transform
-    pmul( pr: TVec4, pp: TVec3, ps: TVec3 ) : Transform
-    pmul( pr: TVec4 | Transform, pp ?: TVec3, ps ?: TVec3 ) : Transform{
+    pmul( tran: Transform ) : this
+    pmul( pr: TVec4, pp: TVec3, ps: TVec3 ) : this
+    pmul( pr: TVec4 | Transform, pp ?: TVec3, ps ?: TVec3 ) : this{
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // If just passing in Tranform Object
         if( pr instanceof Transform ){
@@ -118,7 +118,7 @@ class Transform{
         return this
     }
 
-    addPos( cp: TVec3, ignoreScl=false ) : Transform{
+    addPos( cp: TVec3, ignoreScl=false ) : this{
         //POSITION - parent.position + ( parent.rotation * ( parent.scale * child.position ) )
         if( ignoreScl )	this.pos.add( Vec3.fromQuat( this.rot, cp ) );
         else 			this.pos.add( Vec3.mul( cp, this.scl ).transformQuat( this.rot ) );
@@ -128,7 +128,7 @@ class Transform{
     //#endregion ////////////////////////////////////////////////////////
 
     //#region FROM OPERATORS
-    fromMul( tp: Transform, tc: Transform ) : Transform{
+    fromMul( tp: Transform, tc: Transform ) : this{
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // POSITION - parent.position + ( parent.rotation * ( parent.scale * child.position ) )
         const v = Vec3.mul( tp.scl, tc.pos ).transformQuat( tp.rot ); // parent.scale * child.position;
@@ -145,7 +145,7 @@ class Transform{
         return this;
     }
 
-    fromInvert( t: Transform ) : Transform{
+    fromInvert( t: Transform ) : this{
         // Invert Rotation
         this.rot.fromInvert( t.rot );
 

@@ -22,7 +22,7 @@ class DualQuat extends Float32Array{
 
     //#region BASIC SETTERS / GETTERS
 
-    reset() : DualQuat{
+    reset() : this{
         this[0] = 0;
         this[1] = 0;
         this[2] = 0;
@@ -47,7 +47,7 @@ class DualQuat extends Float32Array{
         return out;
     }
 
-    copy( a : TVec8 ) : DualQuat{
+    copy( a : TVec8 ) : this{
         this[0] = a[0];
         this[1] = a[1];
         this[2] = a[2];
@@ -88,7 +88,7 @@ class DualQuat extends Float32Array{
     // FLAT BUFFERS
 
     /** Used to get data from a flat buffer of dualquat */
-    fromBuf( ary : Array<number> | Float32Array, idx: number ) : DualQuat {
+    fromBuf( ary : Array<number> | Float32Array, idx: number ) : this {
         this[ 0 ]  = ary[ idx ];
         this[ 1 ]  = ary[ idx + 1 ];
         this[ 2 ]  = ary[ idx + 2 ];
@@ -101,7 +101,7 @@ class DualQuat extends Float32Array{
     }
 
     /** Put data into a flat buffer of dualquat */
-    toBuf( ary : Array<number> | Float32Array, idx: number ) : DualQuat { 
+    toBuf( ary : Array<number> | Float32Array, idx: number ) : this { 
         ary[ idx ]      = this[ 0 ];
         ary[ idx + 1 ]  = this[ 1 ];
         ary[ idx + 2 ]  = this[ 2 ];
@@ -117,7 +117,7 @@ class DualQuat extends Float32Array{
 
     //#region FROM SETTERS
     /** Create a DualQuat from Quaternion and Translation Vector */
-    fromQuatTran( q: TVec4, t: TVec4 ) : DualQuat {
+    fromQuatTran( q: TVec4, t: TVec4 ) : this {
         const ax = t[0] * 0.5, ay = t[1] * 0.5, az = t[2] * 0.5,
               bx = q[0],       by = q[1],       bz = q[2],       bw = q[3];
 
@@ -132,7 +132,7 @@ class DualQuat extends Float32Array{
         return this;
     }
 
-    fromTranslation( t: TVec3 ) : DualQuat{
+    fromTranslation( t: TVec3 ) : this{
         this[0] = 0;
         this[1] = 0;
         this[2] = 0;
@@ -144,7 +144,7 @@ class DualQuat extends Float32Array{
         return this;
     }
 
-    fromQuat( q: TVec4 ) : DualQuat{
+    fromQuat( q: TVec4 ) : this{
         this[0] = q[0];
         this[1] = q[1];
         this[2] = q[2];
@@ -156,7 +156,7 @@ class DualQuat extends Float32Array{
         return this;
     }
 
-    fromMul( a: TVec8, b: TVec8 ) : DualQuat{
+    fromMul( a: TVec8, b: TVec8 ) : this{
         const ax0 = a[0], ay0 = a[1], az0 = a[2], aw0 = a[3],
                 ax1 = a[4], ay1 = a[5], az1 = a[6], aw1 = a[7],
                 bx0 = b[0], by0 = b[1], bz0 = b[2], bw0 = b[3],
@@ -173,7 +173,7 @@ class DualQuat extends Float32Array{
         return this;
     }
 
-    fromNorm( a: TVec8 ) : DualQuat {
+    fromNorm( a: TVec8 ) : this {
         let magnitude = a[0]**2 + a[1]**2 + a[2]**2 + a[3]**2;
         if( magnitude == 0 ) return this;
 
@@ -205,7 +205,7 @@ class DualQuat extends Float32Array{
     }
 
     /** If dual quaternion is normalized, this is faster than inverting and produces the same value. */
-    fromConjugate( a: TVec8 ) : DualQuat {
+    fromConjugate( a: TVec8 ) : this {
         this[0] = -a[0];
         this[1] = -a[1];
         this[2] = -a[2];
@@ -221,7 +221,7 @@ class DualQuat extends Float32Array{
 
     //#region BASIC OPERATIONS
 
-    add( q: TVec8 ) : DualQuat{
+    add( q: TVec8 ) : this{
         this[0] = this[0] + q[0];
         this[1] = this[1] + q[1];
         this[2] = this[2] + q[2];
@@ -233,7 +233,7 @@ class DualQuat extends Float32Array{
         return this;
     }
 
-    mul( q: TVec8 ) : DualQuat{
+    mul( q: TVec8 ) : this{
         const   ax0 = this[0], ay0 = this[1], az0 = this[2], aw0 = this[3],
                 ax1 = this[4], ay1 = this[5], az1 = this[6], aw1 = this[7],
                 bx0 = q[0],    by0 = q[1],    bz0 = q[2],    bw0 = q[3],
@@ -249,7 +249,7 @@ class DualQuat extends Float32Array{
         return this;
     }
 
-    pmul( q: TVec8 ) : DualQuat{
+    pmul( q: TVec8 ) : this{
         const ax0 = q[0],    ay0 = q[1],    az0 = q[2],    aw0 = q[3],
               ax1 = q[4],    ay1 = q[5],    az1 = q[6],    aw1 = q[7],
               bx0 = this[0], by0 = this[1], bz0 = this[2], bw0 = this[3],
@@ -266,7 +266,7 @@ class DualQuat extends Float32Array{
         return this;
     }
 
-    scale( s: number ) : DualQuat{
+    scale( s: number ) : this{
         this[0] = this[0] * s;
         this[1] = this[1] * s;
         this[2] = this[2] * s;
@@ -278,7 +278,7 @@ class DualQuat extends Float32Array{
         return this;
     }
 
-    norm() : DualQuat {
+    norm() : this {
         let magnitude = this[0]**2 + this[1]**2 + this[2]**2 + this[3]**2;
         if( magnitude == 0 ) return this;
 
@@ -310,7 +310,7 @@ class DualQuat extends Float32Array{
     }
 
     /** Calculates the inverse of a dual quat. If they are normalized, conjugate is cheaper */
-    invert() : DualQuat{
+    invert() : this{
         const sqlen = 1 / this.lenSqr();
 
         this[0] = -this[0] * sqlen;
@@ -325,7 +325,7 @@ class DualQuat extends Float32Array{
     }
 
     /** If dual quaternion is normalized, this is faster than inverting and produces the same value. */
-    conjugate() : DualQuat {
+    conjugate() : this {
        this[0] = -this[0];
        this[1] = -this[1];
        this[2] = -this[2];
@@ -338,7 +338,7 @@ class DualQuat extends Float32Array{
     }
 
     /** Translates a dual quat by the given vector */
-    translate( v: TVec3 ) : DualQuat{
+    translate( v: TVec3 ) : this{
         const ax1 = this[0],    ay1 = this[1],    az1 = this[2],    aw1 = this[3],
               ax2 = this[4],    ay2 = this[5],    az2 = this[6],    aw2 = this[7],
               bx1 = v[0] * 0.5, by1 = v[1] * 0.5, bz1 = v[2] * 0.5;
@@ -355,7 +355,7 @@ class DualQuat extends Float32Array{
     }
 
     /** Rotates a dual quat by a given quaternion (dq * q) */
-    mulQuat( q: TVec4 ) : DualQuat {
+    mulQuat( q: TVec4 ) : this {
         const qx = q[0],    qy = q[1],    qz = q[2],    qw = q[3];
         let   ax = this[0], ay = this[1], az = this[2], aw = this[3];
 
@@ -373,7 +373,7 @@ class DualQuat extends Float32Array{
     }
 
     /** Rotates a dual quat by a given quaternion (q * dq) */
-    pmulQuat( q: TVec4 ) : DualQuat {
+    pmulQuat( q: TVec4 ) : this {
         const qx = q[0], qy = q[1], qz = q[2], qw = q[3];
         let   bx = this[0], by = this[1], bz = this[2], bw = this[3];
 
@@ -393,7 +393,7 @@ class DualQuat extends Float32Array{
 
     //#region ROTATION OPERATIONS
 
-    rotX( rad: number ) : DualQuat {
+    rotX( rad: number ) : this {
         const bbx =  this[0], bby =  this[1], bbz =  this[2], bbw = this[3];    // Quat
         let   bx  = -this[0], by  = -this[1],  bz = -this[2],  bw = this[3];    // Neg XYZ
         const ax  =  this[4], ay  =  this[5],  az =  this[6],  aw = this[7];
@@ -423,7 +423,7 @@ class DualQuat extends Float32Array{
         return this;
     }
 
-    rotY( rad : number ) : DualQuat {
+    rotY( rad : number ) : this {
         const bbx =  this[0], bby =  this[1], bbz =  this[2], bbw = this[3];    // Quat
         let   bx  = -this[0], by  = -this[1],  bz = -this[2],  bw = this[3];    // Neg XYZ
         const ax  =  this[4], ay  =  this[5],  az =  this[6],  aw = this[7];
@@ -453,7 +453,7 @@ class DualQuat extends Float32Array{
         return this;
     }
 
-    rotZ( rad : number ) : DualQuat{
+    rotZ( rad : number ) : this{
         const bbx =  this[0], bby =  this[1], bbz =  this[2], bbw = this[3];    // Quat
         let   bx  = -this[0], by  = -this[1],  bz = -this[2],  bw = this[3];    // Neg XYZ
         const ax  =  this[4], ay  =  this[5],  az =  this[6],  aw = this[7];
@@ -484,7 +484,7 @@ class DualQuat extends Float32Array{
     }
 
     /** Rotates a dual quat around a given axis. Does the normalisation automatically */
-    rotAxisAngle( axis: TVec3, rad: number ) : DualQuat{
+    rotAxisAngle( axis: TVec3, rad: number ) : this{
         // Special case for rad = 0
         if( Math.abs( rad ) < 0.000001 ) return this;
 

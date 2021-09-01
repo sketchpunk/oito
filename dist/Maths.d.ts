@@ -8,6 +8,7 @@ declare class Maths {
     static DEG2RAD: number;
     static RAD2DEG: number;
     static EPSILON: number;
+    static PHI: number;
     static clamp(v: number, min: number, max: number): number;
     static clamp01(v: number): number;
     static fract(f: number): number;

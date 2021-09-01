@@ -14,6 +14,7 @@ class Maths{
     static DEG2RAD      = 0.01745329251; // PI / 180
     static RAD2DEG      = 57.2957795131; // 180 / PI
     static EPSILON      = 1e-6;
+    static PHI          = 1.618033988749895; // Goldren Ratio, (1 + sqrt(5)) / 2
     //#endregion ////////////////////////////////////////////////////////
 
     //#region OPERATIONS
