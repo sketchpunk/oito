@@ -17,5 +17,6 @@ declare class Util {
     static appendTriangleNormals(geo: TGeo): void;
     /** Flip the winding of the triangles inside of an indices array */
     static reverseWinding(iAry: Array<number>): void;
+    static normalizeScaleVertices(geo: TGeo, scl?: number, updateNormals?: boolean): void;
 }
 export default Util;

@@ -322,6 +322,25 @@ class Util {
             iAry[ii] = t;
         }
     }
+    static normalizeScaleVertices(geo, scl = 1, updateNormals = false) {
+        const vAry = geo.vertices;
+        const nAry = geo.normals;
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        const vCnt = vAry.length;
+        const nCnt = nAry.length;
+        if (vCnt > nCnt) {
+            for (let i = nCnt; i < vCnt; i++)
+                nAry.push(0);
+        }
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        const v = new Vec3();
+        for (let i = 0; i < vAry.length; i += 3) {
+            v.fromBuf(vAry, i).norm();
+            if (updateNormals)
+                v.toBuf(nAry, i);
+            v.scale(scl).toBuf(vAry, i);
+        }
+    }
 }
 /*
     static area( contour ) {

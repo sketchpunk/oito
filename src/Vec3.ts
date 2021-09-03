@@ -121,6 +121,14 @@ class Vec3 extends Float32Array{
     }
 
     //TODO : toPolar() : [ number, number ];
+    // theta   = Math.atan2( Math.sqrt( v[0]**2 + v[1]**2 ), v.z ) + Math.PI / 2;
+    // phi     = Math.atan2( v[1], v[0] );
+
+    // Angle around the Y axis, counter-clockwise when looking from above.
+	// azimuth : Math.atan2( vector.z, - vector.x );
+
+	// Angle above the XZ plane.
+    //inclination Math.atan2( - vector.y, Math.sqrt( ( vector.x * vector.x ) + ( vector.z * vector.z ) ) );
 
     //++++++++++++++++++++++++++++++++++
     
