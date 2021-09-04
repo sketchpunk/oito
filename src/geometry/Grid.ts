@@ -1,5 +1,5 @@
 
-import Util from "./Util.js";
+import Util from "./extra/Util.js";
 
 class Grid{
     static get( width=1, height=1, xCells=2, yCells=2, fromCenter=true ) : TGeo{

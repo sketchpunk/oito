@@ -1,4 +1,4 @@
-import Vec3 from "../Vec3.js";
+import Vec3 from "../../Vec3.js";
 class UniqueVertexGeo {
     constructor() {
         this.map = {};

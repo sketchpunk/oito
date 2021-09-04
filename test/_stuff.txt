@@ -116,6 +116,9 @@ distance is camera to center of view when used with planet stuff
 
 
 //#################################################
+// MESH DEFORMATIONS
+https://github.com/keenanwoodall/Deform-Prototype
+https://github.com/keenanwoodall/Deform
 
 // MATH OBJECTS
 https://www.keithschwarz.com/interesting/code/?dir=alias-method

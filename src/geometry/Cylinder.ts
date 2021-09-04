@@ -1,4 +1,4 @@
-import Util  from "./Util.js";
+import Util  from "./extra/Util.js";
 import Vec3  from "../Vec3.js";
 
 class Cylinder{

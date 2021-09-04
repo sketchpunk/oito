@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import Vec3                         from "../Vec3.js";
-import CircularLinkedList, { Node } from "../object/CircularLinkedList.js";
+import Vec3                         from "../../Vec3.js";
+import CircularLinkedList, { Node } from "../../object/CircularLinkedList.js";
 
 // https://github.com/eliemichel/BMeshUnity
 

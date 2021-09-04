@@ -1,5 +1,5 @@
 
-import Vec3 from "../Vec3.js";
+import Vec3 from "../../Vec3.js";
 
 class UniqueVertexGeo{
     map : { [key:string]: number } = {};

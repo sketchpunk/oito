@@ -1,5 +1,5 @@
-import UniqueVertexGeo from "./UniqueVertexGeo.js";
-import Util from "./Util.js";
+import UniqueVertexGeo from "./extra/UniqueVertexGeo.js";
+import Util from "./extra/Util.js";
 class Dodecahedron {
     static get(div = 0, radius = 1) {
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

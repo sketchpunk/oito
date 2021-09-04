@@ -1,5 +1,5 @@
 import Maths from "../Maths.js";
-import Util from "./Util.js";
+import Util from "./extra/Util.js";
 class UVSphere {
     static get(radius = 0.5, latSteps = 10, lngSteps = 10) {
         let s_lat, c_lat, s_lng, c_lng, x, y, z, i, j, len, tj, ti;

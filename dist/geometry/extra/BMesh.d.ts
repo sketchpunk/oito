@@ -1,5 +1,5 @@
-import Vec3 from "../Vec3.js";
-import CircularLinkedList from "../object/CircularLinkedList.js";
+import Vec3 from "../../Vec3.js";
+import CircularLinkedList from "../../object/CircularLinkedList.js";
 declare class Vertex {
     idx: number | null;
     pos: Vec3;

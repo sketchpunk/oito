@@ -1,5 +1,5 @@
-import Maths from "../Maths.js";
-import Vec3  from "../Vec3.js";
+import Maths from "../../Maths.js";
+import Vec3  from "../../Vec3.js";
 
 class Util{
     

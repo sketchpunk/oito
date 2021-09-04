@@ -1,5 +1,5 @@
 import Maths from "../Maths.js";
-import Util  from "./Util.js";
+import Util  from "./extra/Util.js";
 
 class UVSphere{
 
