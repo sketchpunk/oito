@@ -734,6 +734,22 @@ class Quat extends Float32Array{
         return this;
     }
 
+    transformVec3( v: TVec3 ) : TVec3{
+        const qx = this[0], qy = this[1], qz = this[2], qw = this[3],
+            vx = v[0], vy = v[1], vz = v[2],
+            x1 = qy * vz - qz * vy,
+            y1 = qz * vx - qx * vz,
+            z1 = qx * vy - qy * vx,
+            x2 = qw * x1 + qy * z1 - qz * y1,
+            y2 = qw * y1 + qz * x1 - qx * z1,
+            z2 = qw * z1 + qx * y1 - qy * x1;
+
+        v[ 0 ] = vx + 2 * x2;
+        v[ 1 ] = vy + 2 * y2;
+        v[ 2 ] = vz + 2 * z2;
+        return this;
+    }
+
     //++++++++++++++++++++++++++++++++++
 				
     rotX( rad: number ) : Quat{

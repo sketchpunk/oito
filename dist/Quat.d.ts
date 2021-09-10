@@ -68,6 +68,7 @@ declare class Quat extends Float32Array {
     mirrorX(): Quat;
     random(): Quat;
     scaleAngle(scl: number): Quat;
+    transformVec3(v: TVec3): TVec3;
     rotX(rad: number): Quat;
     rotY(rad: number): Quat;
     rotZ(rad: number): Quat;

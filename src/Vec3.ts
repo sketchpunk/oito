@@ -564,6 +564,8 @@ class Vec3 extends Float32Array{
         return this;
     }
 
+    dot( b: TVec3 ) : number { return this[ 0 ] * b[ 0 ] + this[ 1 ] * b[ 1 ] + this[ 2 ] * b[ 2 ]; }   
+
     //#endregion ////////////////////////////////////////////////////////
 
     //#region TRANSFORM

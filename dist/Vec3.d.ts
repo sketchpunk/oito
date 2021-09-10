@@ -103,6 +103,7 @@ declare class Vec3 extends Float32Array {
     norm(): Vec3;
     clamp(min: TVec3, max: TVec3): Vec3;
     snap(v: TVec3): Vec3;
+    dot(b: TVec3): number;
     axisAngle(axis: TVec3, rad: number): Vec3;
     rotate(rad: number, axis?: string): Vec3;
     transformMat3(m: Array<number> | Float32Array): Vec3;

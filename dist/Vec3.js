@@ -460,6 +460,7 @@ class Vec3 extends Float32Array {
         this[2] = (v[2] != 0) ? Math.floor(this[2] / v[2]) * v[2] : 0;
         return this;
     }
+    dot(b) { return this[0] * b[0] + this[1] * b[1] + this[2] * b[2]; }
     //#endregion ////////////////////////////////////////////////////////
     //#region TRANSFORM
     axisAngle(axis, rad) {

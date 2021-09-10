@@ -1,0 +1,499 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+
+import Starter, { THREE }       from "../lib/starter.js";
+import Draggables               from "../lib/Draggables.js";
+import LinesMesh                from "../lib/LinesMesh.js";
+import PointsMesh               from "../lib/PointsMesh.js";
+import Vec3                     from "../../dist/Vec3.js";
+import Quat                     from "../../dist/Quat.js";
+
+let App;
+let Drag;
+let ln, pnt;
+
+let gSkel;
+
+window.addEventListener( "load", _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:false, grid:true } );
+    App.set_camera( 0, 20, 6, [0,1,0] ).render();
+    
+    ln = new LinesMesh( 100 );
+    App.add( ln.mesh );
+
+    pnt = new PointsMesh( 100 );
+    App.add( pnt.mesh );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Drag = new Draggables( App );
+    Drag.onMove = onDragMove; // ( o )=>{ console.log( o.position ); };
+    //Drag.onStop = onDragStop;
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    gSkel = new IKSkeleton();
+    gSkel
+        .addPoint( 'hip',       [ 0, 1.3, 0 ] )
+        .addPoint( 'thighL',    [ 0.2, 1.0, 0.0 ] )
+        .addPoint( 'thighR',    [ -0.2, 1.0, 0.0 ] )
+        .addPoint( 'footL',     [ 0.2, 0, 0 ] )
+        .addPoint( 'footR',     [ -0.2, 0, 0 ] )
+        .addPoint( 'shoulderL', [ 0.3, 1.7, 0.0 ] )
+        .addPoint( 'shoulderR', [ -0.3, 1.7, 0.0 ] )
+        .addPoint( 'neckBase',  [ 0, 1.7, 0.0 ] )
+        .addPoint( 'head',      [ 0, 2, 0.0 ] )
+        .addPoint( 'handL',     [ 1.0, 1.7, 0.0 ] )
+        .addPoint( 'handR',     [ -1.0, 1.7, 0.0 ] )
+        .addPoint( 'kneeL',     [ 0, 0, 0 ], Point.DIR )
+        .addPoint( 'kneeR',     [ 0, 0, 0 ], Point.DIR )
+        .addPoint( 'elbowL',    [ 0, 0, 0 ], Point.DIR )
+        .addPoint( 'elbowR',    [ 0, 0, 0 ], Point.DIR )
+        .addPoint( 'look',      [ 0, 0, 0 ], Point.DIR )
+
+        .triGroup( 'hip', [ 'hip', 'thighL', 'thighR' ] )
+        .triGroup( 'chest', [ 'hip', 'shoulderL', 'shoulderR' ] )
+        .rangeLink( 'legL', 'thighL', 'footL' )
+        .rangeLink( 'legR', 'thighR', 'footR' )
+        .rangeLink( 'armL', 'shoulderL', 'handL' )
+        .rangeLink( 'armR', 'shoulderR', 'handR' )
+        .midPoint( 'neckBase', 'shoulderL', 'shoulderR' )
+        .anchorLink( 'head', 'neckBase', 'head' )
+
+        .pole( 'kneeL', 'legL', [ 0,0,1 ] )
+        .pole( 'kneeR', 'legR', [ 0,0,1 ] )
+        .pole( 'elbowL', 'armL', [ 0,0,-1 ] )
+        .pole( 'elbowR', 'armR', [ 0,0,-1 ] )
+        .dir( 'look', 'head', [0,0,1] );
+    ;
+    /*
+        gBody = new VerletBody()
+        .newTri( "chest", [0, 1.3, 0.0], [0.3, 1.7, 0.0], [-0.3, 1.7, 0.0] )
+        .extChainTo( "chest", 1, "lefthand", 1, [1.3, 1.7, 0.0] )
+        .extChainTo( "chest", 2, "rightarm", 2, [-0.8, 1.7, 0.0], [-1.3, 1.7, 0.0] )
+
+        .extTriTo( "chest", 0, "hip", [0.2, 1.0, 0.0 ], [-0.2, 1.0, 0.0] )
+        .extChainTo( "hip", 1, "leftfoot", 1, [0.2, 0.0, 0.0] )
+        .extChainTo( "hip", 2, "rightleg", 1, [-0.2, 0.5, 0.0], [-0.2, 0.0, 0.0] )
+    */
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    buildDraggables();
+    visualize();
+});
+
+function buildDraggables(){
+    let v, m, mat, i=0;
+    const scl = 0.2;
+    const geo = new THREE.SphereGeometry( 0.05, 7, 4 ); // new THREE.BoxGeometry( scl, scl, scl );
+    const matA = new THREE.MeshPhongMaterial( { color: 0x00ff00 } );
+    const matB = new THREE.MeshPhongMaterial( { color: 0xffff00 } );
+
+    for( v of gSkel.points.values() ){
+        if( !v.draggable ) continue;
+
+        mat = ( v.type == Point.POS )? matA : matB;
+        m   = new THREE.Mesh( geo, mat );
+        m.position.fromArray( v.pos );
+        m.userData = v.name;
+
+        App.add( m );
+        Drag.add( m );
+    }
+}
+
+function onDragMove( o ){
+    const name = o.userData;
+    
+    switch( name ){
+        case 'kneeL':
+        case 'kneeR':
+        case 'elbowL':
+        case 'elbowR':
+        case 'look':
+            gSkel.directions
+                .get( name )
+                .setWSPos( o.position.toArray() )
+                .resolve();
+            updateDragPoints();
+            visualize();
+            break;
+
+        default: 
+            gSkel.setSPos( name, o.position );
+            resolveIK();
+    }
+
+}
+
+function onDragStop( o ){
+    runVerlet();
+}
+
+function updateDragPoints(){
+    // Update Drag Points with new Position
+    let p, i=0;
+    for( p of gSkel.points.values() ){
+        Drag.items[ i++ ].position.fromArray( p.pos );
+    }
+}
+
+function resolveIK(){
+    gSkel.resolve();
+    updateDragPoints();
+    visualize();
+}
+
+function visualize(){
+    ln.reset();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    let g, i, ii;
+    for( g of gSkel.groups.values() ){
+        switch( g.type ){
+            case 'tri' :
+                for( i=0; i < g.count; i++ ){
+                    ii = ( i+1 ) % g.count;
+                    ln.add( g.points[ i ].pos, g.points[ ii ].pos, 0x00ff00 );
+                }
+                break;
+
+            default :
+                for( i=0; i < g.count-1; i++ ) ln.add( g.points[ i ].pos, g.points[ i+1 ].pos, 0x00ff00 );
+                break;
+        }
+    }
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    let v = new Vec3();
+    let w = new Vec3();
+    let o;
+
+    for( o of gSkel.directions.values() ){
+        ln.add( o.getAnchorPos( w ), o.getPos( v ), 0xffff00 );
+    }
+    //o = gSkel.directions.get( 'kneeL' );
+    //ln.add( o.getAnchorPos( w ), o.getPos( v ), 0xffff00 );
+
+    //o = gSkel.directions.get( 'look' );
+    //ln.add( o.getAnchorPos( w ), o.getPos( v ), 0xffff00 );
+}
+
+//####################################################################################
+
+// Force a distance between Two Points
+class DistanceConstraint{
+    constructor( pa, pb ){
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // DATA
+        this.a          = pa;                               // First Point
+        this.b          = pb;                               // Second Point
+        this.lenSqr     = Vec3.lenSqr( pa.pos, pb.pos );    // Distance Squared between Points
+        this.len        = Math.sqrt( this.lenSqr );         // Distance between Points
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // OPTIONS
+        this.aAnchor    = false;    // First Point is always Pinned
+        this.bAnchor    = false;    // Second Point is always Pinned
+        this.isRanged   = false;    // Only Resolve if distance is OVER the len
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Reuse, so not reallocating them.
+        this.dir        = new Vec3();   
+        this.v          = new Vec3();
+    }
+
+    ranged(){ this.isRanged = true; return this; }
+
+    resolve(){
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // CHECKS
+        
+        // If both Points are Pinned, Dont bother
+        if( this.a.isPinned && this.b.isPinned ) return false;
+
+        // If distance is less then, then dont bother if its Ranged
+        // Apply constraint when its over the max length.
+        this.dir.fromSub( this.a.pos, this.b.pos );         // Vector Length
+        const curLenSqr = this.dir.lenSqr();                // Len Squared for Quick Checks
+        if( Math.abs( curLenSqr - this.lenSqr ) < 0.0001 ||
+            ( this.isRanged && curLenSqr <= this.lenSqr ) ) return false;
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        const stiffness = 1.0; // Max Total Ratio
+        const curLen    = Math.sqrt( curLenSqr ); // Actual Distance
+        const delta     = ( curLen == 0 )? this.len : ( this.len - curLen ) / curLen; // Normalize LenConstraint in relation to current distance of DIR
+        
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Create A & B Ration of how to divide the moment toward eachother.
+        // If a Point is pinned, then the other point gets 100% of the movement
+        // else the movement is based on the difference of mass each point represents.
+        
+        let aScl, bScl;
+        const aPin = ( this.aAnchor || this.a.isPinned );
+        const bPin = ( this.bAnchor || this.b.isPinned );
+        
+        if( aPin && !bPin ){        aScl = 0;           bScl = stiffness; }
+        else if( !aPin && bPin ){   aScl = stiffness;   bScl = 0; }
+        else{
+            // Compute the Weight between the Two Points using its mass
+            aScl = ( this.a.mass / (this.a.mass + this.b.mass) ) * stiffness;
+            bScl = stiffness - aScl;    // Since Stiffness is the Max Weight value, Use that to get the inverse of A's Weight Ratio
+        }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Move Points closer or further appart to reach its ideal distance
+        if( !aPin ) this.a.pos.add( this.v.fromScale( this.dir, aScl * delta ) );
+        if( !bPin ) this.b.pos.sub( this.v.fromScale( this.dir, bScl * delta ) );
+
+        return true;
+    }
+}
+
+
+// IK Skeleton is made of Points
+class Point{
+    static POS = 0;
+    static DIR = 1;
+
+    constructor( n, p, t=0, mass=1 ){
+        this.name       = n;                // Points Name
+        this.pos        = new Vec3( p );    // Point's 3D Position
+        this.mass       = mass;             // Used to help Weight Movement in relation to other point weights
+        this.isPinned   = false;            // Is this Point not allowed to move?
+        this.draggable  = true;             // Is this Point to be user draggable?
+        this.type       = t;
+    }
+}
+
+
+// IK Skeleton can group Points into specific structures.
+class Group{
+    constructor( name, type, pntAry ){
+        this.name    = name;
+        this.type    = type;
+        this.points  = pntAry;
+        this.count   = pntAry.length;
+    }
+}
+
+
+class Pole{
+    constructor( name, bendDir, pnt, segA, segB ){
+        this.name     = name;
+        this.swingDir = Vec3.sub( segB.pos, segA.pos ).norm();
+        this.bendDir  = new Vec3( bendDir );
+        this.point    = pnt;
+        this.aSeg     = segA;
+        this.bSeg     = segB;
+        this.poleDist = 0.3;
+    }
+
+    // Get the Pole Direction based on a World Space Position
+    // It the computes the local space direction
+    setWSPos( pos ){
+        const a     = this.aSeg.pos;                    // Segment Positions
+        const b     = this.bSeg.pos;
+        const np    = nearestFromPoint( a, b, pos );    // Nearest point from an infinite line from segment points
+
+        const sdir  = Vec3.sub( b, a ).norm();          // Reverse Swing Rotation
+        const q     = Quat.fromUnitVecs( sdir, this.swingDir );
+
+        this.bendDir
+            .fromSub( pos, np )     // New Direction
+            .norm()                 // Normalize it
+            .transformQuat( q );    // Apply Reverse Swing
+
+        return this;
+    }
+
+    getPos( out ){ return out.copy( this.point.pos ); }
+    getAnchorPos( out ){ return out.fromLerp( this.aSeg.pos, this.bSeg.pos, 0.5 ); }
+
+    // Get Direction of pole after applying swing rotation
+    getDir( out ){ 
+        let dir = Vec3.sub( this.bSeg.pos, this.aSeg.pos ).norm();
+        let q   = Quat.fromUnitVecs( this.swingDir, dir );        // Swing Rotation
+        out.fromQuat( q, this.bendDir );
+        return out;
+    }
+
+    // Update the Point position based on the Pole Direction and attached segment
+    resolve(){
+        let v = new Vec3();
+        this.getDir( this.point.pos )       // Get Curr
+            .scale( this.poleDist )
+            .add( this.getAnchorPos( v ) );
+        return this;
+    }
+}
+
+
+class Direction{
+    constructor( name, pnt, anchor, dir ){
+        this.name       = name;
+        this.dir        = new Vec3( dir );
+        this.point      = pnt;
+        this.anchor     = anchor;
+        this.dirDist    = 0.3;
+    }
+
+    setWSPos( pos ){
+        this.dir
+            .fromSub( pos, this.anchor.pos )
+            .norm()
+        return this;
+    }
+
+    getPos( out ){ return out.copy( this.point.pos ); }
+    getAnchorPos( out ){ return out.copy( this.anchor.pos ); }
+
+    resolve(){
+        this.point.pos
+            .fromScale( this.dir, this.dirDist )
+            .add( this.anchor.pos );
+        return this;
+    }
+}
+
+
+class MidPoint{
+    constructor( name, pnt, segA, segB ){
+        this.name   = name;
+        this.point  = pnt;
+        this.aSeg   = segA;
+        this.bSeg   = segB;
+    }
+
+    resolve(){
+        let v = Vec3.lerp( this.aSeg.pos, this.bSeg.pos, 0.5 );
+        if( Vec3.lenSqr( v, this.point.pos ) <= 0.0001 ) return false;
+
+        this.point.pos.copy( v );
+        return true;
+    }
+}
+
+
+function nearestFromPoint( a, b, p, out = null ){
+    const   dx    = b[0] - a[0],
+            dy    = b[1] - a[1],
+            dz    = b[2] - a[2],
+            t     = ( (p[0]-a[0])*dx + (p[1]-a[1])*dy + (p[2]-a[2])*dz ) / ( dx*dx + dy*dy + dz*dz ),
+            ti    = 1 - t;
+
+    out      = out || [ 0,0,0 ];
+    out[ 0 ] = a[0] * ti + b[0] * t;
+    out[ 1 ] = a[1] * ti + b[1] * t;
+    out[ 2 ] = a[2] * ti + b[2] * t;
+    return out;
+}
+
+
+class IKSkeleton{
+    //#region MAIN
+    points      = new Map();    // Collection of Named Points
+    groups      = new Map();    // Groupings of Points
+    constraints = new Array();  // Collection of Constraints to execute
+    iterations  = 5;            // How many times to execute constraints to be fully resolved.
+    directions  = new Map();    //
+    //#endregion ////////////////////////////////////////////////////
+
+    //#region POINTS
+    addPoint( name, pos=null, type=0 ){ 
+        this.points.set( name, new Point( name, pos, type ) ); 
+        return this;
+    }
+    
+    setSPos( name, pos ){ 
+        this.points.get( name ).pos.fromStruct( pos ); 
+        return this;
+    }
+    //#endregion ////////////////////////////////////////////////////
+
+    //#region GROUPING
+    triGroup( name, pntNames ){
+        let i, ii, a, b;
+        const pnts = new Array();
+        for( i=0; i < pntNames.length; i++ ){
+            ii = ( i + 1 ) % pntNames.length;
+            a  = this.points.get( pntNames[ i ] );
+            b  = this.points.get( pntNames[ ii ] );
+            
+            pnts.push( a );
+            this.constraints.push( new DistanceConstraint( a, b ) );
+        }
+
+        this.groups.set( name, new Group( name, "tri", pnts ) );
+        return this;
+    }
+
+    rangeLink( name, aName, bName ){
+        const a  = this.points.get( aName );
+        const b  = this.points.get( bName );
+
+        this.constraints.push( new DistanceConstraint( a, b ).ranged() );
+        this.groups.set( name, new Group( name, "link", [ a, b ] ) );
+
+        return this;
+    }
+
+    anchorLink( name, aName, bName ){
+        const a = this.points.get( aName );
+        const b = this.points.get( bName );
+        const c = new DistanceConstraint( a, b );
+        c.aAnchor = true;
+
+        this.constraints.push( c );
+        this.groups.set( name, new Group( name, "link", [ a, b ] ) );
+
+        return this;
+    }
+    
+    midPoint( pName, segAName, segBName ){
+        const p = this.points.get( pName );
+        const a = this.points.get( segAName );
+        const b = this.points.get( segBName );
+        const c = new MidPoint( pName, p, a, b );
+        this.constraints.push( c );
+        return this;
+    }
+
+    pole( pntName, grpName, bendDir ){
+        const pnt = this.points.get( pntName );
+        const grp = this.groups.get( grpName );
+        const po  = new Pole( pntName, bendDir, pnt, grp.points[ 0 ], grp.points[ 1 ] ).resolve();
+        this.directions.set( pntName, po );
+        return this;
+    }
+
+    dir( pntName, anchorName, dir ){
+        const pnt = this.points.get( pntName );
+        const anc = this.points.get( anchorName );
+        const d   = new Direction( pntName, pnt, anc, dir ).resolve();
+        this.directions.set( pntName, d );
+        return this;
+    }
+    //#endregion ////////////////////////////////////////////////////
+    
+    //#region CONSTRAINTS
+    resolve(){
+        let i, j, chg;
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        for( i=0; i < this.iterations; i++ ){
+            chg = false;
+            
+            for( j of this.constraints ){
+                if( j.resolve() ) chg = true;
+            }
+
+            if( !chg ) break;  // Nothing has changed, Exit early.
+        }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        for( i of this.directions.values() ) i.resolve();
+    }
+    //#endregion ////////////////////////////////////////////////////
+}
+
+</script></body></html>
