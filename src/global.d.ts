@@ -1,3 +1,4 @@
+type TVec2 = Vec2 | Float32Array | [number,number] | number[]
 type TVec3 = Vec3 | Float32Array | [number,number,number] | number[]
 type TVec4 = Quat | Vec4 | Float32Array | [number,number,number,number] | number[]
 

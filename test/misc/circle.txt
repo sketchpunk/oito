@@ -1,0 +1,115 @@
+//https://s.baku89.com/pentool/?tool_url=https://gist.githubusercontent.com/baku89/b6b92c352c14779c57ba9a61c426258b/raw/118008ef65e092533e5b57ae574319c7ee388bdb/Arc%2520pen
+
+
+let path, lastPos, lastTangent
+let guideExtend, guideTangent, guideCircle
+
+const HALF_PI = Math.PI / 2
+
+function drawCircumCircle(A, B, C) {
+	const a = B.getDistance(C)
+	const b = C.getDistance(A)
+	const c = A.getDistance(B)
+	
+	const a2 = a ** 2
+	const b2 = b ** 2
+	const c2 = c ** 2
+	
+	const aLen = a2 * (-a2 + b2 + c2)
+  const bLen = b2 * ( a2 - b2 + c2)
+  const cLen = c2 * ( a2 + b2 - c2)
+  const center = A.multiply(aLen)
+  	.add(B.multiply(bLen))
+  	.add(C.multiply(cLen))
+  	.multiply(1 / (aLen + bLen + cLen))
+  
+  const radius = A.getDistance(center)
+  
+  return new Circle(center, radius)
+}
+
+
+function computeMid() {
+	const dir = mouse.subtract(lastPos).normalize()
+	const dist = mouse.getDistance(lastPos)
+	
+	const phi = lastTangent.getAngleInRadians(dir) / 2
+	
+	const mDist = (dist / 2) / Math.cos(phi)
+	const mDir = lastTangent.add(dir).normalize()
+	
+	return lastPos.add(mDir.multiply(mDist))
+}
+
+function move() {
+	updateGuide()
+}
+
+
+function press() {
+	if (!path) {
+		lastPos = mouse
+	}
+}
+
+function drag() {
+	if (!path) {
+		if (guideTangent) guideTangent.remove()
+		
+		guideTangent = Guide.addLine(lastPos, mouse, 'stroke')
+		return
+	}
+	updateGuide()	
+}
+
+
+function release() {
+	
+	if (!path) {
+		if (guideTangent) guideTangent.remove()
+		
+		path = new Path()
+		path.strokeWidth = strokeWidth
+		path.strokeColor = strokeColor
+		path.moveTo(lastPos)
+		
+		lastTangent =
+			mouse.subtract(lastPos).normalize() ||
+			new Point(1, 0)
+		return
+	}
+	
+	if (guideExtend) guideExtend.remove()
+	
+	const mid = computeMid()
+	path.arcTo(mid, mouse)
+	
+	lastPos = mouse
+	lastTangent = path.getTangentAt(path.length)
+}
+
+
+
+
+function updateGuide() {
+	if (!path) return
+	
+	const mid = computeMid()
+	
+	if (guideExtend) guideExtend.remove()
+	guideExtend = new Arc(lastPos, mid, mouse)
+	guideExtend.strokeWidth = strokeWidth
+	guideExtend.strokeColor = strokeColor
+	
+	if (guideCircle) guideCircle.remove()
+	guideCircle = drawCircumCircle(lastPos, mid, mouse)
+	Guide.add(guideCircle)
+}
+
+function end() {
+	if (guideExtend) guideExtend.remove()
+	if (guideTangent) guideTangent.remove()
+	if (guideCircle) guideCircle.remove()
+	
+	path = null;
+}
