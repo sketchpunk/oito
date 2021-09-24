@@ -17,17 +17,18 @@
 
 		"eslint"		: "^7.28.0",
 		"concurrently"	: "^6.2.0",
-		"lite-server"	: "^2.6.1",
-		"servez"		: "^1.11.1",
+		"browser-sync"  : "^2.27.5",
 		"three"         : "0.129.0"
 	},
 	"scripts": {
 		"test"		: "echo \"Error: no test specified\" && exit 1",
+		
 		"tsc"		: "tsc --watch --preserveWatchOutput",
-		"servez"	: "servez -p 1337 --no-index ./",
-		"lite"		: "lite-server",
-		"start"		: "concurrently \"npm:tsc\" \"npm:servez\" ",
 		"build"		: "tsc -p tsconfig.json",
-		"lint"		: "eslint src/ --ext .js,.jsx,.ts,.tsx"
+		"lint"		: "eslint src/ --ext .js,.jsx,.ts,.tsx",
+		
+		"bsyncInit" : "browser-sync init",
+        "bsyncRun"  : "browser-sync start --config bs-config.js",
+		"start"		: "concurrently \"npm:tsc\" \"npm:bsyncRun\" "
 	}
 }
