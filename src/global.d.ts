@@ -22,3 +22,8 @@ type TGeoIVN = {
     vertices    : Array<number>,
     normals     : Array<number>,
 };
+
+//type JSONValue = string | number | boolean | JSONObject | JSONArray;
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+//interface JSONArray extends Array<JSONValue>{}
+//interface JSONObject { [x: string]: JSONValue; }

@@ -1,0 +1,12 @@
+  compareMapCache( newSet, oldMap ){
+    const rtn = { new:[], common:[], old:[] };
+
+    let i;
+    for( i of oldMap.keys() ) if( !newSet.has( i ) ) rtn.old.push( i );   // Item not in new Set
+    for( i of newSet ){
+        if( oldMap.has( i ) ) rtn.common.push( i );                       // Item in both sets
+        else                  rtn.new.push( i );                          // Item only in new Set
+    }
+
+    return rtn;
+  }
