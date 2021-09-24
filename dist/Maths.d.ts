@@ -48,8 +48,6 @@ declare class Maths {
     static lawcosSSS(aLen: number, bLen: number, cLen: number): number;
     static rnd(min: number, max: number): number;
     static rndLcg(seed: number): () => number;
-    static uuid(): string;
-    static nanoId(t?: number): string;
     /** Loops between 0 and Len, once over len, starts over again at 0, like a sawtooth wave  */
     static repeat(t: number, len: number): number;
     /** Loops back and forth between 0 and len, it functions like a triangle wave. */
