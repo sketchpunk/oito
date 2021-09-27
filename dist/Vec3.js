@@ -422,6 +422,18 @@ class Vec3 extends Float32Array {
         this[2] = Math.ceil(this[2]);
         return this;
     }
+    min(a) {
+        this[0] = Math.min(this[0], a[0]);
+        this[1] = Math.min(this[1], a[1]);
+        this[2] = Math.min(this[2], a[2]);
+        return this;
+    }
+    max(a) {
+        this[0] = Math.max(this[0], a[0]);
+        this[1] = Math.max(this[1], a[1]);
+        this[2] = Math.max(this[2], a[2]);
+        return this;
+    }
     /** When values are very small, like less then 0.000001, just make it zero */
     nearZero() {
         if (Math.abs(this[0]) <= 1e-6)

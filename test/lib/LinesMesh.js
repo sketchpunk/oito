@@ -50,8 +50,10 @@ class LinesMesh{
         else if( p0 instanceof THREE.Vector3 )
             this.addRaw( p0.x, p0.y, p0.z, p1.x, p1.y, p1.z, hex_0, hex_1, is_dash );
 
+        this.geo.needsUpdate = true;
         return this;
     }
+
     addRaw( x0, y0, z0, x1, y1, z1, hex_0=0xff0000, hex_1=null, is_dash=false ){
         let idx 	= this.cnt * 2,
             len_0	= -1,
@@ -85,13 +87,35 @@ class LinesMesh{
         // INCREMENT AND UPDATE DRAW RANGE
         this.cnt++;
         this.geo.setDrawRange( 0, this.cnt * 2 );
+        this.geo.needsUpdate = true;
 
         return this;
     }
 
+	box( v0, v1, col=0x00ffff, is_dash=false ){
+		const x1 = v0[0], y1 = v0[1], z1 = v0[2], 
+			  x2 = v1[0], y2 = v1[1], z2 = v1[2];
+
+		this.add( [x1,y1,z1], [x1,y1,z2], col, null, is_dash ); // Bottom
+		this.add( [x1,y1,z2], [x2,y1,z2], col, null, is_dash );
+		this.add( [x2,y1,z2], [x2,y1,z1], col, null, is_dash );
+		this.add( [x2,y1,z1], [x1,y1,z1], col, null, is_dash );
+		this.add( [x1,y2,z1], [x1,y2,z2], col, null, is_dash ); // Top
+		this.add( [x1,y2,z2], [x2,y2,z2], col, null, is_dash );
+		this.add( [x2,y2,z2], [x2,y2,z1], col, null, is_dash );
+		this.add( [x2,y2,z1], [x1,y2,z1], col, null, is_dash );
+		this.add( [x1,y1,z1], [x1,y2,z1], col, null, is_dash ); // Sides
+		this.add( [x1,y1,z2], [x1,y2,z2], col, null, is_dash );
+		this.add( [x2,y1,z2], [x2,y2,z2], col, null, is_dash );
+		this.add( [x2,y1,z1], [x2,y2,z1], col, null, is_dash );
+		return this;
+	}
+
+
     reset(){
         this.cnt = 0;
         this.geo.setDrawRange( 0, 0 );
+        this.geo.needsUpdate = true;
         return this;
     }
 }

@@ -855,6 +855,7 @@ class Quat extends Float32Array {
         q[3] = Math.cos(half);
         return q;
     }
+    static fromEuler(x, y, z) { return new Quat().fromEuler(x, y, z); }
     //++++++++++++++++++++++++++++++++++
     // INTERPOLATION  
     static lerp(a, b, t, out) {

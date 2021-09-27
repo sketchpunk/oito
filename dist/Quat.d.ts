@@ -93,6 +93,7 @@ declare class Quat extends Float32Array {
     static fromUnitVecs(a: TVec3, b: TVec3): Quat;
     /** Axis must be normlized  */
     static fromAxisAngle(axis: TVec3, angle: number): Quat;
+    static fromEuler(x: number, y: number, z: number): Quat;
     static lerp(a: TVec4, b: TVec4, t: number, out?: TVec4): TVec4;
     static nlerp(a: TVec4, b: TVec4, t: number, out?: Quat): Quat;
     static slerp(a: TVec4, b: TVec4, t: number, out?: TVec4): TVec4;

@@ -11,7 +11,7 @@ window.addEventListener( "load", async _=>{
     App.set_camera( 0, 20, 3, [0,0.8,1] ).render();
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // Asset Loading ( Not Scene Loading )
+    // Asset Loading
     let gltf    = await Gltf.fetch( './Vegeta.gltf' );
     let skin    = gltf.getSkin();   // First Available Skin
     let tfMesh  = gltf.getMesh();   // First Available Mesh

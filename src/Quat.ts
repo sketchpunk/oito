@@ -1037,6 +1037,8 @@ class Quat extends Float32Array{
         return q;
     }
 
+    static fromEuler( x: number, y: number, z: number ): Quat{ return new Quat().fromEuler( x, y, z ); }
+
     //++++++++++++++++++++++++++++++++++
     // INTERPOLATION  
   

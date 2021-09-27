@@ -151,9 +151,9 @@ class Vec3 extends Float32Array{
 
     /** Copy data from a struct vector type. ThreeJS compatilbility */
     fromStruct( v: TVec3Struct ) : Vec3{
-        this[0] = v.x; 
-        this[1] = v.y; 
-        this[2] = v.z;
+        this[ 0 ] = v.x; 
+        this[ 1 ] = v.y; 
+        this[ 2 ] = v.z;
         return this;
     }
 
@@ -439,14 +439,14 @@ class Vec3 extends Float32Array{
     //#region OPERATORS
 
     /** Add vector to current vector */
-    add( a: TVec3 ) : Vec3{
+    add( a: TVec3 ) : this{
         this[ 0 ] += a[ 0 ];
         this[ 1 ] += a[ 1 ];
         this[ 2 ] += a[ 2 ];
         return this;
     }
 
-    sub( v: TVec3 ) : Vec3{
+    sub( v: TVec3 ) : this{
         this[ 0 ] -= v[ 0 ];
         this[ 1 ] -= v[ 1 ];
         this[ 2 ] -= v[ 2 ];
@@ -521,6 +521,20 @@ class Vec3 extends Float32Array{
         this[ 0 ] = Math.ceil( this[ 0 ] );
         this[ 1 ] = Math.ceil( this[ 1 ] );
         this[ 2 ] = Math.ceil( this[ 2 ] );
+        return this;
+    }
+
+    min( a: TVec3 ) : this{
+        this[ 0 ] = Math.min( this[ 0 ], a[ 0 ] );
+        this[ 1 ] = Math.min( this[ 1 ], a[ 1 ] );
+        this[ 2 ] = Math.min( this[ 2 ], a[ 2 ] );
+        return this;
+    }
+
+    max( a: TVec3 ) : this{
+        this[ 0 ] = Math.max( this[ 0 ], a[ 0 ] );
+        this[ 1 ] = Math.max( this[ 1 ], a[ 1 ] );
+        this[ 2 ] = Math.max( this[ 2 ], a[ 2 ] );
         return this;
     }
 

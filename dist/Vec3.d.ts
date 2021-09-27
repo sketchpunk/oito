@@ -86,8 +86,8 @@ declare class Vec3 extends Float32Array {
     fromOrthogonal(v: TVec3): this;
     fromReflect(dir: TVec3, norm: TVec3): this;
     /** Add vector to current vector */
-    add(a: TVec3): Vec3;
-    sub(v: TVec3): Vec3;
+    add(a: TVec3): this;
+    sub(v: TVec3): this;
     mul(v: TVec3): Vec3;
     div(v: TVec3): Vec3;
     divScale(v: number): Vec3;
@@ -97,6 +97,8 @@ declare class Vec3 extends Float32Array {
     abs(): Vec3;
     floor(): Vec3;
     ceil(): Vec3;
+    min(a: TVec3): this;
+    max(a: TVec3): this;
     /** When values are very small, like less then 0.000001, just make it zero */
     nearZero(): Vec3;
     negate(): Vec3;
