@@ -52,6 +52,7 @@ declare class Vec3 extends Float32Array {
      * vec.add( [1,1,1] ).copyTo( backup ).scale( 5 ); // vec continues operations after saving a copy of itself.
      */
     copyTo(v: TVec3): Vec3;
+    fromVec2(v: TVec2, useZ?: boolean): this;
     /** Used to get data from a flat buffer of vectors, useful when building geometery */
     fromBuf(ary: Array<number> | Float32Array, idx: number): Vec3;
     /** Put data into a flat buffer of vectors, useful when building geometery */

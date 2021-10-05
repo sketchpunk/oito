@@ -135,6 +135,17 @@ class Maths{
         return ( Math.sin( 2 * Math.PI * ( t - 0.25 ) ) + 1 ) * 0.5;
     }
 
+    /*
+    static sigmoid( t, k=0 ){ // Over 0, Eases in the middle, under eases in-out
+        // this uses the -1 to 1 value of sigmoid which allows to create
+        // easing at start and finish. Can pass in range 0:1 and it'll return that 
+        // range.
+        // https://dhemery.github.io/DHE-Modules/technical/sigmoid/
+        // https://www.desmos.com/calculator/q6ukniiqwn
+        return ( t - k*t ) / ( k - 2*k*Math.abs(t) + 1 );
+    }
+    */
+
     /** a = 1.5, 2, 4, 9 */
     static betaDistCurve( t: number, a: number ): number{ 
         // https://stackoverflow.com/questions/13097005/easing-functions-for-bell-curves

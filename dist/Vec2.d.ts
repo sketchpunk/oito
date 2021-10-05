@@ -18,6 +18,7 @@ declare class Vec2 extends Float32Array {
     reset(): Vec2;
     /** Convert value to a string value */
     toString(rnd?: number): string;
+    toArray(): Array<number>;
     /** Test if all components equal zero */
     isZero(): boolean;
     /** When values are very small, like less then 0.000001, just make it zero.*/
@@ -38,6 +39,12 @@ declare class Vec2 extends Float32Array {
     fromMin(a: TVec2, b: TVec2): this;
     fromFloor(v: TVec2): this;
     fromFract(v: TVec2): this;
+    /** Used to get data from a flat buffer of vectors, useful when building geometery */
+    fromBuf(ary: Array<number> | Float32Array, idx: number): this;
+    /** Put data into a flat buffer of vectors, useful when building geometery */
+    toBuf(ary: Array<number> | Float32Array, idx: number): this;
+    /** Pust vector components onto an array, useful when building geometery */
+    pushTo(ary: Array<number>): this;
     add(v: TVec2): this;
     addRaw(x: number, y: number): this;
     sub(v: TVec2): this;
@@ -48,6 +55,8 @@ declare class Vec2 extends Float32Array {
     divScale(v: number): this;
     divInvScale(v: number, out: TVec2): this;
     floor(out?: TVec2): this;
+    min(a: TVec2): this;
+    max(a: TVec2): this;
     norm(out?: TVec2): this;
     lerp(v: TVec2, t: number, out?: TVec2): this;
     rotate(rad: number, out?: TVec2): this;
@@ -70,5 +79,18 @@ declare class Vec2 extends Float32Array {
     static rotateDeg(v: TVec2, deg: number): Vec2;
     static perpCW(v: TVec2): Vec2;
     static perpCCW(v: TVec2): Vec2;
+    /** Create an Iterator Object that allows an easy way to loop a Float32Buffer
+     * @example
+     * let buf = new Float32Array( 2 * 10 );
+     * for( let v of Vec3.bufIter( buf ) ) console.log( v );
+    */
+    static bufIter(buf: Array<number> | Float32Array): {
+        [Symbol.iterator](): {
+            next: () => {
+                value: Vec2;
+                done: boolean;
+            };
+        };
+    };
 }
 export default Vec2;

@@ -1,8 +1,11 @@
 declare class Util {
-    /** Generate Indices of both a Looped or Unlooped Grid, Backslash Pattern */
+    /** Generate Indices of both a Looped or Unlooped Grid, Backslash Pattern, Loops on Rows */
     static gridIndices(out: Array<number>, row_size: number, row_cnt: number, start_idx?: number, do_loop?: boolean, rev_quad?: boolean): void;
+    /** Generate Indices of both a Looped or Unlooped Grid, Backslash Pattern, Loops on Columns */
+    static gridIndicesCol(out: Array<number>, row_size: number, row_cnt: number, start_idx?: number, do_loop?: boolean, rev_quad?: boolean): void;
     /** Alternating Triangle Pattern, Front/Back Slash */
     static gridAltIndices(out: Array<number>, row_size: number, row_cnt: number, start_idx?: number, rev_quad?: boolean): void;
+    static fanIndices(out: Array<number>, midIdx: number, edgeStart: number, edgeEnd: number, rev_quad?: boolean): void;
     static arcVertices(out: Array<number>, angle_a: number, angle_b: number, div: number, radius?: number, offset?: number[]): void;
     static gridVertices(out: Array<number>, width?: number, height?: number, xCells?: number, yCells?: number, useCenter?: boolean): void;
     static circleVertices(out: Array<number>, pntCnt?: number, radius?: number): void;

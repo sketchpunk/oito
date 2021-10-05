@@ -2,7 +2,7 @@ import Maths from "../../Maths.js";
 import Vec3 from "../../Vec3.js";
 class Util {
     // #region GEN INDICES
-    /** Generate Indices of both a Looped or Unlooped Grid, Backslash Pattern */
+    /** Generate Indices of both a Looped or Unlooped Grid, Backslash Pattern, Loops on Rows */
     static gridIndices(out, row_size, row_cnt, start_idx = 0, do_loop = false, rev_quad = false) {
         const row_stop = (do_loop) ? row_cnt : row_cnt - 1, col_stop = row_size - 1;
         let row_a, row_b, r, rr, a, b, c, d;
@@ -17,6 +17,29 @@ class Util {
                 b = row_a + rr + 1;
                 d = row_b + rr;
                 c = row_b + rr + 1;
+                if (!rev_quad)
+                    out.push(a, b, c, c, d, a); // Counter ClockWise
+                else
+                    out.push(a, d, c, c, b, a); // ClockWise
+            }
+        }
+    }
+    /** Generate Indices of both a Looped or Unlooped Grid, Backslash Pattern, Loops on Columns */
+    static gridIndicesCol(out, row_size, row_cnt, start_idx = 0, do_loop = false, rev_quad = false) {
+        const row_stop = row_cnt - 1, col_stop = (do_loop) ? row_size : row_size - 1;
+        let row_a, row_b, r, rr, rrr, a, b, c, d;
+        for (r = 0; r < row_stop; r++) {
+            // Figure out the starting Index for the Two Rows
+            // 2nd row might loop back to starting row when Looping.
+            row_a = start_idx + row_size * r;
+            row_b = start_idx + row_size * (r + 1);
+            for (rr = 0; rr < col_stop; rr++) {
+                // Defined the Vertex Index of a Quad
+                rrr = (rr + 1) % row_size;
+                a = row_a + rr;
+                b = row_a + rrr;
+                d = row_b + rr;
+                c = row_b + rrr;
                 if (!rev_quad)
                     out.push(a, b, c, c, d, a); // Counter ClockWise
                 else
@@ -50,6 +73,17 @@ class Util {
                         out.push(a, d, c, c, b, a); // Back Slash
                 }
             }
+        }
+    }
+    static fanIndices(out, midIdx, edgeStart, edgeEnd, rev_quad = false) {
+        const len = (edgeEnd - edgeStart) + 1;
+        let i, ii;
+        for (i = 0; i < len; i++) {
+            ii = (i + 1) % len; // Next Point on the edge
+            if (!rev_quad)
+                out.push(midIdx, edgeStart + i, edgeStart + ii); // Counter ClockWise
+            else
+                out.push(midIdx, edgeStart + ii, edgeStart + i); // ClockWise
         }
     }
     /*

@@ -1,0 +1,95 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+    
+import Starter, { THREE }  from "../lib/starter.js";
+import PointsMesh          from "../lib/PointsMesh.js";
+import LinesMesh           from "../lib/LinesMesh.js";
+
+import Vec3                from "../../dist/Vec3.js";
+import Quat                from "../../dist/Quat.js";
+import Intersect           from "../../dist/geometry/Intersect.js";
+
+/*
+https://github.com/meshonline/Surface-Heat-Diffuse-Skinning
+https://github.com/Eisenwave/obj2voxel
+https://github.com/mattatz/unity-voxel
+https://www.gamedeveloper.com/programming/triangle-mesh-voxelization
+https://bronsonzgeb.com/index.php/2021/06/26/volumetric-heat-diffusion-for-automatic-mesh-skinning/
+https://github.com/tunabrain/sparse-voxel-octrees
+https://www.youtube.com/watch?v=-RpqbC5-Z0E  
+http://blog.wolfire.com/2009/11/volumetric-heat-diffusion-skinning/  
+http://blog.wolfire.com/2009/11/Triangle-mesh-voxelization 
+https://0fps.net/2012/06/30/meshing-in-a-minecraft-game/
+https://www.gedge.ca/dev/2014/08/17/greedy-voxel-meshing
+*/
+
+let App, pnt, ln, Grid,
+    Box = { min: new Vec3( -1 ), max: new Vec3( 1 ) },
+    Tri = [
+        new Vec3( -1, 0, 0 ),
+        new Vec3( 1, 0, 1 ),
+        new Vec3( 1, 0, -1 ),
+    ];
+
+window.addEventListener( "load", async _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:true, grid:true } );
+    App.set_camera( 0, 20, 6, [0,0.1,0] ).render();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    pnt = new PointsMesh( 100 );
+    App.add( pnt.mesh );
+
+    ln = new LinesMesh( 100 );
+    App.add( ln.mesh );
+
+    Grid = new VoxelGrid();
+
+    ln.box( Grid.minBound, Grid.maxBound, 0x00ff00 );
+
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    let verts = new Float32Array( Tri.length * 3 );
+    let i     = 0;
+    let rot   = Quat.fromEuler( 45, 0, -30 );
+
+    for( const v of Tri ){
+        v   .transformQuat( rot )
+            .toBuf( verts, i );
+
+        pnt.add( v, 0x00ffff, 4 );        
+        i += 3;
+    }
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Create Geometry + Skinned Mesh
+    let geo     = new THREE.BufferGeometry();
+    //geo.setIndex( new THREE.BufferAttribute( tfPrim.indices.data, 1 ) );
+    geo.setAttribute( 'position',   new THREE.BufferAttribute( verts, 3 ) );
+    //geo.setAttribute( 'normal',     new THREE.BufferAttribute( tfPrim.normal.data, tfPrim.normal.componentLen ) );
+    //geo.setAttribute( 'skinIndex',  new THREE.BufferAttribute( tfPrim.joints_0.data, tfPrim.joints_0.componentLen ) );
+    //geo.setAttribute( 'skinWeight', new THREE.BufferAttribute( tfPrim.weights_0.data, tfPrim.weights_0.componentLen ) );
+
+    let mesh    = new THREE.Mesh( geo, new THREE.MeshBasicMaterial( { color:0x808080, side:THREE.DoubleSide }) );
+    App.add( mesh );
+});
+
+class VoxelGrid{
+    constructor( div=2 ){
+        this.minBound   = new Vec3( -2 );
+        this.maxBound   = new Vec3( 2 );
+        this.cellSize   = 0;
+
+        this.subDivide( div );
+    }
+
+    subDivide( n ){
+
+
+    }
+}
+
+// Triange / AABB Intersection, Following similar implementation
+// https://gist.github.com/yomotsu/d845f21e2e1eb49f647f
+// https://github.com/mrdoob/three.js/blob/master/src/math/Box3.js
+// https://github.com/mattatz/unity-voxel/blob/master/Assets/Packages/Voxelizer/Scripts/CPUVoxelizer.cs
+</script></body></html>

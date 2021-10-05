@@ -161,3 +161,6 @@ https://www.youtube.com/watch?v=g55QvpAev0I
 // Rigid Body
 https://www.toptal.com/game/video-game-physics-part-i-an-introduction-to-rigid-body-dynamics
 https://www.youtube.com/watch?v=suaJz-zWt3A
+
+// NOISE
+https://jobtalle.com/cubic_noise.html

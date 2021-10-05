@@ -186,6 +186,18 @@ class Vec3 extends Float32Array{
         return this;
     }
 
+    fromVec2( v: TVec2, useZ=false ) : this{
+        this[ 0 ] = v[ 0 ];
+        if( useZ ){
+            this[ 1 ] = 0;
+            this[ 2 ] = v[ 1 ];
+        }else{
+            this[ 1 ] = v[ 1 ];
+            this[ 2 ] = 0;
+        }
+        return this;
+    }
+
     //++++++++++++++++++++++++++++++++++
     // FLAT BUFFERS
 

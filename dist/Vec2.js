@@ -58,6 +58,7 @@ class Vec2 extends Float32Array {
             return s.slice(0, -1) + "]";
         }
     }
+    toArray() { return [this[0], this[1]]; }
     /** Test if all components equal zero */
     isZero() { return (this[0] == 0 && this[1] == 0); }
     /** When values are very small, like less then 0.000001, just make it zero.*/
@@ -90,7 +91,7 @@ class Vec2 extends Float32Array {
     len() { return Math.sqrt(this[0] * this[0] + this[1] * this[1]); }
     lenSqr() { return this[0] * this[0] + this[1] * this[1]; }
     //#endregion ////////////////////////////////////////////////////////
-    //#region FROM SETTERS / OPERATORS
+    // #region FROM SETTERS / OPERATORS
     fromAngleLen(ang, len) {
         this[0] = len * Math.cos(ang);
         this[1] = len * Math.sin(ang);
@@ -130,6 +131,25 @@ class Vec2 extends Float32Array {
         this[1] = v[1] - Math.floor(v[1]);
         return this;
     }
+    //++++++++++++++++++++++++++++++++++
+    // FLAT BUFFERS
+    /** Used to get data from a flat buffer of vectors, useful when building geometery */
+    fromBuf(ary, idx) {
+        this[0] = ary[idx];
+        this[1] = ary[idx + 1];
+        return this;
+    }
+    /** Put data into a flat buffer of vectors, useful when building geometery */
+    toBuf(ary, idx) {
+        ary[idx] = this[0];
+        ary[idx + 1] = this[1];
+        return this;
+    }
+    /** Pust vector components onto an array, useful when building geometery */
+    pushTo(ary) {
+        ary.push(this[0], this[1]);
+        return this;
+    }
     //#endregion ////////////////////////////////////////////////////////
     // #region MATH OPERATIONS
     add(v) { this[0] += v[0]; this[1] += v[1]; return this; }
@@ -155,6 +175,16 @@ class Vec2 extends Float32Array {
         out[0] = Math.floor(this[0]);
         out[1] = Math.floor(this[1]);
         return out;
+    }
+    min(a) {
+        this[0] = Math.min(this[0], a[0]);
+        this[1] = Math.min(this[1], a[1]);
+        return this;
+    }
+    max(a) {
+        this[0] = Math.max(this[0], a[0]);
+        this[1] = Math.max(this[1], a[1]);
+        return this;
     }
     norm(out) {
         const mag = Math.sqrt(this[0] * this[0] + this[1] * this[1]);
@@ -256,6 +286,25 @@ class Vec2 extends Float32Array {
         out[0] = -v[1];
         out[1] = v[0];
         return out;
+    }
+    /** Create an Iterator Object that allows an easy way to loop a Float32Buffer
+     * @example
+     * let buf = new Float32Array( 2 * 10 );
+     * for( let v of Vec3.bufIter( buf ) ) console.log( v );
+    */
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    static bufIter(buf) {
+        let i = 0;
+        const result = { value: new Vec2(), done: false }, len = buf.length, next = () => {
+            if (i >= len)
+                result.done = true;
+            else {
+                result.value.fromBuf(buf, i);
+                i += 2;
+            }
+            return result;
+        };
+        return { [Symbol.iterator]() { return { next }; } };
     }
 }
 //#region STATIC VALUES
