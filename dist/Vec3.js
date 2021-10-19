@@ -357,6 +357,15 @@ class Vec3 extends Float32Array {
         this[2] = factor * norm[2] + dir[2];
         return this;
     }
+    // http://www.rorydriscoll.com/2016/03/07/frame-rate-independent-damping-using-lerp/
+    damp(v, lambda, dt) {
+        const t = Math.exp(-lambda * dt);
+        const ti = 1 - t;
+        this[0] = this[0] * t + v[0] * ti;
+        this[1] = this[1] * t + v[1] * ti;
+        this[2] = this[2] * t + v[2] * ti;
+        return this;
+    }
     //#endregion ////////////////////////////////////////////////////////
     //#region OPERATORS
     /** Add vector to current vector */

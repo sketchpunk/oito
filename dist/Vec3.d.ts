@@ -86,6 +86,7 @@ declare class Vec3 extends Float32Array {
     fromAxisAngle(axis: TVec3, rad: number, v?: number[]): Vec3;
     fromOrthogonal(v: TVec3): this;
     fromReflect(dir: TVec3, norm: TVec3): this;
+    damp(v: TVec3, lambda: number, dt: number): this;
     /** Add vector to current vector */
     add(a: TVec3): this;
     sub(v: TVec3): this;
