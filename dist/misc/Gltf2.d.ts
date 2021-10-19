@@ -30,6 +30,8 @@ declare class Mesh {
     scale: TVec3 | null;
 }
 declare class Primitive {
+    materialName: string | null;
+    materialIdx: number | null;
     indices: Accessor | null;
     position: Accessor | null;
     normal: Accessor | null;
@@ -65,6 +67,7 @@ declare class Gltf {
     getSkinNames(): Array<string>;
     getSkinByName(n: string): [any, number] | null;
     getSkin(id: string | number | undefined): Skin | null;
+    getMaterial(id: number | undefined): any;
     parseAccessor(accID: number): Accessor | null;
     static fetch(url: string): Promise<Gltf>;
 }

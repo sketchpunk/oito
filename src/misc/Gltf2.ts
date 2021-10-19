@@ -85,15 +85,18 @@ class Mesh{
 }
 
 class Primitive{
-    indices    : Accessor | null = null;
-    position   : Accessor | null = null;
-    normal     : Accessor | null = null;
-    tangent    : Accessor | null = null;
-    texcoord_0 : Accessor | null = null;
-    texcoord_1 : Accessor | null = null;
-    color_0    : Accessor | null = null;
-    joints_0   : Accessor | null = null;
-    weights_0  : Accessor | null = null;
+    materialName    : string | null   = null;
+    materialIdx     : number | null   = null;
+
+    indices         : Accessor | null = null;
+    position        : Accessor | null = null;
+    normal          : Accessor | null = null;
+    tangent         : Accessor | null = null;
+    texcoord_0      : Accessor | null = null;
+    texcoord_1      : Accessor | null = null;
+    color_0         : Accessor | null = null;
+    joints_0        : Accessor | null = null;
+    weights_0       : Accessor | null = null;
 }
 //#endregion
 
@@ -190,6 +193,13 @@ class Gltf{
             attr = p.attributes;
             prim = new Primitive();
 
+            //------------------------------------------------------
+            if( p.material != undefined && p.material != null ){
+                prim.materialIdx    = p.material;
+                prim.materialName   = json.materials[ p.material ].name;
+            }
+
+            //------------------------------------------------------
             if( p.indices       != undefined ) prim.indices    = this.parseAccessor( p.indices );
             if( attr.POSITION   != undefined ) prim.position   = this.parseAccessor( attr.POSITION );
             if( attr.NORMAL     != undefined ) prim.normal     = this.parseAccessor( attr.NORMAL );
@@ -198,7 +208,9 @@ class Gltf{
             if( attr.TEXCOORD_1 != undefined ) prim.texcoord_1 = this.parseAccessor( attr.TEXCOORD_1 );
             if( attr.JOINTS_0   != undefined ) prim.joints_0   = this.parseAccessor( attr.JOINTS_0 );
             if( attr.WEIGHTS_0  != undefined ) prim.weights_0  = this.parseAccessor( attr.WEIGHTS_0 );
+            if( attr.COLOR_0    != undefined ) prim.color_0    = this.parseAccessor( attr.COLOR_0 );
 
+            //------------------------------------------------------
             mesh.primitives.push( prim );
         }
 
@@ -334,6 +346,27 @@ class Gltf{
         return skin;
     }
     
+    //#endregion ///////////////////////////////////////////////////////////////////////
+
+    //#region MATERIALS
+    // https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_010_Materials.md
+
+    getMaterial( id: number | undefined ) : any{
+        console.log( id );
+        if( !this.json.materials ){ console.warn( "No Materials in GLTF File" ); return null; }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        const json = this.json;
+        let mat    = null;
+
+        switch( typeof id ){
+            case "number" : if( id < json.materials.length ){ mat = json.materials[ id ].pbrMetallicRoughness; } break;
+            default       : mat = json.materials[ 0 ].pbrMetallicRoughness; break;
+        }
+
+        return mat;
+    }
+
     //#endregion ///////////////////////////////////////////////////////////////////////
 
     //#region SUPPORT

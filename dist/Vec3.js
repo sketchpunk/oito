@@ -606,6 +606,18 @@ class Vec3 extends Float32Array {
             ary[i] = new Vec3();
         return ary;
     }
+    static flattenVecArray(ary) {
+        const len = ary.length;
+        const rtn = new Array(len * 3);
+        let i = 0;
+        let v;
+        for (v of ary) {
+            rtn[i++] = v[0];
+            rtn[i++] = v[1];
+            rtn[i++] = v[2];
+        }
+        return rtn;
+    }
     /** Create an Iterator Object that allows an easy way to loop a Float32Buffer
      * @example
      * let buf = new Float32Array( 3 * 10 );

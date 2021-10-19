@@ -132,6 +132,7 @@ declare class Vec3 extends Float32Array {
     static fromQuat(q: TVec4, v: TVec3): Vec3;
     /** Create an array filled with Vec3 Objects */
     static createAarray(len: number): Array<Vec3>;
+    static flattenVecArray(ary: Array<TVec3>): Array<number>;
     /** Create an Iterator Object that allows an easy way to loop a Float32Buffer
      * @example
      * let buf = new Float32Array( 3 * 10 );

@@ -99,6 +99,7 @@ class Vec2 extends Float32Array {
     }
     fromAdd(a, b) { this[0] = a[0] + b[0]; this[1] = a[1] + b[1]; return this; }
     fromSub(a, b) { this[0] = a[0] - b[0]; this[1] = a[1] - b[1]; return this; }
+    fromMul(a, b) { this[0] = a[0] * b[0]; this[1] = a[1] * b[1]; return this; }
     fromScale(a, s) { this[0] = a[0] * s; this[1] = a[1] * s; return this; }
     fromLerp(a, b, t) {
         const tt = 1 - t;
@@ -129,6 +130,16 @@ class Vec2 extends Float32Array {
     fromFract(v) {
         this[0] = v[0] - Math.floor(v[0]);
         this[1] = v[1] - Math.floor(v[1]);
+        return this;
+    }
+    fromNegate(a) {
+        this[0] = -a[0];
+        this[1] = -a[1];
+        return this;
+    }
+    fromInvert(a) {
+        this[0] = (a[0] != 0) ? 1 / a[0] : 0;
+        this[1] = (a[1] != 0) ? 1 / a[1] : 0;
         return this;
     }
     //++++++++++++++++++++++++++++++++++
@@ -175,6 +186,11 @@ class Vec2 extends Float32Array {
         out[0] = Math.floor(this[0]);
         out[1] = Math.floor(this[1]);
         return out;
+    }
+    negate() {
+        this[0] = -this[0];
+        this[1] = -this[1];
+        return this;
     }
     min(a) {
         this[0] = Math.min(this[0], a[0]);

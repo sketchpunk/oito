@@ -120,6 +120,7 @@ class Vec2 extends Float32Array{
 
 	fromAdd( a: TVec2, b: TVec2 ): this{ this[0] = a[0] + b[0]; this[1] = a[1] + b[1]; return this; }
 	fromSub( a: TVec2, b: TVec2 ): this{ this[0] = a[0] - b[0]; this[1] = a[1] - b[1]; return this; }
+    fromMul( a: TVec2, b: TVec2 ): this{ this[0] = a[0] * b[0]; this[1] = a[1] * b[1]; return this; }
 	fromScale( a: TVec2, s: number ): this{ this[0] = a[0] * s; this[1] = a[1] * s; return this; }
 	fromLerp( a: TVec2, b: TVec2, t: number ): this{
 		const tt = 1 - t;
@@ -157,6 +158,18 @@ class Vec2 extends Float32Array{
 		this[1] = v[1] - Math.floor( v[1] );
 		return this;
 	}
+
+    fromNegate( a: TVec2 ) : this {
+        this[ 0 ] = -a[ 0 ]; 
+        this[ 1 ] = -a[ 1 ];
+        return this;
+    }
+
+    fromInvert( a: TVec2 ) : this {
+        this[0] = ( a[0] != 0 )? 1 / a[0] : 0;
+        this[1] = ( a[1] != 0 )? 1 / a[1] : 0;
+        return this;
+    }
 
     //++++++++++++++++++++++++++++++++++
     // FLAT BUFFERS
@@ -212,6 +225,13 @@ class Vec2 extends Float32Array{
         out[0] = Math.floor( this[0] );
         out[1] = Math.floor( this[1] );
         return out;
+    }
+
+    
+    negate() : this{
+        this[ 0 ] = -this[ 0 ];
+        this[ 1 ] = -this[ 1 ];
+        return this;
     }
 
     min( a: TVec2 ) : this{

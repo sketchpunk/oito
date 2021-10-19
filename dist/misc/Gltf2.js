@@ -61,6 +61,8 @@ class Mesh {
 }
 class Primitive {
     constructor() {
+        this.materialName = null;
+        this.materialIdx = null;
         this.indices = null;
         this.position = null;
         this.normal = null;
@@ -168,6 +170,12 @@ class Gltf {
         for (p of m.primitives) {
             attr = p.attributes;
             prim = new Primitive();
+            //------------------------------------------------------
+            if (p.material != undefined && p.material != null) {
+                prim.materialIdx = p.material;
+                prim.materialName = json.materials[p.material].name;
+            }
+            //------------------------------------------------------
             if (p.indices != undefined)
                 prim.indices = this.parseAccessor(p.indices);
             if (attr.POSITION != undefined)
@@ -184,6 +192,9 @@ class Gltf {
                 prim.joints_0 = this.parseAccessor(attr.JOINTS_0);
             if (attr.WEIGHTS_0 != undefined)
                 prim.weights_0 = this.parseAccessor(attr.WEIGHTS_0);
+            if (attr.COLOR_0 != undefined)
+                prim.color_0 = this.parseAccessor(attr.COLOR_0);
+            //------------------------------------------------------
             mesh.primitives.push(prim);
         }
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -314,6 +325,30 @@ class Gltf {
         }
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         return skin;
+    }
+    //#endregion ///////////////////////////////////////////////////////////////////////
+    //#region MATERIALS
+    // https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_010_Materials.md
+    getMaterial(id) {
+        console.log(id);
+        if (!this.json.materials) {
+            console.warn("No Materials in GLTF File");
+            return null;
+        }
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        const json = this.json;
+        let mat = null;
+        switch (typeof id) {
+            case "number":
+                if (id < json.materials.length) {
+                    mat = json.materials[id].pbrMetallicRoughness;
+                }
+                break;
+            default:
+                mat = json.materials[0].pbrMetallicRoughness;
+                break;
+        }
+        return mat;
     }
     //#endregion ///////////////////////////////////////////////////////////////////////
     //#region SUPPORT

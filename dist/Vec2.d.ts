@@ -32,6 +32,7 @@ declare class Vec2 extends Float32Array {
     fromAngleLen(ang: number, len: number): this;
     fromAdd(a: TVec2, b: TVec2): this;
     fromSub(a: TVec2, b: TVec2): this;
+    fromMul(a: TVec2, b: TVec2): this;
     fromScale(a: TVec2, s: number): this;
     fromLerp(a: TVec2, b: TVec2, t: number): this;
     fromVec3(v: TVec3, z_plane?: boolean): this;
@@ -39,6 +40,8 @@ declare class Vec2 extends Float32Array {
     fromMin(a: TVec2, b: TVec2): this;
     fromFloor(v: TVec2): this;
     fromFract(v: TVec2): this;
+    fromNegate(a: TVec2): this;
+    fromInvert(a: TVec2): this;
     /** Used to get data from a flat buffer of vectors, useful when building geometery */
     fromBuf(ary: Array<number> | Float32Array, idx: number): this;
     /** Put data into a flat buffer of vectors, useful when building geometery */
@@ -55,6 +58,7 @@ declare class Vec2 extends Float32Array {
     divScale(v: number): this;
     divInvScale(v: number, out: TVec2): this;
     floor(out?: TVec2): this;
+    negate(): this;
     min(a: TVec2): this;
     max(a: TVec2): this;
     norm(out?: TVec2): this;
