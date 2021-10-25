@@ -14,6 +14,7 @@ declare class VoxelMesh {
         v: number[][];
     }[];
     static fromChunk(chunk: VoxelChunk, geo: TGeo): void;
+    static fromChunkRange(chunk: VoxelChunk, geo: TGeo, minCoord: TVec3, maxCoord: TVec3): void;
     static appendFace(fIdx: number, scl: number, origin: TVec3, geo: TGeo): void;
 }
 export default VoxelMesh;

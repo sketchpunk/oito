@@ -12,7 +12,7 @@ class Ray{
     posAt( t: number, out ?: TVec3 ) : TVec3 {
         // RayVecLen * t + RayOrigin
         // also works lerp( RayOrigin, RayEnd, t )
-        out      = out || [ 0, 0, 0 ];
+        out      = out || new Vec3();
         out[ 0 ] = this.vecLen[ 0 ] * t + this.origin[ 0 ];
         out[ 1 ] = this.vecLen[ 1 ] * t + this.origin[ 1 ];
         out[ 2 ] = this.vecLen[ 2 ] * t + this.origin[ 2 ];
@@ -22,7 +22,7 @@ class Ray{
 
     /** Get position of the ray from distance from origin */
     distAt( len: number, out ?: TVec3 ) : TVec3 {
-        out      = out || [ 0, 0, 0 ];
+        out      = out || new Vec3();
         out[ 0 ] = this.dir[ 0 ] * len + this.origin[ 0 ];
         out[ 1 ] = this.dir[ 1 ] * len + this.origin[ 1 ];
         out[ 2 ] = this.dir[ 2 ] * len + this.origin[ 2 ];        

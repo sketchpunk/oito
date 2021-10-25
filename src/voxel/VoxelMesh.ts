@@ -100,6 +100,43 @@ class VoxelMesh{
         }
     }
 
+
+    static fromChunkRange( chunk: VoxelChunk, geo: TGeo, minCoord: TVec3, maxCoord: TVec3 ): void{
+        const cells = chunk.getStateArrayRef();
+        if( !cells ) return;
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        const coord = [ 0, 0, 0 ];
+        const csize = chunk.cellSize;
+
+        const yIdx  = chunk.xzCount;
+        const zIdx  = chunk.dimension[ 0 ];
+        const xMax  = chunk.dimension[ 0 ] - 1;
+        const yMax  = chunk.dimension[ 1 ] - 1;
+        const zMax  = chunk.dimension[ 2 ] - 1;
+
+        const bMin  = new Vec3();
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        for( let i=0; i < cells.length; i++ ){
+            if( cells[ i ] == 0 ) continue; // If Cell is Empty, Skip
+
+            chunk.idxCoord( i, coord );
+            if( coord[ 0 ] < minCoord[ 0 ] || coord[ 0 ] > maxCoord[ 0 ] ) continue;
+            if( coord[ 1 ] < minCoord[ 1 ] || coord[ 0 ] > maxCoord[ 1 ] ) continue;
+            if( coord[ 2 ] < minCoord[ 2 ] || coord[ 0 ] > maxCoord[ 2 ] ) continue;
+
+            chunk.coordMinBound( coord, bMin );
+            if( cells[ i - 1 ]    === 0 || coord[ 0 ] === 0   ) this.appendFace( VoxelMesh.XN, csize, bMin, geo );
+            if( cells[ i + 1 ]    === 0 || coord[ 0 ] >= xMax ) this.appendFace( VoxelMesh.XP, csize, bMin, geo );
+            if( cells[ i - zIdx ] === 0 || coord[ 2 ] === 0 )   this.appendFace( VoxelMesh.ZN, csize, bMin, geo );
+            if( cells[ i + zIdx ] === 0 || coord[ 2 ] >= zMax ) this.appendFace( VoxelMesh.ZP, csize, bMin, geo );
+            if( cells[ i - yIdx ] === 0 || coord[ 1 ] === 0 )   this.appendFace( VoxelMesh.YN, csize, bMin, geo );
+            if( cells[ i + yIdx ] === 0 || coord[ 1 ] >= yMax ) this.appendFace( VoxelMesh.YP, csize, bMin, geo );
+        }
+    }
+    
+
     static appendFace( fIdx: number, scl: number, origin: TVec3, geo: TGeo ): void{
         const face = VoxelMesh.FACES[ fIdx ];
         const vIdx = geo.vertices.length / 3;

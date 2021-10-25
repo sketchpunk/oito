@@ -40,18 +40,45 @@ class VoxelChunk {
         this._buildStateArray();
         return this;
     }
+    /** Create a Chunk Boundary based on how many cells are needed and its size, plus the origin point optional */
+    asAxisBlock(cellSize, xCnt, yCnt, zCnt, origin) {
+        this.cellSize = cellSize;
+        this.dimension.xyz(xCnt, yCnt, zCnt);
+        if (origin)
+            this.minBound.copy(origin);
+        else
+            this.minBound.xyz(0, 0, 0);
+        const mx = cellSize * xCnt;
+        const my = cellSize * yCnt;
+        const mz = cellSize * zCnt;
+        this.maxBound
+            .xyz(mx, my, mz)
+            .add(this.minBound);
+        this.xzCount = this.dimension[0] * this.dimension[2];
+        return this;
+    }
     _buildStateArray() {
         this._cellState = new Uint8Array(this.dimension.x * this.dimension.z * this.dimension.y);
     }
     //#endregion ////////////////////////////////////////////////////////////
     //#region SETTERS / GETTERS
-    getStateArrayRef() { return this._cellState; }
+    get cellCount() { return (this._cellState) ? this._cellState.length : 0; }
+    getStateArrayRef() {
+        return this._cellState;
+    }
     setState(x, y, z, isOn) {
         if (this._cellState) {
             const idx = this.coordIdx(x, y, z);
             this._cellState[idx] = (isOn) ? 1 : 0;
         }
         return this;
+    }
+    getState(x, y, z) {
+        if (this._cellState) {
+            const idx = this.coordIdx(x, y, z);
+            return (this._cellState[idx] == 1);
+        }
+        return false;
     }
     resetState() {
         if (this._cellState) {
@@ -61,6 +88,16 @@ class VoxelChunk {
         }
         return this;
     }
+    //#endregion
+    //#region USER DATA
+    /*
+    prepareDataSpace(): this{
+        if( this._cellState && !this._cellData ){
+            this._cellData = new Array( this._cellState.length );
+        }
+        return this;
+    }
+    */
     //#endregion
     //#region COORDINATE MATH
     /** Using Voxel Coordinates, Gets the Cell Array Index */

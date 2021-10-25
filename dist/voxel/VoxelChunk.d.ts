@@ -22,9 +22,13 @@ declare class VoxelChunk {
     setCellSize(n: number): this;
     /** Compute a Min/Max Chunk Boundary that fits over another bounds by using cell size */
     fitBound(bMin: TVec3, bMax: TVec3): this;
+    /** Create a Chunk Boundary based on how many cells are needed and its size, plus the origin point optional */
+    asAxisBlock(cellSize: number, xCnt: number, yCnt: number, zCnt: number, origin?: TVec3): this;
     _buildStateArray(): void;
+    get cellCount(): number;
     getStateArrayRef(): Uint8Array | null;
     setState(x: number, y: number, z: number, isOn: boolean): this;
+    getState(x: number, y: number, z: number): boolean;
     resetState(): this;
     /** Using Voxel Coordinates, Gets the Cell Array Index */
     coordIdx(x: number, y: number, z: number): number;

@@ -64,6 +64,26 @@ class VoxelChunk{
         return this;
     }
 
+    /** Create a Chunk Boundary based on how many cells are needed and its size, plus the origin point optional */
+    asAxisBlock( cellSize: number, xCnt:number, yCnt:number, zCnt:number, origin ?: TVec3 ): this{
+        this.cellSize = cellSize;
+        this.dimension.xyz( xCnt, yCnt, zCnt );
+
+        if( origin ) this.minBound.copy( origin );
+        else         this.minBound.xyz( 0, 0, 0 );
+
+        const mx = cellSize * xCnt;
+        const my = cellSize * yCnt;
+        const mz = cellSize * zCnt;
+        this.maxBound
+            .xyz( mx, my, mz )
+            .add( this.minBound );
+
+        this.xzCount = this.dimension[0] * this.dimension[2];
+
+        return this;
+    }
+
     _buildStateArray(): void{
         this._cellState = new Uint8Array( this.dimension.x * this.dimension.z * this.dimension.y );
     }
@@ -71,7 +91,11 @@ class VoxelChunk{
     //#endregion ////////////////////////////////////////////////////////////
 
     //#region SETTERS / GETTERS
-    getStateArrayRef(){ return this._cellState; }
+    get cellCount():number { return ( this._cellState )? this._cellState.length : 0; }
+
+    getStateArrayRef(): Uint8Array | null { 
+        return this._cellState;
+    }
 
     setState( x:number, y:number, z:number, isOn: boolean ): this{
         if( this._cellState ){
@@ -81,6 +105,14 @@ class VoxelChunk{
         return this;
     }
 
+    getState( x:number, y:number, z:number ): boolean{
+        if( this._cellState ){
+            const idx = this.coordIdx( x, y, z );
+            return ( this._cellState[ idx ] == 1 );
+        }
+        return false;
+    }
+
     resetState(): this{
         if( this._cellState ){
             let i;
@@ -88,6 +120,17 @@ class VoxelChunk{
         }
         return this;
     }
+    //#endregion
+
+    //#region USER DATA
+        /*
+        prepareDataSpace(): this{
+            if( this._cellState && !this._cellData ){
+                this._cellData = new Array( this._cellState.length );
+            }
+            return this;
+        }
+        */
     //#endregion
 
     //#region COORDINATE MATH
