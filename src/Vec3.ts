@@ -3,6 +3,7 @@ class Vec3 extends Float32Array{
     //#region STATIC VALUES
     static BYTESIZE = 3 * Float32Array.BYTES_PER_ELEMENT;
 
+    static AXIS     = [ [1,0,0], [0,1,0], [0,0,1] ];
     static UP       = [  0,  1,  0 ];
     static DOWN     = [  0, -1,  0 ];
     static LEFT     = [ -1,  0,  0 ];

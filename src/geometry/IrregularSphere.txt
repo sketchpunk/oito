@@ -1,0 +1,509 @@
+// Irregular relaxed icosphere grid
+// https://pastebin.com/jVzeZNy1
+// https://twitter.com/Calneon/status/1450774728021626885
+
+protected override void CreateInternal()
+{
+    // Create base set of verts from which all tris are made
+    float t = (1.0f + Mathf.Sqrt(5.0f)) / 2.0f;
+    _verts.Add(new Vector3(-1, -t, 0));
+    _verts.Add(new Vector3(1, -t, 0));
+    _verts.Add(new Vector3(-1, t, 0));
+    _verts.Add(new Vector3(1, t, 0));
+    _verts.Add(new Vector3(0, 1, t));
+    _verts.Add(new Vector3(0, -1, t));
+    _verts.Add(new Vector3(0, 1, -t));
+    _verts.Add(new Vector3(0, -1, -t));
+    _verts.Add(new Vector3(t, 0, -1));
+    _verts.Add(new Vector3(t, 0, 1));
+    _verts.Add(new Vector3(-t, 0, -1));
+    _verts.Add(new Vector3(-t, 0, 1));
+ 
+    // Create base tris for the icosphere
+    _quads.Add(Poly.Create(new int[] { 5, 11, 0}));
+    _quads.Add(Poly.Create(new int[] { 1, 5, 0 }));
+    _quads.Add(Poly.Create(new int[] { 7, 1, 0 }));
+    _quads.Add(Poly.Create(new int[] { 10, 7, 0 }));
+    _quads.Add(Poly.Create(new int[] { 11, 10, 0 }));
+ 
+    _quads.Add(Poly.Create(new int[] { 9, 5, 1 }));
+    _quads.Add(Poly.Create(new int[] { 4, 11, 5 }));
+    _quads.Add(Poly.Create(new int[] { 2, 10, 11 }));
+    _quads.Add(Poly.Create(new int[] { 6, 7, 10 }));
+    _quads.Add(Poly.Create(new int[] { 8, 1, 7 }));
+ 
+    _quads.Add(Poly.Create(new int[] { 4, 9, 3 }));
+    _quads.Add(Poly.Create(new int[] { 2, 4, 3 }));
+    _quads.Add(Poly.Create(new int[] { 6, 2, 3 }));
+    _quads.Add(Poly.Create(new int[] { 8, 6, 3 }));
+    _quads.Add(Poly.Create(new int[] { 9, 8, 3 }));
+ 
+    _quads.Add(Poly.Create(new int[] { 5, 9, 4 }));
+    _quads.Add(Poly.Create(new int[] { 11, 4, 2 }));
+    _quads.Add(Poly.Create(new int[] { 10, 2, 6 }));
+    _quads.Add(Poly.Create(new int[] { 7, 6, 8 }));
+    _quads.Add(Poly.Create(new int[] { 1, 8, 9 }));
+ 
+    // At this stage we connect up neighbors, and we need to remember update neighbors as 
+    // we modify the icosphere since calculating neighbors again later will be expensive
+    foreach(Poly t1 in _quads)
+    {
+        // To get a tri's neighbors, find all other tris that share two verts with this tri
+        foreach (Poly t2 in _quads)
+        {
+            if (t1 == t2) continue;
+ 
+            int sharedCount = 0;
+            foreach (int v1 in t1.verts)
+            {
+                foreach (int v2 in t2.verts)
+                {
+                    if (v1 == v2)
+                        sharedCount += 1;
+                }
+            }
+            if (sharedCount >= 2)
+                t1.neighbors.Add(t2);
+        }
+        if (t1.neighbors.Count != 3)
+        {
+            Debug.LogError("Error in neighbor calculation #1.");
+        }
+    }
+ 
+    // This is where we subdivide the original icosphere as many times as we want
+    for (int i = 0; i < Subdivisions; i++)
+    {
+        List<Poly> newTris = new List<Poly>();
+        foreach (Poly tri in _quads)
+        {
+            // Split each tri into 4
+            int a = AddMiddleVert(tri.verts[0], tri.verts[1]);
+            int b = AddMiddleVert(tri.verts[1], tri.verts[2]);
+            int c = AddMiddleVert(tri.verts[2], tri.verts[0]);
+ 
+            Poly newMidTri = AddTriangle(a, b, c, newTris);
+            List<Poly> triforce = new List<Poly>();
+            triforce.Add(AddTriangle(tri.verts[0], a, c, newTris));
+            triforce.Add(AddTriangle(tri.verts[1], b, a, newTris));
+            triforce.Add(AddTriangle(tri.verts[2], c, b, newTris));
+ 
+            // Update neighbors on the new tris
+            // We know the 3 neighbors for the middle tri
+            newMidTri.neighbors.Add(triforce[0]);
+            newMidTri.neighbors.Add(triforce[1]);
+            newMidTri.neighbors.Add(triforce[2]);
+ 
+            // The others are a bit more complicated. we know we're neighbored to the middle tri
+            triforce[0].neighbors.Add(newMidTri);
+            triforce[1].neighbors.Add(newMidTri);
+            triforce[2].neighbors.Add(newMidTri);
+ 
+            // Other neighbors are in other parent triangles
+            foreach (Poly t1 in triforce)
+            {
+                foreach (Poly n in tri.neighbors)
+                {
+                    foreach (Poly t2 in n.children)
+                    {
+                        // Search neighbor children for tris that match 2 verts in our children
+                        if (t1.IsAdjacent(t2))
+                        {
+                            // add to our new tri
+                            t1.neighbors.Add(t2);
+                            // also add our new tri to neighbor
+                            t2.neighbors.Add(t1);
+                        }
+                    } 
+                }
+                if (t1.neighbors.Count > 3)
+                    Debug.LogError("Tri has too many neighbors.");
+            }
+            // Add our new tris as children
+            tri.children.Add(triforce[0]);
+            tri.children.Add(triforce[1]);
+            tri.children.Add(triforce[2]);
+            tri.children.Add(newMidTri);
+        }
+        _quads = newTris;
+    }
+ 
+    // Check neighbors are set correctly
+    if (_doChecks)
+    {
+        foreach (Poly tri in _quads)
+        {
+            foreach (Poly n in tri.neighbors)
+            {
+                if (!tri.IsAdjacent(n))
+                    Debug.LogError("Error in neighbor calculation #2.");
+            }
+ 
+            if (tri.neighbors.Count != 3)
+                Debug.LogError("Error in neighbor calculation #2.");
+        }
+    }
+ 
+    // We're now going to remove edges randomly so we get a grid of quads and tris
+    List<Vector2Int> usedEdges = new List<Vector2Int>();
+    List<Poly> polys = new List<Poly>();
+    foreach (Poly tri in _quads)
+    {
+        bool cont = false;
+        foreach (Poly poly in polys)
+        {
+            if (poly.verts.Length == 4)
+            {
+                if ((poly.t1 != null && poly.t1 == tri) || (poly.t2 != null && poly.t2 == tri))
+                {
+                    cont = true;
+                    break;
+                }
+            }
+        }
+        if (cont)
+            continue;
+ 
+        List<Vector2Int> edges = new List<Vector2Int>();
+        if (!usedEdges.Contains(Poly.GetEdgeID(new Vector2Int(tri.verts[0], tri.verts[1]))))
+            edges.Add(new Vector2Int(tri.verts[0], tri.verts[1]));
+        if (!usedEdges.Contains(Poly.GetEdgeID(new Vector2Int(tri.verts[1], tri.verts[2]))))
+            edges.Add(new Vector2Int(tri.verts[1], tri.verts[2]));
+        if (!usedEdges.Contains(Poly.GetEdgeID(new Vector2Int(tri.verts[2], tri.verts[0]))))
+            edges.Add(new Vector2Int(tri.verts[2], tri.verts[0]));
+ 
+        if (edges.Count == 0)
+        {
+            polys.Add(tri);
+            continue;
+        }
+ 
+        int randEdgeIdx = Random.Range(0, edges.Count - 1);
+        Vector2Int randEdge = edges[randEdgeIdx];
+ 
+        // Find the tri opposite the edge
+        // This will be the other tri in tris that matches the two indices in the edge
+        Poly opposite = null;
+        for (int j = 0; j < tri.neighbors.Count; j++)
+        {   
+            if (tri.neighbors[j].HasEdge(randEdge))
+            {
+                opposite = tri.neighbors[j];
+                break;
+            }
+        }
+        if (opposite == null)
+            return;
+ 
+        List<int> oppositeVerts = new List<int> { opposite.verts[0], opposite.verts[1], opposite.verts[2] };
+        oppositeVerts.Remove(randEdge.x);
+        oppositeVerts.Remove(randEdge.y);
+        int oppositeVert = oppositeVerts[0];
+ 
+        // Merge the two tris between the edge.
+        int[] quadVerts = new int[4];
+        int idx = 0;
+        for (int j = 0; j < 3; j++)
+        {
+            Vector2Int edge = new Vector2Int(tri.verts[j], tri.verts[(j + 1) % 3]);
+            if (edge == randEdge)
+            { 
+                quadVerts[idx++] = oppositeVert;
+                quadVerts[idx++] = tri.verts[(j + 1) % 3];
+                quadVerts[idx++] = tri.verts[(j + 2) % 3];
+                quadVerts[idx++] = tri.verts[(j + 3) % 3];
+            }
+        }
+ 
+        Poly quad = Poly.Create(quadVerts);
+        quad.t1 = tri;
+        quad.t2 = opposite;
+ 
+        // Mark the 6 edges as used so that we don't further break up this poly (we don't want
+        // anything with more that 4 verts.
+        // add and test in ascending order so we only have to add an edge once
+        usedEdges.Add(Poly.GetEdgeID(new Vector2Int(tri.verts[0], tri.verts[1])));
+        usedEdges.Add(Poly.GetEdgeID(new Vector2Int(tri.verts[1], tri.verts[2])));
+        usedEdges.Add(Poly.GetEdgeID(new Vector2Int(tri.verts[2], tri.verts[0])));
+        usedEdges.Add(Poly.GetEdgeID(new Vector2Int(opposite.verts[0], opposite.verts[1])));
+        usedEdges.Add(Poly.GetEdgeID(new Vector2Int(opposite.verts[1], opposite.verts[2])));
+        usedEdges.Add(Poly.GetEdgeID(new Vector2Int(opposite.verts[2], opposite.verts[0])));
+ 
+        // Setup neighbors
+        for (int n = 0; n < tri.neighbors.Count; n++)
+        {
+            Poly neighbor = tri.neighbors[n];
+            if (neighbor == opposite)
+                continue;
+ 
+            quad.neighbors.Add(neighbor);
+            neighbor.neighbors.Remove(tri);
+            neighbor.neighbors.Add(quad);
+        }
+ 
+        for (int n = 0; n < opposite.neighbors.Count; n++)
+        {
+            Poly neighbor = opposite.neighbors[n];
+            if (neighbor == tri)
+                continue;
+ 
+            quad.neighbors.Add(neighbor);
+            neighbor.neighbors.Remove(opposite);
+            neighbor.neighbors.Add(quad);
+        }
+ 
+        polys.Add(quad);
+    }
+ 
+    // Check neighbors are set correctly.
+    foreach (Poly tri in polys)
+    {
+        foreach (Poly n in tri.neighbors)
+        {
+            int sharedCount = 0;
+            foreach (int v1 in tri.verts)
+                foreach (int v2 in n.verts)
+                    if (v1 == v2)
+                        sharedCount++;
+ 
+            if (sharedCount != 2)
+                Debug.LogError("Error in neighbor calculation #3.");
+        }
+ 
+        if (tri.neighbors.Count != tri.verts.Length)
+            Debug.LogError("Error in neighbor calculation #3.");
+    }
+ 
+    // Next, split each quad into 4, and each tri into 3 (to make quads)
+    List<Poly> newPolys = new List<Poly>();
+    foreach (Poly poly in polys)
+    {
+        if (poly.verts.Length == 4)
+        {
+            Poly parentQuad = poly;
+            int a = AddMiddleVert(parentQuad.verts[0], parentQuad.verts[1]);
+            int b = AddMiddleVert(parentQuad.verts[1], parentQuad.verts[2]);
+            int c = AddMiddleVert(parentQuad.verts[2], parentQuad.verts[3]);
+            int d = AddMiddleVert(parentQuad.verts[3], parentQuad.verts[0]);
+            int m = AddMiddleVert4(parentQuad.verts[0], parentQuad.verts[1], parentQuad.verts[2], parentQuad.verts[3]);
+ 
+            Poly[] quads = new Poly[4] { Poly.Create(new int[] { parentQuad.verts[0], a, m, d }),
+                Poly.Create(new int[] { parentQuad.verts[1], b, m, a }),
+                Poly.Create(new int[] { parentQuad.verts[2], c, m, b }),
+                Poly.Create(new int[] { parentQuad.verts[3], d, m, c }) };
+ 
+            newPolys.Add(quads[0]);
+            newPolys.Add(quads[1]);
+            newPolys.Add(quads[2]);
+            newPolys.Add(quads[3]);
+ 
+            quads[0].neighbors = new List<Poly> { quads[3], quads[1] };
+            quads[1].neighbors = new List<Poly> { quads[0], quads[2] };
+            quads[2].neighbors = new List<Poly> { quads[1], quads[3] };
+            quads[3].neighbors = new List<Poly> { quads[2], quads[0] };
+ 
+            // Setup surrounding neighbors
+            foreach (Poly q1 in quads)
+            {
+                foreach (Poly n in parentQuad.neighbors)
+                {
+                    foreach (Poly q2 in n.children)
+                    {
+                        // For each possible neighbor type, find those that share 2 verts
+                        int sharedCount = 0;
+                        foreach (int v1 in q1.verts)
+                            foreach (int v2 in q2.verts)
+                                if (v1 == v2)
+                                    sharedCount++;
+ 
+                        if (sharedCount == 2)
+                        {
+                            // Add to our new tri
+                            q1.neighbors.Add(q2);
+                            // Also add our new tri to neighbor
+                            q2.neighbors.Add(q1);
+                        }
+                    }
+                }
+                if (q1.neighbors.Count > 4)
+                {
+                    Debug.LogError("Quad has too many neighbors.");
+                    return;
+                }
+            }
+            poly.children = new List<Poly> { quads[0], quads[1], quads[2], quads[3] };
+        }
+        else if (poly.verts.Length == 3)
+        {
+            Poly parentTri = poly;
+            int a = AddMiddleVert(parentTri.verts[0], parentTri.verts[1]);
+            int b = AddMiddleVert(parentTri.verts[1], parentTri.verts[2]);
+            int c = AddMiddleVert(parentTri.verts[2], parentTri.verts[0]);
+            int m = AddMiddleVert3(parentTri.verts[0], parentTri.verts[1], parentTri.verts[2]);
+ 
+            Poly[] quads = new Poly[3] { Poly.Create(new int[] { parentTri.verts[0], a, m, c }),
+                Poly.Create(new int[] { parentTri.verts[1], b, m, a }),
+                Poly.Create(new int[] { parentTri.verts[2], c, m, b }) };
+ 
+            newPolys.Add(quads[0]);
+            newPolys.Add(quads[1]);
+            newPolys.Add(quads[2]);
+ 
+            quads[0].neighbors = new List<Poly> { quads[1], quads[2] };
+            quads[1].neighbors = new List<Poly> { quads[0], quads[2] };
+            quads[2].neighbors = new List<Poly> { quads[0], quads[1] };
+ 
+            // Setup surrounding neighbors
+            foreach (Poly q1 in quads)
+            {
+                foreach (Poly n in parentTri.neighbors)
+                {
+                    foreach (Poly q2 in n.children)
+                    {
+                        // For each possible neighbor type, find those that share 2 verts
+                        int sharedCount = 0;
+                        foreach (int v1 in q1.verts)
+                            foreach (int v2 in q2.verts)
+                                if (v1 == v2)
+                                    sharedCount++;
+ 
+                        if (sharedCount == 2)
+                        {
+                            // Add to our new tri
+                            q1.neighbors.Add(q2);
+                            // Also add our new tri to neighbor
+                            q2.neighbors.Add(q1);
+                        }
+                    }
+                }
+                if (q1.neighbors.Count > 4)
+                {
+                    Debug.LogError("Quad has too many neighbors.");
+                    return;
+                }
+            }
+            poly.children = new List<Poly> { quads[0], quads[1], quads[2] };
+        }
+        else
+        {
+            Debug.LogError("Malformed poly.");
+        }
+    }
+    polys = newPolys;
+ 
+    // Check neighbors are set correctly.
+    if (_doChecks)
+    {
+        foreach (Poly poly in polys)
+        {
+            if (poly.neighbors.Count != poly.verts.Length)
+                Debug.LogError("Error in neighbor calculation #3.");
+        }
+    }
+ 
+    // Fix neighbor winding so that the the first neighbor is always the one adjacent to v[0] and v[1] etc.
+    foreach (Poly poly in polys)
+    {
+        List<Poly> newNeighbors = new List<Poly>();
+        for (int v = 0; v < 4; v++)
+        {
+            foreach (Poly n in poly.neighbors)
+            {
+                if (n.HasVert(poly.verts[v]) && n.HasVert(poly.verts[(v + 1) % 4]))
+                {
+                    newNeighbors.Add(n);
+                    break;
+                }
+            }
+        }
+        poly.neighbors = newNeighbors;
+    }
+ 
+    _quads = polys;
+    for (int i = 0; i < _verts.Count; i++)
+    {
+        _verts[i] = _verts[i].normalized * Radius;
+    }
+    Relax(_quads);
+}
+ 
+int AddMiddleVert(int v1, int v2)
+{
+    Vector2Int key = new Vector2Int(Mathf.Min(v1, v2), Mathf.Max(v1, v2));
+    if (_middleVertCache.ContainsKey(key))
+        return _middleVertCache[key];
+ 
+    Vector3 middleVec = (_verts[v1] + _verts[v2]) / 2.0f;
+    _verts.Add(middleVec);
+    _middleVertCache[key] = _verts.Count - 1;
+    return _verts.Count - 1;
+}
+ 
+int AddMiddleVert3(int v1, int v2, int v3)
+{
+    Vector3 middleVec = (_verts[v1] + _verts[v2] + _verts[v3]) / 3.0f;
+    _verts.Add(middleVec);
+    return _verts.Count - 1;
+}
+ 
+int AddMiddleVert4(int v1, int v2, int v3, int v4)
+{
+    Vector3 middleVec = (_verts[v1] + _verts[v2] + _verts[v3] + _verts[v4]) / 4.0f;
+    _verts.Add(middleVec);
+    return _verts.Count - 1;
+}
+ 
+Poly AddTriangle(int v1, int v2, int v3, List<Poly> list)
+{
+    Poly newTri = Poly.Create(new int[] { v1, v2, v3 });
+    list.Add(newTri);
+    return newTri;
+}
+ 
+protected void Relax(List<Poly> polys)
+{
+    int iterations = _relaxIterations;
+    while (iterations > 0)
+    {
+        iterations -= 1;
+        List<Vector3> forces = new List<Vector3>();
+        foreach (Vector3 vert in _verts)
+        {
+            forces.Add(new Vector3());
+        }
+ 
+        foreach (Poly poly in polys)
+        {
+            Vector3 force = new Vector3();
+ 
+            // Get centroid
+            Vector3 centre = new Vector3();
+            foreach (int v in poly.verts)
+            {
+                centre += _verts[v];
+            }
+            centre /= 4.0f;
+ 
+            // Collect forces
+            foreach (int v in poly.verts)
+            {
+                force += _verts[v] - centre;
+                force = Quaternion.AngleAxis(90.0f, centre) * force;
+            }
+            force /= 4.0f;
+ 
+            // Store forces
+            foreach (int v in poly.verts)
+            {
+                forces[v] += centre + force - _verts[v];
+                force = Quaternion.AngleAxis(90.0f, centre) * force;
+            }
+        }
+ 
+        // Apply all accumulated forces on every vert
+        for (int i = 0; i < _verts.Count; i++)
+        {
+            _verts[i] = (_verts[i] + forces[i] * _relaxDelta).normalized * Radius;
+        }
+    }
+}

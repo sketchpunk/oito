@@ -1,0 +1,299 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+    
+import Starter, { THREE }  from "../lib/starter.js";
+import PointsMesh          from "../lib/PointsMesh.js";
+import LinesMesh           from "../lib/LinesMesh.js";
+
+import Vec3                from "../../dist/Vec3.js";
+import Quat                from "../../dist/Quat.js";
+import Intersect           from "../../dist/geometry/Intersect.js";
+
+import Gltf                from "../../dist/misc/Gltf2.js";
+
+import VoxelChunk          from "../../dist/voxel/VoxelChunk.js";
+//import Voxelizer           from "../../dist/voxel/Voxelizer.js";
+import VoxelizerVol           from "../../dist/voxel/VoxelizerVol.js";
+import VoxelMesh           from "../../dist/voxel/VoxelMesh.js";
+
+/*
+https://github.com/meshonline/Surface-Heat-Diffuse-Skinning
+https://github.com/Eisenwave/obj2voxel
+https://github.com/mattatz/unity-voxel
+https://www.gamedeveloper.com/programming/triangle-mesh-voxelization
+https://bronsonzgeb.com/index.php/2021/06/26/volumetric-heat-diffusion-for-automatic-mesh-skinning/
+https://github.com/tunabrain/sparse-voxel-octrees
+https://www.youtube.com/watch?v=-RpqbC5-Z0E  
+http://blog.wolfire.com/2009/11/volumetric-heat-diffusion-skinning/  
+http://blog.wolfire.com/2009/11/Triangle-mesh-voxelization 
+https://0fps.net/2012/06/30/meshing-in-a-minecraft-game/
+https://www.gedge.ca/dev/2014/08/17/greedy-voxel-meshing
+*/
+
+let App, pnt, ln
+let gChunk, gVox, gVMesh;
+
+window.addEventListener( "load", async _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:true, grid:true } );
+    App.set_camera( 0, 20, 2, [0,0.1,0] ).render();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    pnt = new PointsMesh( 2500 );
+    App.add( pnt.mesh );
+
+    ln = new LinesMesh( 2500 );
+    App.add( ln.mesh );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    let gltf = await Gltf.fetch( '../_meshes/war_sword/war_sword.gltf' );
+    //let gltf = await Gltf.fetch( './suzanne_hpoly.gltf' );
+    let prim = gltf.getMesh().primitives[ 0 ];
+
+    let ggeo     = new THREE.BufferGeometry();
+    ggeo.setIndex( new THREE.BufferAttribute( prim.indices.data, 1 ) );
+    ggeo.setAttribute( 'position',   new THREE.BufferAttribute( prim.position.data, prim.position.componentLen ) );
+    //ggeo.setAttribute( 'normal',     new THREE.BufferAttribute( prim.normal.data, prim.normal.componentLen ) );
+
+    ggeo.computeBoundingBox();
+    let mesh    = new THREE.Mesh( ggeo, new THREE.MeshPhongMaterial( { flatShading:true } ) );
+    
+    //mesh.position.x = 0.5;
+    App.add( mesh );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //gVox   = new Voxelizer();
+    gVox   = new VoxelizerVol();
+    gChunk = new VoxelChunk( 0.05 );
+    gChunk.fitBound( ggeo.boundingBox.min.toArray(), ggeo.boundingBox.max.toArray() );
+
+    ln.box( gChunk.minBound, gChunk.maxBound, 0x00ffff );
+
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    gVox.fromGeometry( gChunk, prim.position.data, prim.indices.data );
+
+
+    const v = new Vec3();
+    for( const itm of gChunk.iterAllCells() ){
+        if( itm.isOn ) ln.box( itm.min, itm.max );
+
+        //if( itm.isOn && itm.coord[0] > -1 && itm.coord[0] < 100 ){ 
+        //    v.fromLerp( itm.min, itm.max, 0.5 );
+        //    pnt.add( v, 0x00ffff, 1, 1 );
+        //}
+
+    }
+    /*
+    const geo = { vertices:[], normals:[], indices :[], texcoord:[] };
+    VoxelMesh.fromChunkRange( gChunk, geo, [6,0,0], [100,100,100] );
+    
+    let bgeo     = new THREE.BufferGeometry();
+    bgeo.setIndex( new THREE.BufferAttribute( new Uint32Array( geo.indices ), 1 ) );
+    bgeo.setAttribute( 'position',   new THREE.BufferAttribute( new Float32Array(geo.vertices), 3 ) );
+    bgeo.setAttribute( 'normal',     new THREE.BufferAttribute( new Float32Array(geo.normals), 3 ) );
+
+    let meshx    = new THREE.Mesh( bgeo, new THREE.MeshPhongMaterial( {color:0xff0000, side:THREE.DoubleSide, opacity: 0.5, transparent: true, }) );
+    App.add( meshx );
+    */
+}); 
+
+
+class CellData{
+    constructor( x, y, z ){
+        this.norm = new Vec3();
+        this.hasBackface    = false;
+        this.hasFrontface   = false;
+    }
+
+    setNorm( n ){
+        this.norm.add( n );
+
+        const dot = Vec3.dot( n, Vec3.FORWARD );
+        if( dot >= 0 ) this.hasFrontface = true;
+        else           this.hasBackface  = true;
+
+    }
+
+    static genKey( x, y, z ){ return x + '_' + y + '_' + z; }
+}
+
+//#region IMPORTS
+class Voxelizer {
+    constructor() {
+        //#region MAIN
+        this.a = new Vec3(); // Triangle Points
+        this.b = new Vec3();
+        this.c = new Vec3();
+        this.vmin = new Vec3(); // Triangle Bounding Box
+        this.vmax = new Vec3();
+        this.minCoord = new Vec3(); // Min/Max Voxel Coordinates
+        this.maxCoord = new Vec3();
+        this.minCell = new Vec3(); // Min/Max Voxel Cell Bounds
+        this.maxCell = new Vec3();
+
+        this.v0 = new Vec3();
+        this.v1 = new Vec3();
+
+        this.data = new Map();
+    }
+    //#endregion
+    fromGeometry(chunk, vertices, indices) {
+        this.data.clear();
+
+        let i;
+        for (i = 0; i < indices.length; i += 3) {
+            this.setTriVoxIntersect(indices[i], indices[i + 1], indices[i + 2], vertices, chunk);
+        }
+
+        this.fillVolume( chunk );
+    }
+
+    setTriVoxIntersect(ia, ib, ic, vertices, chunk) {
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Get the Vertices
+        const a = this.a.fromBuf(vertices, ia * 3);
+        const b = this.b.fromBuf(vertices, ib * 3);
+        const c = this.c.fromBuf(vertices, ic * 3);
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Compute its bounding Box
+        const vmin = this.vmin.copy(a).min(b).min(c);
+        const vmax = this.vmax.copy(a).max(b).max(c);
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Compute the Voxel Coordinates of the area
+        // the triangle takes up with its bounding box.
+        chunk.posCoord(vmin, this.minCoord);
+        chunk.posCoord(vmax, this.maxCoord);
+        const [minx, miny, minz] = this.minCoord;
+        const [maxx, maxy, maxz] = this.maxCoord;
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Loop every voxel the triangle might be in and do
+        // an intersection test to see if the triangle is truely
+        // in the voxel cell.
+        let x, y, z, isHit, idx, key, cell, norm = new Vec3();
+        for (y = miny; y <= maxy; y++) {
+            for (z = minz; z <= maxz; z++) {
+                for (x = minx; x <= maxx; x++) {
+                    chunk.coordBound([x, y, z], this.minCell, this.maxCell); // Get Cell Boundary Position
+                    isHit = Intersect.triangle_aabb(a, b, c, this.minCell, this.maxCell); // Test Triangle-AABB Intersection
+                    if (isHit){
+                        
+                        chunk.setState(x, y, z, true); // If hit, set Cell as ON.
+
+                        key     = CellData.genKey( x, y, z );
+                        cell    = this.data.get( key );
+                        if( !cell ){
+                            cell = new CellData();
+                            this.data.set( key, cell );
+                        }
+
+                        this.getTriNorm( a, b, c, norm );
+                        //cell.norm.add( norm );
+                        cell.setNorm( norm );
+                    }
+                }
+            }
+        }
+    }
+
+    getTriNorm( a, b, c, out ){
+        this.v0.fromSub( b, a );
+        this.v1.fromSub( c, a );
+        out.fromCross( this.v0, this.v1 ).norm();
+    }
+
+    fillVolume( chunk ){
+        const [ mx, my, mz ] = chunk.dimension;
+        let x, y, z, isOn, key, cell, dot, inner = false;
+
+        let min = new Vec3();
+        let max = new Vec3();
+        let mid = new Vec3();
+
+        console.log( mx, my, mz );
+
+        for( x=0; x < mx; x++ ){
+            for( y=0; y < my; y++ ){
+                
+                inner = false;
+                console.log( '---------------', x, y, z );
+
+                /*
+                This fill isn't perfect, there are a few false positives that happens in the back of the volume. 
+                Some back voxels might still trigger a "inner" state at the end. Possible solution is when a voxel
+                is found as an entry, scan ahead looking for an exit voxel. If it does exist then fill the in between
+                voxels. If a an entry is found but no exit, can skip them as the entry is most likely a falsey.
+
+                BUT, if using this for AutoSkinning, a few extra voxels turned on won't hurt things. The most
+                important thing is to have all the inner voxels filled. If there are hollow parts inside the voxel
+                volume, they can get in the way of doing heat traversal which will cause inaccurate heat values. Its
+                very important to be able to reach any shell voxel during heat traversal since those voxels are the ones
+                that actually contain vertices.
+                
+                Bad if vertices are unable to be assigned to a bone because the heat traverse
+                wasn't able to reach the voxel they exist in.
+                */
+
+                for( z=mz-1; z >= 0; z-- ){
+
+                    //chunk.coordBound( [x,y,z], min, max );
+                    //mid.fromLerp( min, max, 0.5 );
+                    //pnt.add( mid, 0x00ff00, 1.5 );
+                    
+
+                    console.log( '---', x, y, z );
+
+                    isOn = chunk.getState( x, y, z );
+                    if( isOn ){
+                        key     = CellData.genKey( x, y, z );
+                        cell    = this.data.get( key );
+                        if( !cell ) continue;
+
+                        dot     = Vec3.dot( cell.norm.norm(), Vec3.FORWARD );
+
+
+                        //ln.add( mid, cell.norm.add( mid ) );
+
+                        //dot     = Vec3.dot( cell.norm.norm(), Vec3.FORWARD );
+                        //inner   = ( dot > 0.2 );
+                        inner   = ( dot > -0.1 || ( cell.hasFrontface && !cell.hasBackface) );
+
+                        console.log( "inner", inner, "front", cell.hasFrontface, 'back', cell.hasBackface, dot );
+                    }else{
+
+                        if( inner && z != 0 ){ 
+                            
+                            //chunk.setState( x, y, z, true );
+
+                            chunk.coordBound( [x,y,z], min, max );
+                            mid.fromLerp( min, max, 0.5 );
+                            pnt.add( mid, 0xff0000, 0.8 );
+                        }
+
+                    }
+
+                    //if( !isOn ){
+                        //chunk.coordBound( [x,y,z], min, max );
+                        //mid.fromLerp( min, max, 0.5 );
+                        //pnt.add( mid, 0xff0000, 2 );
+                    //}
+
+                    //console.log( "--", x, y, z );
+
+                }
+
+                //return;
+            }
+        }
+
+
+    }
+}
+export default Voxelizer;
+
+
+// Triange / AABB Intersection, Following similar implementation
+// https://gist.github.com/yomotsu/d845f21e2e1eb49f647f
+// https://github.com/mrdoob/three.js/blob/master/src/math/Box3.js
+// https://github.com/mattatz/unity-voxel/blob/master/Assets/Packages/Voxelizer/Scripts/CPUVoxelizer.cs
+</script></bod4></html>
