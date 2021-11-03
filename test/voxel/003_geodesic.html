@@ -1,0 +1,501 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+    
+import Starter, { THREE }  from "../lib/starter.js";
+import PointsMesh          from "../lib/PointsMesh.js";
+import LinesMesh           from "../lib/LinesMesh.js";
+
+import Maths               from "../../dist/Maths.js";
+import Vec3                from "../../dist/Vec3.js";
+import Quat                from "../../dist/Quat.js";
+import Intersect           from "../../dist/geometry/Intersect.js";
+import Colour              from "../../dist/Colour.js";
+
+import Gltf                from "../../dist/misc/Gltf2.js";
+
+import VoxelChunk          from "../../dist/voxel/VoxelChunk.js";
+import VoxelizerVol        from "../../dist/voxel/VoxelizerVol.js";
+import VoxelMesh           from "../../dist/voxel/VoxelMesh.js";
+
+import Ray                 from "../../dist/ray/Ray.js";
+import VoxelRay            from "../../dist/voxel/VoxelRay.js";
+
+let App, pnt, ln
+let gChunk, gVox, gSkel, gMesh, gGeodesic;
+
+window.addEventListener( "load", async _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:true, grid:true } );
+    App.set_camera( 90, 10, 2.0, [0,0.2,0] ).render();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    pnt = new PointsMesh( 2500 );
+    App.add( pnt.mesh );
+
+    ln = new LinesMesh( 8000 );
+    App.add( ln.mesh );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    createSkeleton();
+    const prim = await loadModel();
+    //createMesh( prim );
+
+    //----------------------------------
+    gChunk = new VoxelChunk( 0.05 );
+    gChunk.fitBound( prim.position.boundMin, prim.position.boundMax );
+
+    ln.box( gChunk.minBound, gChunk.maxBound, 0x00ffff );
+    //ln.box( prim.position.boundMin, prim.position.boundMax, 0x00ff00 );
+
+    //----------------------------------
+    gVox   = new VoxelizerVol();
+    gVox.fromGeometry( gChunk, prim.position.data, prim.indices.data ); // Fill Voxel Cells based on Mesh Data
+
+
+    gGeodesic = new VoxelGeodesic()
+    gGeodesic.fromChunk( gChunk );
+    //showVoxelCells();
+    //createVoxelMesh();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //boneRaycast();
+    //getBoneVoxIntersects( gChunk );
+
+    crawlBoneVoxels( gChunk, gGeodesic );
+}); 
+
+
+//#region SETUP
+function createSkeleton(){
+    let b, bLen = 0.2;
+    const bones = [ new THREE.Bone() ];
+    bones[ 0 ].position.y = -0.2;
+
+    for( let i=1; i < 6; i++ ){
+        b = new THREE.Bone();
+        b.position.y = bLen;
+        bones[ i-1 ].add( b );
+        bones.push( b );
+    }
+
+    const skel     = new THREE.Skeleton( bones );
+    const boneview = new THREE.SkeletonHelper( bones[0] );
+    App.add( bones[0] );
+    App.add( boneview );
+
+    gSkel = skel
+}
+
+async function loadModel(){
+    let gltf = await Gltf.fetch( '../_meshes/war_sword/war_sword.gltf' );
+    let prim = gltf.getMesh().primitives[ 0 ];
+    return prim;
+}
+
+function createMesh( prim ){
+    let ggeo     = new THREE.BufferGeometry();
+    ggeo.setIndex( new THREE.BufferAttribute( prim.indices.data, 1 ) );
+    ggeo.setAttribute( 'position',   new THREE.BufferAttribute( prim.position.data, prim.position.componentLen ) );
+    ggeo.computeBoundingBox();
+
+    let mesh    = new THREE.Mesh( ggeo, new THREE.MeshPhongMaterial( { flatShading:true } ) );
+    //mesh.position.x = 0.5;
+    App.add( mesh );
+
+    gMesh = mesh;
+}
+
+function showVoxelCells(){
+    const v = new Vec3();
+    for( const itm of gChunk.iterAllCells() ){
+        if( itm.isOn ) ln.box( itm.min, itm.max );
+
+        //if( itm.isOn && itm.coord[0] > -1 && itm.coord[0] < 100 ){ 
+        //    v.fromLerp( itm.min, itm.max, 0.5 );
+        //    pnt.add( v, 0x00ffff, 1, 1 );
+        //}
+    }
+}
+
+function createVoxelMesh(){
+    const geo = { vertices:[], normals:[], indices :[], texcoord:[] };
+    VoxelMesh.fromChunkRange( gChunk, geo, [0,0,2], [100,100,100] );
+    
+    let bgeo     = new THREE.BufferGeometry();
+    bgeo.setIndex( new THREE.BufferAttribute( new Uint32Array( geo.indices ), 1 ) );
+    bgeo.setAttribute( 'position',   new THREE.BufferAttribute( new Float32Array(geo.vertices), 3 ) );
+    bgeo.setAttribute( 'normal',     new THREE.BufferAttribute( new Float32Array(geo.normals), 3 ) );
+
+    let mesh    = new THREE.Mesh( bgeo, new THREE.MeshPhongMaterial( {color:0xff0000, side:THREE.DoubleSide, opacity: 1.0, transparent: true, }) );
+    App.add( mesh );
+}
+//#endregion
+
+
+function getBones(){
+    const b    = gSkel.bones;
+    const bLen = gSkel.bones.length;
+    const rtn  = new Array();
+    
+    const v    = new THREE.Vector3();
+    const vv   = new THREE.Vector3();
+
+    for( let i=0; i < bLen-1; i++ ){
+        rtn.push({
+            idx      : i,
+            bone     : b[i],
+            origin   : b[i].getWorldPosition( v ).toArray(),
+            end      : b[i+1].getWorldPosition( vv ).toArray(),
+        });
+    }
+
+    return rtn;
+}
+
+function boneRaycast(){
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    const bones = getBones();
+    let b = bones[ 0 ];
+    //pnt.add( b.origin, 0x00ff00, 1.5 );
+    //pnt.add( b.end, 0xff0000, 1.5 );
+
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    const ray   = new Ray().fromEndPoints( b.origin, b.end );
+    const vray  = new VoxelRay();
+    
+    let ary = vray.fullIntersect( ray, gChunk );
+    let v = new Vec3();
+    for( let hit of ary ){
+        gChunk.coordMidPoint( hit.coord, v );
+        pnt.add( v, 0x00ff00, 1 );
+    }
+}
+
+function getBoneVoxIntersects( chunk ){
+    const bones = getBones();
+    const ray   = new Ray();
+    const vray  = new VoxelRay();
+    const out   = new Array();
+
+    let i, b, h, hits, coords;
+    for( i=0; i < bones.length; i++ ){
+        b = bones[ i ];
+        ray.fromEndPoints( b.origin, b.end );
+
+        hits = vray.fullIntersect( ray, chunk );
+        if( !hits || hits.length == 0 ) out.push( null );
+        else{
+            coords = new Array();
+            for( h of hits ){
+
+                // Only Save the Cells that are active
+                if( chunk.getState( h.coord ) ){        
+                    coords.push( h.coord.slice( 0 ) );
+                }
+
+            }
+            out.push( coords );
+        }
+    }
+
+    /*
+    let v = new Vec3();
+    let vv = new Vec3();
+    chunk.coordBound( [0, 0, 0], v, vv );
+
+    //pnt.add( v, 0x00ff00, 2 );
+    ln.box( v, vv, 0x00ff00 );
+
+    console.log( chunk.dimension );
+    */
+
+    return out;
+}
+
+function crawlBoneVoxels( chunk, geodes ){
+    const boneVoxels = getBoneVoxIntersects( chunk );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Set all Bone Voxels Intersects Distance to Zero.
+    let bone, bi, coord;
+    for( bi=0; bi < boneVoxels.length; bi++ ){
+        bone = boneVoxels[ bi ];
+        for( coord of bone ){
+            if( !geodes.setDistanceIfLower( coord, bi, 0 ) ){
+                console.warn( 'Setting Zero Distance didnt work for ', coord );
+            }
+        }
+
+        //break; // TODO REMOVE
+    }
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Process Voxel Queue
+
+    for( bi=0; bi < boneVoxels.length; bi++ ){
+        boneCrawl( bi, boneVoxels[ bi ], chunk, geodes );
+
+        //break; // TODO REMOVE
+    }
+
+    //viewBoneGeoWeight( 0 );
+    computeWeights( 1 );
+}
+
+function boneCrawl( boneIdx, initCoords, chunk, geodes ){
+    const queue = initCoords.slice( 0 );
+
+    let min = new Vec3();
+    let max = new Vec3();
+    let cell, neigh;
+    let cdist, ndist;
+    let coord;
+    let ncoord, neighbors;
+    let cpos;
+    let npos;
+
+    while( queue.length > 0 ){
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        coord       = queue.pop();
+        neighbors   = chunk.getActiveNeighbors( coord );
+        cdist       = geodes.getDistance( coord, boneIdx );
+        cpos        = geodes.getCellMidPoint( coord );
+
+        //console.log( "MAIN", coord, cdist );
+        //pnt.add( cpos, 0x00ff00, 0.5 );
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //chunk.coordBound( coord, min, max );
+        //ln.box( min, max, 0x00ff00 );
+
+        for( ncoord of neighbors ){
+            npos    = geodes.getCellMidPoint( ncoord );
+            ndist   = cdist + Vec3.len( cpos, npos );
+            //console.log( ncoord, cdist, ndist );
+            if( geodes.setDistanceIfLower( ncoord, boneIdx, ndist ) ){
+                queue.push( ncoord );
+                //console.log( "queue", ncoord );
+                //pnt.add( npos, 0x00ffff, 1 );
+            }else{
+                //pnt.add( npos, 0xff0000, 1 );
+            }
+
+            chunk.coordBound( ncoord, min, max );
+            //ln.box( min, max, 0x00ffff );
+            //break;
+        }
+
+        //break;
+    }
+    
+    //console.log( geodes );
+    //console.log( Vec3.len( chunk.minBound, chunk.maxBound ) );
+}
+
+
+function computeWeights( boneIdx ){
+    const maxDist = Vec3.len( gChunk.minBound, gChunk.maxBound );
+    const minDist = 0.00001; // Can't use Zero because of Weight equation, so need a min number.
+    const smooth  = 0.7;
+
+    let map, wgt;
+
+    let green = new Colour( 'green' );
+    let red   = new Colour( 'red' );
+    let blue  = new Colour( 'blue' );
+    let color = new Colour();
+
+    for( const cell of gGeodesic.cells.values() ){
+        
+        map = cell.computeWeights( minDist, maxDist, smooth ); 
+        //break;
+        
+        wgt = map.get( boneIdx );
+        if( !wgt ) wgt = 0;
+
+        if( wgt > 0.5 ){
+            //wgt   = Maths.smoothStep( 0.5, 1.0, wgt );
+            wgt   = wgt * 2 + 1;
+            color.fromLerp( green, red, wgt );
+        }else{
+            //wgt   = Maths.smoothStep( 0.0, 0.5, wgt );
+            wgt   = wgt * 2;
+            color.fromLerp( blue, green, wgt );
+        }
+
+        pnt.add( cell.midPoint, color.toRGBNumber() );
+
+        
+    }
+
+
+}
+
+function viewBoneGeoWeight( boneIdx ){
+
+    const maxDist = Vec3.len( gChunk.minBound, gChunk.maxBound );
+    const minDist = 0.001; // Can't use Zero because of Weight equation, so need a min number.
+    const smooth  = 0.001;
+
+    let cDist;
+    let nDist; // Normalized
+    let wgt;
+    let maxWeight = -Infinity;
+    for( const cell of gGeodesic.cells.values() ){
+        
+        cDist = Math.max( minDist, cell.getDistance( boneIdx ) );
+        //cDist = cell.getDistance( boneIdx );
+        //if( cDist <= 0 ){ continue; }
+
+        nDist = cDist / maxDist;
+        wgt   = ( 1 / ( (1 - smooth)*nDist  + smooth*(nDist**2) ) ) ** 2;
+
+        cell.setWeight( boneIdx, wgt );
+
+        //if( wgt > maxWeight ) maxWeight = wgt;
+        //pnt.add( cell.midPoint );
+    }
+
+    /*
+    let norm, color;
+    for( const cell of gGeodesic.cells.values() ){
+        norm = cell.getWeight( boneIdx ) / maxWeight;
+        if( norm == 0 ) norm = 1;
+        norm = Maths.clamp01( norm );
+
+        color = 0xffff00 * (1-norm) + 0xff0000 * norm;
+
+        pnt.add( cell.midPoint, color, );
+    }
+    */
+}
+
+
+//#region Handle Storing Geodesic distance of each volume voxel to bone voxel
+class GeodesicItem{
+    distance = Infinity;
+    weight   = 0;
+    boneIdx  = 0;
+    bweight  = 0;
+    constructor( idx ){ this.boneIdx = idx; }
+
+    calcWeight( minDist, maxDist, smooth=0.7 ){
+        const cDist = Math.max( minDist, this.distance );
+        const nDist = cDist / maxDist;
+        this.weight = ( 1 / ( (1 - smooth)*nDist  + smooth*(nDist**2) ) ) ** 2;
+    }
+}
+
+class GeodesicCell{
+    midPoint    = [0,0,0];
+    items       = new Map();
+
+    constructor( mid ){
+        Vec3.copy( mid, this.midPoint );
+    }
+
+    add( idx ){
+        const gi = new GeodesicItem( idx );
+        this.items.set( idx, gi );
+        return gi;
+    }
+
+    setWeight( bIdx, wgt ){
+        this.items.get( bIdx ).weight = wgt;
+    }
+
+    getWeight( bIdx ){
+        return this.items.get( bIdx ).weight;
+    }
+
+    getDistance( bIdx ){
+        return this.items.get( bIdx ).distance;
+    }
+
+    computeWeights( minDist, maxDist, smooth=0.7 ){
+        //------------------------------------------
+        let i;
+        for( i of this.items.values() ) i.calcWeight( minDist, maxDist, smooth );
+
+        //------------------------------------------
+        const wLmt = 100.0;
+        const ary = Array
+             .from( this.items.values() )                   // Get All Bones Items
+             .filter( (a)=>(a.weight >= wLmt) )
+             .sort( (a,b)=>( a.weight > b.weight )? -1:1 )  // Sort desc weight
+             .slice( 0, 4 );                                // Top 4 only
+
+        // Total Weight of all Bones
+        const sum = ary.reduce( (p,c)=>{ return p + c.weight }, 0 );    
+        const wgt = ary.reduce( (p,c)=>{ p.set( c.boneIdx, c.weight/sum ); return p }, new Map() );
+
+        //const wgtx = ary.map( i=>i.weight/sum );                         // Normalize Weight
+        //const idx = ary.map( i=>i.boneIdx );                            // 
+        //console.log( ary, sum, wgtx );
+
+        return wgt;
+    }
+}
+
+class VoxelGeodesic{
+    cells = new Map();
+    constructor(){}
+
+    addCell( coord, midPoint ){
+        const k = Vec3.toKey( coord );
+        const c = new GeodesicCell( midPoint );
+        
+        this.cells.set( k, c );
+        //console.log( k );
+        //pnt.add( midPoint, 0xff0000 );
+        return this;
+    }
+
+    getCell( coord ){
+        const k = Vec3.toKey( coord );
+        return this.cells.get( k );
+    }
+
+    setDistanceIfLower( coord, bIdx, dist ){
+        const c = this.getCell( coord );
+        let   i = c.items.get( bIdx );
+        
+        if( !i ) i = c.add( bIdx );
+
+        if( dist < i.distance ){
+            i.distance = dist;
+            return true;
+        }
+
+        return false;
+    }
+
+    getDistance( coord, bIdx ){
+        const c = this.getCell( coord );
+        const i = c.items.get( bIdx );
+        return ( i )? i.distance : Infinity;
+    }
+
+    getCellMidPoint( coord ){
+        const k = Vec3.toKey( coord );
+        return this.cells.get( k ).midPoint;
+    }
+
+    fromChunk( chunk ){
+        const v = new Vec3();
+        let   c = null;
+
+        for( const itm of gChunk.iterAllCells() ){
+            if( !itm.isOn ) continue;     
+            
+            v.fromLerp( itm.min, itm.max, 0.5 );   
+            this.addCell( itm.coord, v );
+            //ln.box( itm.min, itm.max );
+
+            //console.log( itm.coord );
+        }
+    }
+}
+//#endregion
+
+</script></bod4></html>

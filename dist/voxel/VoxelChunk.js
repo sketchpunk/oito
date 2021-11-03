@@ -1,4 +1,9 @@
 import Vec3 from '../Vec3.js';
+const NEIGHBOR_OFFSETS = [
+    [0, 0, 1], [0, 0, -1],
+    [0, 1, 0], [0, -1, 0],
+    [1, 0, 0], [-1, 0, 0],
+];
 class VoxelChunk {
     constructor(cellSize) {
         //#region MAIN
@@ -7,6 +12,7 @@ class VoxelChunk {
         this.cellSize = 0; // Size of
         this.xzCount = 0; // x cell cnt * z cell cnt
         this.dimension = new Vec3(); // How Many Cells available at each axis.
+        this.maxCoord = new Vec3(); // Maximum Coord
         this.minBound = new Vec3(); // Min Position
         this.maxBound = new Vec3(); // Max Position
         if (cellSize != undefined)
@@ -26,6 +32,7 @@ class VoxelChunk {
             .copyTo(this.dimension) // Save Cell Counts
             .scale(this.cellSize); // Actual Volume Size
         this.xzCount = this.dimension[0] * this.dimension[2];
+        this.maxCoord.fromSub(this.dimension, [1, 1, 1]);
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Set the starting volume
         this.minBound.xyz(0, 0, 0);
@@ -66,16 +73,16 @@ class VoxelChunk {
     getStateArrayRef() {
         return this._cellState;
     }
-    setState(x, y, z, isOn) {
+    setState(coord, isOn) {
         if (this._cellState) {
-            const idx = this.coordIdx(x, y, z);
+            const idx = this.coordIdx(coord);
             this._cellState[idx] = (isOn) ? 1 : 0;
         }
         return this;
     }
-    getState(x, y, z) {
+    getState(coord) {
         if (this._cellState) {
-            const idx = this.coordIdx(x, y, z);
+            const idx = this.coordIdx(coord);
             return (this._cellState[idx] == 1);
         }
         return false;
@@ -87,6 +94,36 @@ class VoxelChunk {
                 this._cellState[i] = 0;
         }
         return this;
+    }
+    getNeighbors(coord) {
+        const rtn = [];
+        const x = coord[0];
+        const y = coord[1];
+        const z = coord[2];
+        if (z < this.maxCoord[2])
+            rtn.push([x, y, z + 1]); // Forward
+        if (z > 0)
+            rtn.push([x, y, z - 1]); // Back
+        if (x < this.maxCoord[0])
+            rtn.push([x + 1, y, z]); // Right
+        if (x > 0)
+            rtn.push([x - 1, y, z]); // Left
+        if (y < this.maxCoord[2])
+            rtn.push([x, y + 1, z]); // Up
+        if (y > 0)
+            rtn.push([x, y - 1, z]); // Down
+        return rtn;
+    }
+    getActiveNeighbors(coord) {
+        const rtn = [];
+        const v = new Vec3();
+        let no;
+        for (no of NEIGHBOR_OFFSETS) {
+            v.fromAdd(coord, no);
+            if (this.isCoord(v) && this.getState(v))
+                rtn.push(v.toArray());
+        }
+        return rtn;
     }
     //#endregion
     //#region USER DATA
@@ -101,9 +138,9 @@ class VoxelChunk {
     //#endregion
     //#region COORDINATE MATH
     /** Using Voxel Coordinates, Gets the Cell Array Index */
-    coordIdx(x, y, z) {
+    coordIdx(coord) {
         // ( xLen * zLen * y ) + ( xLen * z ) + x
-        return this.xzCount * y + this.dimension[0] * z + x;
+        return this.xzCount * coord[1] + this.dimension[0] * coord[2] + coord[0];
     }
     /** Using Cell Array Index, Compute Voxel Coordinate */
     idxCoord(i, out) {
@@ -136,6 +173,22 @@ class VoxelChunk {
     coordMinBound(coord, minOut) {
         minOut.fromScale(coord, this.cellSize)
             .add(this.minBound);
+    }
+    /** Get the center point of a cell */
+    coordMidPoint(coord, out) {
+        const h = this.cellSize * 0.5;
+        out.fromScale(coord, this.cellSize)
+            .add(this.minBound)
+            .add([h, h, h]);
+    }
+    isCoord(coord) {
+        if (coord[0] < 0 || coord[0] > this.maxCoord[0])
+            return false;
+        if (coord[1] < 0 || coord[1] > this.maxCoord[1])
+            return false;
+        if (coord[2] < 0 || coord[2] > this.maxCoord[2])
+            return false;
+        return true;
     }
     //#endregion ////////////////////////////////////////////////////////////
     //#region ITER

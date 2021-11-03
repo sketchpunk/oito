@@ -76,6 +76,15 @@ class Ray{
 
         return this;
     }
+
+    fromEndPoints( a: TVec3, b: TVec3 ): this{
+        this.origin.copy( a );               // Starting Point of the Ray
+        this.end.copy( b );                  // The absolute end of the ray
+        this.vecLen.fromSub( b, a );         // Vector Length
+        this.dir.fromNorm( this.vecLen );    // Normalized Vector Length
+
+        return this;
+    }
     //#endregion /////////////////////////////////////////////////////////////////
 
     //#region INTERSECTION TESTS

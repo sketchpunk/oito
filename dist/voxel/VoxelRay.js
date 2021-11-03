@@ -1,11 +1,12 @@
 import Vec3 from '../Vec3.js';
-import { AABBRay, RayBBoxResult } from '../ray/BoundingBox.js';
+import { BoundingBox, AABBRay, RayBBoxResult } from '../ray/BoundingBox.js';
 //#endregion
 class VoxelRayHit {
-    constructor(ix, iy, iz, pos, norm) {
+    constructor(ix, iy, iz, pos, norm, t) {
         this.coord = [ix, iy, iz];
         this.pos = new Vec3(pos);
         this.norm = new Vec3(norm);
+        this.t = t;
     }
 }
 class VoxelRay {
@@ -36,6 +37,7 @@ class VoxelRay {
         this.iAxis = 0; // Preselect the initial axis voxel coord.
         this.norm = new Vec3(); // Normal of Face Being Hit
         this.boundPos = 0;
+        this.ray_t = 0;
         //#endregion
     }
     //#endregion
@@ -152,21 +154,25 @@ class VoxelRay {
         this.norm[this.nAxis] = -this.dir[this.nAxis]; // Update the specific axis
         this.boundPos = ((this.dir[this.nAxis] > 0) ? this.iAxis + 1 : this.iAxis) * chunk.cellSize; // Position of boundary in Local Space
         this.boundPos += chunk.minBound[this.nAxis]; // Move from Local Space to WorldSpace, to figure out T of Ray which is in World Space
-        const tt = (this.boundPos - ray.origin[this.nAxis]) / ray.vecLen[this.nAxis]; // Time when at boundary
-        ray.posAt(tt, this.inPos); // Intersection point on voxel face
+        this.ray_t = (this.boundPos - ray.origin[this.nAxis]) / ray.vecLen[this.nAxis]; // Time when at boundary
+        ray.posAt(this.ray_t, this.inPos); // Intersection point on voxel face
     }
     //#endregion
     //#region HELPERS
     // Create Hit Result Data for current step
     _new_hit() {
-        return new VoxelRayHit(this.ix, this.iy, this.iz, this.inPos, this.norm);
+        return new VoxelRayHit(this.ix, this.iy, this.iz, this.inPos, this.norm, this.ray_t);
     }
     //#endregion
     //#region VARIOUS INTERSECT METHODS
     // Run a full ray intersect threw the whole chunk and return hit data for each voxel in the path.
     fullIntersect(ray, chunk, bbox) {
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if (!bbox)
+            bbox = new BoundingBox(chunk.minBound, chunk.maxBound);
         if (!this._init(ray, chunk, bbox))
             return null;
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         const rtn = [];
         for (let i = 0; i < this.tries; i++) {
             rtn.push(this._new_hit());
@@ -184,8 +190,10 @@ class VoxelRay {
             //-------------------------
             */
             if (this._step())
-                break;
-            this._step_next_hit(ray, chunk);
+                break; // Exit when reaching chunk boundary
+            this._step_next_hit(ray, chunk); // Prepare data for next hit.
+            if (this.ray_t >= 1)
+                break; // Exit if reaching the end of the ray
         }
         return rtn;
     }

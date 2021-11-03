@@ -77,10 +77,10 @@ window.addEventListener( "pointerdown", e=>{
         for( let i of ary ){
             Data.vox.coordBound( i.coord, min, max );
             ln.box( min, max, 0xffffff );       // Voxel Box
-            pnt.add( i.pos, 0x00ff00, 3 );      // Intersection Pos
+            pnt.add( i.pos, 0x00ff00, 3 );      // Intersect Pos
 
             end.fromScale( i.norm, 0.3 ).add( i.pos );
-            ln.add( i.pos, end, 0x00ff00 );     // Face Normal of Intersection
+            ln.add( i.pos, end, 0x00ff00 );     // Face Normal of Intersect
         }
     }
 } );

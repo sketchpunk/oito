@@ -11,3 +11,63 @@ export function isPolygonClockwise(polygon: Polygon): boolean
 
     return sum > 0;
 }
+
+
+const n     = new Vec3();
+const len   = this.points.length;
+let ii, a, b;
+// #Calculate normal with Newell's method
+for( let i=0; i < len; i++ ){
+    ii = ( i+1 ) % len;
+    a  = poly.points[ i ];
+    b  = poly.points[ ii ];
+
+    n[0] += ( a[1] - b[1] ) * ( a[2] + b[2] );
+    n[1] += ( a[2] - b[2] ) * ( a[0] + b[0] );
+    n[2] += ( a[0] - b[0] ) * ( a[1] + b[1] );
+}
+n.norm();
+
+
+getCentroid(){
+    /* Manually Compute Centroid
+    let p, c = new Vec3();
+
+    for( p of this.points ) c.add( p );
+
+    c.divScale( this.points.length );
+    */
+
+getPlane(){
+    // normal with Newell's method
+    const len   = this.points.length;
+    const n     = new Vec3();           // Normal
+    const c     = new Vec3();           // Centroid
+    
+    let i, ii, a, b;
+    for( i=0; i < len; i++ ){
+        ii = ( i+1 ) % len;
+        a  = poly.points[ i ];
+        b  = poly.points[ ii ];
+        
+        // Normal
+        n[0] += ( a[1] - b[1] ) * ( a[2] + b[2] );
+        n[1] += ( a[2] - b[2] ) * ( a[0] + b[0] );
+        n[2] += ( a[0] - b[0] ) * ( a[1] + b[1] );
+        
+        // Centroid
+        c[0] += a[0];
+        c[1] += a[1];
+        c[2] += a[2];
+    }
+    return [ c.divScale( len ), n.norm() ];
+
+class Polygon3D{
+    points : Array< Array<number> >;
+    constructor(){
+        points = [];
+    }
+
+    getNormal(): void{} 
+    getCentroid(): void{} 
+}

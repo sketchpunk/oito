@@ -49,7 +49,7 @@ class Voxelizer {
                     chunk.coordBound([x, y, z], this.minCell, this.maxCell); // Get Cell Boundary Position
                     isHit = Intersect.triangle_aabb(a, b, c, this.minCell, this.maxCell); // Test Triangle-AABB Intersection
                     if (isHit)
-                        chunk.setState(x, y, z, true); // If hit, set Cell as ON.
+                        chunk.setState([x, y, z], true); // If hit, set Cell as ON.
                 }
             }
         }

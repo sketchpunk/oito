@@ -11,10 +11,12 @@ class VoxelRayHit{
     coord : Array<number>;
     pos   : Vec3;
     norm  : Vec3;
-    constructor( ix: number, iy: number, iz: number, pos: TVec3, norm: TVec3 ){
+    t     : number;
+    constructor( ix: number, iy: number, iz: number, pos: TVec3, norm: TVec3, t: number ){
         this.coord = [ ix, iy, iz ];
         this.pos   = new Vec3( pos );
         this.norm  = new Vec3( norm );
+        this.t     = t;
     }
 }
 
@@ -41,19 +43,20 @@ class VoxelRay{
     xBound      = 0;    // Position of the closest boundary line for each axis at the ray dir. Depends on direction.
     yBound      = 0;
     zBound      = 0;
-    xt			= 0;    // Time for axis // (xBound - inPos.x) / ray.dir.x,
-    yt 			= 0;
-    zt			= 0;
+    xt          = 0;    // Time for axis // (xBound - inPos.x) / ray.dir.x,
+    yt          = 0;
+    zt          = 0;
 
-    xDelta		= 0;    // Delta T for each axis as we traverse one voxel at a time
-    yDelta		= 0;
-    zDelta		= 0;
+    xDelta      = 0;    // Delta T for each axis as we traverse one voxel at a time
+    yDelta      = 0;
+    zDelta      = 0;
 
     nAxis       = 0;    // Axis Vector Component 0:x, 1:y, 2:z
     iAxis       = 0;    // Preselect the initial axis voxel coord.
 
-    norm		= new Vec3();   // Normal of Face Being Hit
-    boundPos	= 0;
+    norm        = new Vec3();   // Normal of Face Being Hit
+    boundPos    = 0;
+    ray_t       = 0;
     //#endregion
 
     //#region ALGORITHM IN PIECES
@@ -79,9 +82,9 @@ class VoxelRay{
         this.inPosLoc.fromSub( this.inPos, chunk.minBound );       // Intersect position in relation to chunk origin.        
 
         //--------- Calc Voxel Coord Integer(x,y,z), Clamp between 0 and Max
-        this.ix			= Math.max( Math.min( Math.floor( this.inPosLoc.x / cellSize ), chunk.dimension[0]-1 ), 0);
-        this.iy			= Math.max( Math.min( Math.floor( this.inPosLoc.y / cellSize ), chunk.dimension[1]-1 ), 0);
-        this.iz			= Math.max( Math.min( Math.floor( this.inPosLoc.z / cellSize ), chunk.dimension[2]-1 ), 0);
+        this.ix = Math.max( Math.min( Math.floor( this.inPosLoc.x / cellSize ), chunk.dimension[0]-1 ), 0);
+        this.iy = Math.max( Math.min( Math.floor( this.inPosLoc.y / cellSize ), chunk.dimension[1]-1 ), 0);
+        this.iz = Math.max( Math.min( Math.floor( this.inPosLoc.z / cellSize ), chunk.dimension[2]-1 ), 0);
 
         //--------- Simplify direction with -1,0,1
         this.dir.xyz( -1, -1, -1 );  // Start off going in the negative direction, figure out if positive later.
@@ -119,17 +122,17 @@ class VoxelRay{
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Time for axis // (xBound - inPos.x) / ray.dir.x,
-        this.xt			= ( this.xBound - this.inPosLoc.x ) / ray.dir.x;
-        this.yt 		= ( this.yBound - this.inPosLoc.y ) / ray.dir.y;
-        this.zt			= ( this.zBound - this.inPosLoc.z ) / ray.dir.z;
+        this.xt     = ( this.xBound - this.inPosLoc.x ) / ray.dir.x;
+        this.yt     = ( this.yBound - this.inPosLoc.y ) / ray.dir.y;
+        this.zt     = ( this.zBound - this.inPosLoc.z ) / ray.dir.z;
 
         // Delta T for each axis as we traverse one voxel at a time
-        this.xDelta		= cellSize * this.dir.x / ray.dir.x;
-        this.yDelta		= cellSize * this.dir.y / ray.dir.y;
-        this.zDelta		= cellSize * this.dir.z / ray.dir.z;
+        this.xDelta = cellSize * this.dir.x / ray.dir.x;
+        this.yDelta = cellSize * this.dir.y / ray.dir.y;
+        this.zDelta = cellSize * this.dir.z / ray.dir.z;
 
-        this.nAxis       = this.rayResults.entryAxis;                 // Axis Vector Component 0:x, 1:y, 2:z
-        this.iAxis       = [this.ix, this.iy, this.iz][ this.nAxis ]; // Preselect the initial axis voxel coord.
+        this.nAxis  = this.rayResults.entryAxis;                 // Axis Vector Component 0:x, 1:y, 2:z
+        this.iAxis  = [this.ix, this.iy, this.iz][ this.nAxis ]; // Preselect the initial axis voxel coord.
 
         // Set the starting voxel
         this.norm.xyz( 0,0,0 );
@@ -148,10 +151,10 @@ class VoxelRay{
             ii = this.ix + this.dir.x;
             if( ii == this.xOut ) return true;  // When out of bounds of the voxel chunk, we're done.
             
-            this.nAxis	= 0;                // Numeric Axis Index (x,y,z // 0,1,2)
-            this.iAxis	= this.ix;          // Save before modifing it.
-            this.ix		= ii;               // Move to next voxel
-            this.xt		+= this.xDelta;     // Move T so the next loop has a chance to move in a different axis
+            this.nAxis  = 0;                // Numeric Axis Index (x,y,z // 0,1,2)
+            this.iAxis  = this.ix;          // Save before modifing it.
+            this.ix     = ii;               // Move to next voxel
+            this.xt     += this.xDelta;     // Move T so the next loop has a chance to move in a different axis
 
         // Y AXIS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         }else if( this.yt < this.zt ){
@@ -168,10 +171,10 @@ class VoxelRay{
             ii = this.iz + this.dir.z;
             if( ii == this.zOut ) return true;
 
-            this.nAxis	= 2;
-            this.iAxis	= this.iz;
-            this.iz		= ii;
-            this.zt		+= this.zDelta;
+            this.nAxis  = 2;
+            this.iAxis  = this.iz;
+            this.iz     = ii;
+            this.zt     += this.zDelta;
         }
 
         return false;
@@ -181,13 +184,13 @@ class VoxelRay{
     _step_next_hit( ray: Ray, chunk: VoxelChunk ): void{
         // Compute Information for the Next voxel Hit
         this.norm.xyz( 0, 0, 0 );
-        this.norm[ this.nAxis ] = -this.dir[ this.nAxis ];                                       // Update the specific axis
+        this.norm[ this.nAxis ] = -this.dir[ this.nAxis ];                                          // Update the specific axis
 
-        this.boundPos 	= (( this.dir[this.nAxis] > 0)? this.iAxis+1 : this.iAxis) * chunk.cellSize;  // Position of boundary in Local Space
-        this.boundPos 	+= chunk.minBound[ this.nAxis ];                                        // Move from Local Space to WorldSpace, to figure out T of Ray which is in World Space
+        this.boundPos = (( this.dir[this.nAxis] > 0)? this.iAxis+1 : this.iAxis) * chunk.cellSize;  // Position of boundary in Local Space
+        this.boundPos += chunk.minBound[ this.nAxis ];                                              // Move from Local Space to WorldSpace, to figure out T of Ray which is in World Space
 
-        const tt = ( this.boundPos - ray.origin[ this.nAxis ] ) / ray.vecLen[this.nAxis];    // Time when at boundary
-        ray.posAt( tt, this.inPos );                                                            // Intersection point on voxel face
+        this.ray_t = ( this.boundPos - ray.origin[ this.nAxis ] ) / ray.vecLen[this.nAxis];         // Time when at boundary
+        ray.posAt( this.ray_t, this.inPos );                                                        // Intersection point on voxel face
     }
     
     //#endregion
@@ -202,6 +205,7 @@ class VoxelRay{
             this.iz,
             this.inPos,
             this.norm,
+            this.ray_t,
         );
     }
     
@@ -210,11 +214,13 @@ class VoxelRay{
     //#region VARIOUS INTERSECT METHODS
 
     // Run a full ray intersect threw the whole chunk and return hit data for each voxel in the path.
-    fullIntersect( ray: Ray, chunk: VoxelChunk, bbox: BoundingBox ): Array<VoxelRayHit> | null{
+    fullIntersect( ray: Ray, chunk: VoxelChunk, bbox?: BoundingBox ): Array<VoxelRayHit> | null{
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if( !bbox ) bbox = new BoundingBox( chunk.minBound, chunk.maxBound );
         if( !this._init( ray, chunk, bbox ) ) return null;
 
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         const rtn = [];
-
         for( let i=0; i < this.tries; i++ ){
 
             rtn.push( this._new_hit() );
@@ -233,9 +239,11 @@ class VoxelRay{
             //-------------------------
             */
 
-            if( this._step() ) break;
+            if( this._step() ) break;           // Exit when reaching chunk boundary
 
-            this._step_next_hit( ray, chunk );
+            this._step_next_hit( ray, chunk );  // Prepare data for next hit.
+
+            if( this.ray_t >= 1 ) break;        // Exit if reaching the end of the ray
         }
 
         return rtn;

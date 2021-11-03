@@ -27,12 +27,16 @@ declare class Vec3 extends Float32Array {
     reset(): Vec3;
     /** Convert value to a string value */
     toString(rnd?: number): string;
+    /** Convert to a Javascript Array */
+    toArray(): Array<number>;
     /** Test if all components equal zero */
     isZero(): boolean;
     /** Generate a random vector. Can choose per axis range */
     rnd(x0?: number, x1?: number, y0?: number, y1?: number, z0?: number, z1?: number): Vec3;
     /** Return the Index of which axis has the smallest number */
     minAxis(): number;
+    /** Return the Index of which axis has the smallest number */
+    maxAxis(): number;
     fromPolar(lon: number, lat: number): Vec3;
     /** Length / Magnitude squared of the vector. Good for quick simple testing */
     lenSqr(): number;
@@ -79,9 +83,10 @@ declare class Vec3 extends Float32Array {
     /** Divide vector by a scalar value */
     fromDivScale(a: TVec3, s: number): Vec3;
     fromNorm(v: TVec3): Vec3;
+    fromTriNorm(a: TVec3, b: TVec3, c: TVec3): this;
     fromNegate(a: TVec3): Vec3;
     fromInvert(a: TVec3): Vec3;
-    fromCross(a: TVec3, b: TVec3): Vec3;
+    fromCross(a: TVec3, b: TVec3): this;
     fromQuat(q: TVec4, v: TVec3): Vec3;
     /** Axis Rotation of a Vector */
     fromAxisAngle(axis: TVec3, rad: number, v?: number[]): Vec3;
@@ -105,8 +110,9 @@ declare class Vec3 extends Float32Array {
     /** When values are very small, like less then 0.000001, just make it zero */
     nearZero(): Vec3;
     negate(): Vec3;
-    norm(): Vec3;
+    norm(): this;
     clamp(min: TVec3, max: TVec3): Vec3;
+    reflect(norm: TVec3): this;
     snap(v: TVec3): Vec3;
     dot(b: TVec3): number;
     axisAngle(axis: TVec3, rad: number): Vec3;
@@ -126,9 +132,12 @@ declare class Vec3 extends Float32Array {
     static len(a: TVec3, b: TVec3): number;
     static norm(x: TVec3): Vec3;
     static norm(x: number, y: number, z: number): Vec3;
+    static copy(a: TVec3, b: TVec3): TVec3;
+    static toKey(a: TVec3, place?: number): string;
     static dot(a: TVec3, b: TVec3): number;
     static angle(a: TVec3, b: TVec3): number;
     static project(from: TVec3, to: TVec3, out?: TVec3): TVec3;
+    static projectScale(from: TVec3, to: TVec3): number;
     static lerp(a: TVec3, b: TVec3, t: number): Vec3;
     static fromStruct(v: TVec3Struct): Vec3;
     static fromQuat(q: TVec4, v: TVec3): Vec3;

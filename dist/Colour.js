@@ -65,6 +65,19 @@ class Colour extends Float32Array {
             this[3] = parseInt(c[7] + c[8], 16) * NORMALIZE_RGB;
         return this;
     }
+    fromLerp(a, b, t) {
+        const ti = 1 - t;
+        this[0] = a[0] * ti + b[0] * t;
+        this[1] = a[1] * ti + b[1] * t;
+        this[2] = a[2] * ti + b[2] * t;
+        this[3] = a[3] * ti + b[3] * t;
+        return this;
+    }
+    toRGBNumber() {
+        return (this[0] * 255) << 16 |
+            (this[1] * 255) << 8 |
+            (this[2] * 255);
+    }
 }
 /**
  * Convert HSV spectrum to RGB.

@@ -99,7 +99,7 @@ class VoxelizerVol{
                     isHit = Intersect.triangle_aabb( a, b, c, this.minCell, this.maxCell ); // Test Triangle-AABB Intersection
 
                     if( isHit ){
-                        chunk.setState( x, y, z, true );        // If hit, set Cell as ON.
+                        chunk.setState( [x, y, z], true );        // If hit, set Cell as ON.
 
                         //------------------------------------------
                         key     = CellData.genKey( x, y, z );   // Generate Cell Key
@@ -150,7 +150,7 @@ class VoxelizerVol{
                 inner = false;  // Reset before each loop
 
                 for( z=mz-1; z >= 0; z-- ){
-                    isOn = chunk.getState( x, y, z );
+                    isOn = chunk.getState( [x, y, z] );
 
                     if( isOn ){
                         // Get Cell Data, if theres none, skip thisc cell
@@ -165,7 +165,7 @@ class VoxelizerVol{
                         // This cell if off, Did we pass an Entry Voxel & is this not the last voxel in the row
                         // if so, turn on this cell since it most likely inner volume voxel.
                         if( inner && z != 0 ){ 
-                            chunk.setState( x, y, z, true );
+                            chunk.setState( [x, y, z], true );
                         }
                     }
                 }

@@ -88,6 +88,9 @@ class Vec3 extends Float32Array{
             return s.slice(0,-1) + "]";
         }
     }
+
+    /** Convert to a Javascript Array */
+    toArray() : Array<number>{ return [ this[0], this[1], this[2] ]; }
     
     /** Test if all components equal zero */
     isZero() : boolean { return ( this[ 0 ] == 0 && this[ 1 ] == 0 && this[ 2 ] == 0 ); }
@@ -105,6 +108,13 @@ class Vec3 extends Float32Array{
     minAxis() : number{
         if( this[ 0 ] < this[ 1 ] && this[ 0 ] < this[ 2 ] ) return 0;
         if( this[ 1 ] < this[ 2 ] ) return 1;
+        return 2;
+    }
+
+    /** Return the Index of which axis has the smallest number */
+    maxAxis() : number{
+        if( this[ 0 ] > this[ 1 ] && this[ 0 ] > this[ 2 ] ) return 0;
+        if( this[ 1 ] > this[ 2 ] ) return 1;
         return 2;
     }
 
@@ -365,6 +375,12 @@ class Vec3 extends Float32Array{
         return this;
     }
 
+    fromTriNorm( a:TVec3, b:TVec3, c:TVec3 ): this{
+        const ab = Vec3.sub( b, a );
+        const ac = Vec3.sub( c, a );
+        return this.fromCross( ab, ac ).norm();
+    }
+
     fromNegate( a: TVec3 ) : Vec3 {
         this[ 0 ] = -a[ 0 ]; 
         this[ 1 ] = -a[ 1 ];
@@ -379,7 +395,7 @@ class Vec3 extends Float32Array{
         return this;
     }
 
-    fromCross( a: TVec3, b: TVec3 ) : Vec3{
+    fromCross( a: TVec3, b: TVec3 ) : this{
         const ax = a[0], ay = a[1], az = a[2],
               bx = b[0], by = b[1], bz = b[2];
 
@@ -577,7 +593,7 @@ class Vec3 extends Float32Array{
         return this;
     }
 
-    norm() : Vec3{
+    norm() : this{
         let mag = Math.sqrt( this[0]**2 + this[1]**2 + this[2]**2 );
         if( mag != 0 ){
             mag      = 1 / mag;
@@ -592,6 +608,14 @@ class Vec3 extends Float32Array{
         this[ 0 ] = Math.min( Math.max( this[ 0 ], min[ 0 ] ), max[ 0 ] );
         this[ 1 ] = Math.min( Math.max( this[ 1 ], min[ 1 ] ), max[ 1 ] );
         this[ 2 ] = Math.min( Math.max( this[ 2 ], min[ 2 ] ), max[ 2 ] );
+        return this;
+    }
+
+    reflect( norm: TVec3 ) : this{
+        const factor = -2 * Vec3.dot( norm, this );
+        this[ 0 ] = factor * norm[ 0 ] + this[ 0 ];
+        this[ 1 ] = factor * norm[ 1 ] + this[ 1 ];
+        this[ 2 ] = factor * norm[ 2 ] + this[ 2 ];
         return this;
     }
 
@@ -720,6 +744,18 @@ class Vec3 extends Float32Array{
 
         return rtn.norm();
     }
+
+    static copy( a:TVec3, b:TVec3 ): TVec3{
+        b[0] = a[0];
+        b[1] = a[1];
+        b[2] = a[2];
+        return b;
+    }
+
+    static toKey( a:TVec3, place=0 ): string{
+        //if( place != 0 ){} TODO
+        return a[0] + '_' + a[1] + '_' + a[2];
+    }
     
     //++++++++++++++++++++++++++++++++++
 
@@ -761,6 +797,14 @@ class Vec3 extends Float32Array{
         out[ 1 ] = to[ 1 ] * scl;
         out[ 2 ] = to[ 2 ] * scl;
         return out;
+    }
+
+    static projectScale( from: TVec3, to: TVec3 ) : number{
+        // Modified from https://github.com/Unity-Technologies/UnityCsReference/blob/master/Runtime/Export/Math/Vector3.cs#L265
+        // dot( a, b ) / dot( b, b ) * b
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        const denom = Vec3.dot( to, to );
+        return ( denom < 0.000001 )? 0 : Vec3.dot( from, to ) / denom;
     }
     
     static lerp( a: TVec3, b: TVec3, t: number ) : Vec3{ return new Vec3().fromLerp( a, b, t ); }

@@ -64,6 +64,8 @@ class Vec3 extends Float32Array {
             return s.slice(0, -1) + "]";
         }
     }
+    /** Convert to a Javascript Array */
+    toArray() { return [this[0], this[1], this[2]]; }
     /** Test if all components equal zero */
     isZero() { return (this[0] == 0 && this[1] == 0 && this[2] == 0); }
     /** Generate a random vector. Can choose per axis range */
@@ -82,6 +84,14 @@ class Vec3 extends Float32Array {
         if (this[0] < this[1] && this[0] < this[2])
             return 0;
         if (this[1] < this[2])
+            return 1;
+        return 2;
+    }
+    /** Return the Index of which axis has the smallest number */
+    maxAxis() {
+        if (this[0] > this[1] && this[0] > this[2])
+            return 0;
+        if (this[1] > this[2])
             return 1;
         return 2;
     }
@@ -295,6 +305,11 @@ class Vec3 extends Float32Array {
         this[2] = v[2] * mag;
         return this;
     }
+    fromTriNorm(a, b, c) {
+        const ab = Vec3.sub(b, a);
+        const ac = Vec3.sub(c, a);
+        return this.fromCross(ab, ac).norm();
+    }
     fromNegate(a) {
         this[0] = -a[0];
         this[1] = -a[1];
@@ -487,6 +502,13 @@ class Vec3 extends Float32Array {
         this[2] = Math.min(Math.max(this[2], min[2]), max[2]);
         return this;
     }
+    reflect(norm) {
+        const factor = -2 * Vec3.dot(norm, this);
+        this[0] = factor * norm[0] + this[0];
+        this[1] = factor * norm[1] + this[1];
+        this[2] = factor * norm[2] + this[2];
+        return this;
+    }
     snap(v) {
         this[0] = (v[0] != 0) ? Math.floor(this[0] / v[0]) * v[0] : 0;
         this[1] = (v[1] != 0) ? Math.floor(this[1] / v[1]) * v[1] : 0;
@@ -570,6 +592,16 @@ class Vec3 extends Float32Array {
         }
         return rtn.norm();
     }
+    static copy(a, b) {
+        b[0] = a[0];
+        b[1] = a[1];
+        b[2] = a[2];
+        return b;
+    }
+    static toKey(a, place = 0) {
+        //if( place != 0 ){} TODO
+        return a[0] + '_' + a[1] + '_' + a[2];
+    }
     //++++++++++++++++++++++++++++++++++
     static dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
     static angle(a, b) {
@@ -603,6 +635,13 @@ class Vec3 extends Float32Array {
         out[1] = to[1] * scl;
         out[2] = to[2] * scl;
         return out;
+    }
+    static projectScale(from, to) {
+        // Modified from https://github.com/Unity-Technologies/UnityCsReference/blob/master/Runtime/Export/Math/Vector3.cs#L265
+        // dot( a, b ) / dot( b, b ) * b
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        const denom = Vec3.dot(to, to);
+        return (denom < 0.000001) ? 0 : Vec3.dot(from, to) / denom;
     }
     static lerp(a, b, t) { return new Vec3().fromLerp(a, b, t); }
     static fromStruct(v) { return new Vec3().fromStruct(v); }

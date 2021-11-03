@@ -16,6 +16,7 @@ declare class VoxelChunk {
     cellSize: number;
     xzCount: number;
     dimension: Vec3;
+    maxCoord: Vec3;
     minBound: Vec3;
     maxBound: Vec3;
     constructor(cellSize?: number);
@@ -27,11 +28,13 @@ declare class VoxelChunk {
     _buildStateArray(): void;
     get cellCount(): number;
     getStateArrayRef(): Uint8Array | null;
-    setState(x: number, y: number, z: number, isOn: boolean): this;
-    getState(x: number, y: number, z: number): boolean;
+    setState(coord: TVec3, isOn: boolean): this;
+    getState(coord: TVec3): boolean;
     resetState(): this;
+    getNeighbors(coord: TVec3): Array<TVec3>;
+    getActiveNeighbors(coord: TVec3): Array<TVec3>;
     /** Using Voxel Coordinates, Gets the Cell Array Index */
-    coordIdx(x: number, y: number, z: number): number;
+    coordIdx(coord: TVec3): number;
     /** Using Cell Array Index, Compute Voxel Coordinate */
     idxCoord(i: number, out?: TVec3): TVec3;
     /** Convert Worldspace Position to Voxel Coordinates */
@@ -40,6 +43,9 @@ declare class VoxelChunk {
     coordBound(coord: TVec3, minOut: Vec3, maxOut: Vec3): void;
     /** Get the cell min boundary from voxel coordinates */
     coordMinBound(coord: TVec3, minOut: Vec3): void;
+    /** Get the center point of a cell */
+    coordMidPoint(coord: TVec3, out: Vec3): void;
+    isCoord(coord: TVec3): boolean;
     /** Loop over all the cells */
     iterAllCells(): Iterable<IterCellAllInfo> | null;
     /** Loop over only cells that are active */

@@ -1,4 +1,4 @@
-import Vec3 from '../Vec3.js';
+import Vec3         from '../Vec3.js';
 
 interface IterCellAllInfo{
     min   : Vec3,
@@ -13,6 +13,12 @@ interface IterCellInfo{
     coord : Vec3,
 }
 
+const NEIGHBOR_OFFSETS = [
+    [0,0,1], [0,0,-1],
+    [0,1,0], [0,-1,0],
+    [1,0,0], [-1,0,0],
+];
+
 class VoxelChunk{
 
     //#region MAIN
@@ -21,6 +27,7 @@ class VoxelChunk{
     cellSize                        = 0;            // Size of
     xzCount                         = 0;            // x cell cnt * z cell cnt
     dimension                       = new Vec3();   // How Many Cells available at each axis.
+    maxCoord                        = new Vec3();   // Maximum Coord
     minBound                        = new Vec3();   // Min Position
     maxBound                        = new Vec3();   // Max Position
     
@@ -44,7 +51,8 @@ class VoxelChunk{
             .copyTo( this.dimension )   // Save Cell Counts
             .scale( this.cellSize );   // Actual Volume Size
 
-        this.xzCount = this.dimension[0] * this.dimension[2];
+        this.xzCount   = this.dimension[0] * this.dimension[2];
+        this.maxCoord.fromSub( this.dimension, [1,1,1] );
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Set the starting volume
@@ -97,17 +105,17 @@ class VoxelChunk{
         return this._cellState;
     }
 
-    setState( x:number, y:number, z:number, isOn: boolean ): this{
+    setState( coord: TVec3, isOn: boolean ): this{
         if( this._cellState ){
-            const idx = this.coordIdx( x, y, z );
+            const idx = this.coordIdx( coord );
             this._cellState[ idx ] = ( isOn )? 1 : 0;
         }
         return this;
     }
 
-    getState( x:number, y:number, z:number ): boolean{
+    getState( coord: TVec3 ): boolean{
         if( this._cellState ){
-            const idx = this.coordIdx( x, y, z );
+            const idx = this.coordIdx( coord );
             return ( this._cellState[ idx ] == 1 );
         }
         return false;
@@ -120,6 +128,38 @@ class VoxelChunk{
         }
         return this;
     }
+
+    getNeighbors( coord: TVec3 ): Array<TVec3>{
+        const rtn: Array<TVec3> = [];
+        const x   = coord[ 0 ];
+        const y   = coord[ 1 ];
+        const z   = coord[ 2 ];
+
+        if( z < this.maxCoord[2] ) rtn.push( [ x, y, z+1 ] ); // Forward
+        if( z > 0 )                rtn.push( [ x, y, z-1 ] ); // Back
+        
+        if( x < this.maxCoord[0] ) rtn.push( [ x+1, y, z ] ); // Right
+        if( x > 0 )                rtn.push( [ x-1, y, z ] ); // Left
+
+        if( y < this.maxCoord[2] ) rtn.push( [ x, y+1, z ] ); // Up
+        if( y > 0 )                rtn.push( [ x, y-1, z ] ); // Down
+
+        return rtn;
+    }
+
+    getActiveNeighbors( coord: TVec3 ): Array<TVec3>{
+        const rtn: Array<TVec3> = [];
+        const v = new Vec3();
+        let no;
+
+        for( no of NEIGHBOR_OFFSETS ){
+            v.fromAdd( coord, no );
+            if( this.isCoord( v ) && this.getState( v ) ) rtn.push( v.toArray() );
+        }
+
+        return rtn;
+    }
+
     //#endregion
 
     //#region USER DATA
@@ -136,9 +176,9 @@ class VoxelChunk{
     //#region COORDINATE MATH
 
     /** Using Voxel Coordinates, Gets the Cell Array Index */
-    coordIdx( x:number, y:number, z:number ): number{
+    coordIdx( coord: TVec3 ): number{
         // ( xLen * zLen * y ) + ( xLen * z ) + x
-        return this.xzCount * y + this.dimension[ 0 ] * z + x;
+        return this.xzCount * coord[1] + this.dimension[ 0 ] * coord[2] + coord[0];
     }
 
     /** Using Cell Array Index, Compute Voxel Coordinate */
@@ -179,6 +219,21 @@ class VoxelChunk{
     coordMinBound( coord: TVec3, minOut: Vec3 ): void{
         minOut .fromScale( coord, this.cellSize )
             .add( this.minBound );
+    }
+
+    /** Get the center point of a cell */
+    coordMidPoint( coord: TVec3, out: Vec3 ): void{
+        const h = this.cellSize * 0.5;
+        out .fromScale( coord, this.cellSize )
+            .add( this.minBound )
+            .add( [h,h,h] );
+    }
+
+    isCoord( coord: TVec3 ): boolean{
+        if( coord[0] < 0 || coord[0] > this.maxCoord[0] ) return false;
+        if( coord[1] < 0 || coord[1] > this.maxCoord[1] ) return false;
+        if( coord[2] < 0 || coord[2] > this.maxCoord[2] ) return false;
+        return true;
     }
 
     //#endregion ////////////////////////////////////////////////////////////

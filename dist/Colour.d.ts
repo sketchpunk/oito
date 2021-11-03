@@ -13,6 +13,8 @@ declare class Colour extends Float32Array {
     fromName(s: string): this;
     fromNumber(c: number): this;
     fromHex(c: string): this;
+    fromLerp(a: Colour, b: Colour, t: number): this;
+    toRGBNumber(): number;
 }
 /**
  * Convert HSV spectrum to RGB.

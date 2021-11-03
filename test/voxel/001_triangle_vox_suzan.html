@@ -8,6 +8,8 @@ import Vec3                from "../../dist/Vec3.js";
 import Quat                from "../../dist/Quat.js";
 import Intersect           from "../../dist/geometry/Intersect.js";
 
+import Gltf                from "../../dist/misc/Gltf2.js";
+
 /*
 https://github.com/meshonline/Surface-Heat-Diffuse-Skinning
 https://github.com/Eisenwave/obj2voxel
@@ -42,15 +44,38 @@ window.addEventListener( "load", async _=>{
     App.add( ln.mesh );
     //ln.box( Grid.minBound, Grid.maxBound, 0x00ff00 );
 
+    let gltf = await Gltf.fetch( './suzanne_hpoly.gltf' );
+    let prim = gltf.getMesh().primitives[ 0 ];
+
+    let geo     = new THREE.BufferGeometry();
+    geo.setIndex( new THREE.BufferAttribute( prim.indices.data, 1 ) );
+    geo.setAttribute( 'position',   new THREE.BufferAttribute( prim.position.data, prim.position.componentLen ) );
+    geo.setAttribute( 'normal',     new THREE.BufferAttribute( prim.normal.data, prim.normal.componentLen ) );
+
+    geo.computeBoundingBox();
+    let mesh    = new THREE.Mesh( geo, new THREE.MeshPhongMaterial() );
+
+    //console.log( geo );
+    App.add( mesh );
+
+    
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    createTriangle();
-    const tbox = getMeshBoundingBox();
+    //createTriangle();
+    //const tbox = getMeshBoundingBox();
     //ln.box( tbox.min, tbox.max, 0xb0b0b0 );
 
+    const bmin = new Vec3().fromStruct( geo.boundingBox.min );
+    const bmax = new Vec3().fromStruct( geo.boundingBox.max );
+    //ln.box( bmin, bmax, 0xb0b0b0 );
+
+    
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    console.time();
+
     Vol = new VoxelVolume();
-    Vol.setCellSize( 0.6 );
-    Vol.fitBounds( tbox.min, tbox.max );
+    Vol.setCellSize( 0.1 );
+    Vol.fitBounds( bmin, bmax );
 
     ln.box( Vol.minBound, Vol.maxBound, 0x00ffff );
     /*
@@ -59,16 +84,18 @@ window.addEventListener( "load", async _=>{
     }
     */
 
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    let vertices = Vec3.flattenVecArray( Tri );
-    let indices  = [ 0, 1, 2 ];
 
-    Voxelizer.fromMesh( indices, vertices, Vol );
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //let vertices = Vec3.flattenVecArray( Tri );
+    //let indices  = [ 0, 1, 2 ];
+
+    Voxelizer.fromMesh( prim.indices.data, prim.position.data, Vol );
 
     for( const c of Vol.iterCell() ){
         if( c.isOn ) ln.box( c.min, c.max );
     }
-
+    console.timeEnd();
+    console.log( 'Tri Count', prim.indices.data.length / 3 );
 });
 
 function createTriangle(){
@@ -186,7 +213,7 @@ class VoxelVolume{
 
         //console.log( pos[0], this.minBound[ 0 ] );
 
-        console.log( out );
+        //console.log( out );
     }
 
     coordBound( coord, min, max ){
@@ -302,7 +329,7 @@ class Voxelizer{
                 }
             }
         }
-        console.log( cnt );
+        //console.log( cnt );
     }
 
 }

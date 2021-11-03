@@ -59,7 +59,7 @@ class Vec4 extends Float32Array{
         this[ 0 ] = 0; 
         this[ 1 ] = 0; 
         this[ 2 ] = 0; 
-        this[ 3 ] = 1; 
+        this[ 3 ] = 0; 
         return this;
     }
 
