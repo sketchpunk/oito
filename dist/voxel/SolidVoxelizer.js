@@ -19,7 +19,7 @@ class CellData {
     }
     static genKey(x, y, z) { return x + '_' + y + '_' + z; }
 }
-class VoxelizerVol {
+class SolidVoxelizer {
     constructor() {
         //#region MAIN
         this.a = new Vec3(); // Triangle Points
@@ -139,4 +139,4 @@ class VoxelizerVol {
         }
     }
 }
-export default VoxelizerVol;
+export default SolidVoxelizer;

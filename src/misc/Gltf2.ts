@@ -306,7 +306,7 @@ class Gltf{
 
             if( bind && bind.data ){
                 bi               = i * 16;
-                joint.bindMatrix = bind.data.slice( bi, bi+16 );
+                joint.bindMatrix = Array.from( bind.data.slice( bi, bi+16 ) );
             }
 
             //-----------------------------------------
@@ -383,9 +383,12 @@ class Gltf{
 
     //#region STATIC
 
-    static async fetch( url: string ) : Promise<Gltf>{
+    static async fetch( url: string ) : Promise< Gltf | null >{
         let   bin  = null;
-        const json = await fetch( url ).then( r=>r.json() );
+        const json = await fetch( url )
+            .then( r=>{ return (r.ok)? r.json() : null } );
+
+        if( !json ) return null;
 
         if( json.buffers && json.buffers.length > 0 ){
             const path = url.substring( 0, url.lastIndexOf( '/') + 1 );

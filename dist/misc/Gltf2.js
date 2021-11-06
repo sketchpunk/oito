@@ -289,7 +289,7 @@ class Gltf {
             joint.scale = node?.scale?.slice(0) ?? null;
             if (bind && bind.data) {
                 bi = i * 16;
-                joint.bindMatrix = bind.data.slice(bi, bi + 16);
+                joint.bindMatrix = Array.from(bind.data.slice(bi, bi + 16));
             }
             //-----------------------------------------
             // Because of Rounding Errors, If Scale is VERY close to 1, Set it to 1.
@@ -366,7 +366,10 @@ class Gltf {
     //#region STATIC
     static async fetch(url) {
         let bin = null;
-        const json = await fetch(url).then(r => r.json());
+        const json = await fetch(url)
+            .then(r => { return (r.ok) ? r.json() : null; });
+        if (!json)
+            return null;
         if (json.buffers && json.buffers.length > 0) {
             const path = url.substring(0, url.lastIndexOf('/') + 1);
             bin = await fetch(path + json.buffers[0].uri).then(r => r.arrayBuffer());

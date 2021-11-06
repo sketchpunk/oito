@@ -66,7 +66,6 @@ class VoxelRay{
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Test if the voxel chunk boundary has an intersection
         this.rayBox.fromRay( ray ); // Setup Optimized AABB/RAY INTERSECTION Object
-
         if( !bbox.rayIntersects( ray, this.rayBox, this.rayResults ) ){
             console.log( 'Does not intersect AABB' );
             return false;

@@ -25,5 +25,6 @@ declare class BoundingBox {
     set max(v: TVec3);
     setBounds(min: TVec3, max: TVec3): this;
     rayIntersects(ray: Ray, raybox: AABBRay, results?: RayBBoxResult): boolean;
+    rayIntersect(ray: Ray, results?: RayBBoxResult): boolean;
 }
 export { BoundingBox, AABBRay, RayBBoxResult };

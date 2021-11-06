@@ -41,9 +41,9 @@ class AABBRay{
 
 class BoundingBox{
     bounds = [ new Vec3(), new Vec3() ];
-	constructor( min ?: TVec3, max ?: TVec3 ){
+    constructor( min ?: TVec3, max ?: TVec3 ){
         if( min && max ) this.setBounds( min, max );
-	}
+    }
 
     get min(): Vec3{ return this.bounds[ 0 ]; }
     set min( v: TVec3 ){ this.bounds[ 0 ].copy( v ); }
@@ -91,6 +91,74 @@ class BoundingBox{
             results.exitAxis    = maxAxis;
             results.exitNorm	= ( raybox.dir[ maxAxis ] == 1 )? -1 : 1;
         }
+        return true;
+    }
+
+    rayIntersect( ray: Ray, results ?: RayBBoxResult ): boolean{
+        let tmin, tmax, tymin, tymax, tzmin, tzmax;
+    
+        const xinv      = 1 / ray.dir[ 0 ],
+              yinv      = 1 / ray.dir[ 1 ],
+              zinv      = 1 / ray.dir[ 2 ];
+        let   minAxis   = 0, 
+              maxAxis   = 0;
+
+        //X Axis ---------------------------
+        if( xinv >= 0 ){
+            tmin = ( this.min[0] - ray.origin[0] ) * xinv;
+            tmax = ( this.max[0] - ray.origin[0] ) * xinv;
+        }else{
+            tmin = ( this.max[0] - ray.origin[0] ) * xinv;
+            tmax = ( this.min[0] - ray.origin[0] ) * xinv;
+        }
+
+        //Y Axis ---------------------------
+        if( yinv >= 0 ){
+            tymin = ( this.min.y - ray.origin.y ) * yinv;
+            tymax = ( this.max.y - ray.origin.y ) * yinv;
+        }else{
+            tymin = ( this.max.y - ray.origin.y ) * yinv;
+            tymax = ( this.min.y - ray.origin.y ) * yinv;
+        }
+
+        if( tmin > tymax || tymin > tmax ) return false;
+        
+        // These lines also handle the case where tmin or tmax is NaN
+        // (result of 0 * Infinity). x !== x returns true if x is NaN
+        if( tymin > tmin || tmin !== tmin ){ tmin = tymin; minAxis = 1; }
+        if( tymax < tmax || tmax !== tmax ){ tmax = tymax; maxAxis = 1; }
+
+        //Z Axis ---------------------------
+        if( zinv >= 0 ){
+            tzmin = ( this.min.z - ray.origin.z ) * zinv;
+            tzmax = ( this.max.z - ray.origin.z ) * zinv;
+        }else{
+            tzmin = ( this.max.z - ray.origin.z ) * zinv;
+            tzmax = ( this.min.z - ray.origin.z ) * zinv;
+        }
+
+        if( tmin > tzmax || tzmin > tmax ) return false;
+        if( tzmin > tmin || tmin !== tmin ){ tmin = tzmin; minAxis = 2; }
+        if( tzmax < tmax || tmax !== tmax ){ tmax = tzmax; maxAxis = 2; }
+        if( tmax < 0 ) return false;
+
+        //Finish ------------------------------
+        if( results ){
+            if( tmin >= 0 ){
+                results.tMin = tmin;
+                results.tMax = tmax;
+            }else{
+                results.tMin = tmax;
+                results.tMax = tmin;
+            }
+            
+            const inv           = [ xinv, yinv, zinv ];
+            results.entryAxis	= minAxis; // 0 : X, 1 : Y, 2 : Z
+            results.entryNorm	= ( inv[ minAxis ] < 0 )? 1 : -1;
+            results.exitAxis    = maxAxis;
+            results.exitNorm	= ( inv[ maxAxis ] < 0 )? -1 : 1;
+        }
+
         return true;
     }
 }

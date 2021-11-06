@@ -69,6 +69,6 @@ declare class Gltf {
     getSkin(id: string | number | undefined): Skin | null;
     getMaterial(id: number | undefined): any;
     parseAccessor(accID: number): Accessor | null;
-    static fetch(url: string): Promise<Gltf>;
+    static fetch(url: string): Promise<Gltf | null>;
 }
 export default Gltf;

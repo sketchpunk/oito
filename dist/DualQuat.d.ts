@@ -21,6 +21,8 @@ declare class DualQuat extends Float32Array {
     fromQuat(q: TVec4): this;
     fromMul(a: TVec8, b: TVec8): this;
     fromNorm(a: TVec8): this;
+    /** Calculates the inverse of a dual quat. If they are normalized, conjugate is cheaper */
+    fromInvert(a: TVec8): this;
     /** If dual quaternion is normalized, this is faster than inverting and produces the same value. */
     fromConjugate(a: TVec8): this;
     add(q: TVec8): this;

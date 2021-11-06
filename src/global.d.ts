@@ -1,4 +1,11 @@
 //#region MATH
+//import type Vec2        from './Vec2.js';
+//import type Vec3        from './Vec3.js';
+//import type Vec4        from './Vec4.js';
+//import type Quat        from './Quat.js';
+//import type Mat4        from './Mat4.js';
+//import type DualQuat    from './DualQuat.js';
+
 type TVec2 = Vec2 | Float32Array | [number,number] | number[]
 type TVec3 = Vec3 | Float32Array | [number,number,number] | number[]
 type TVec4 = Quat | Vec4 | Float32Array | [number,number,number,number] | number[]

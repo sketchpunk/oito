@@ -389,9 +389,13 @@ class Vec3 extends Float32Array{
     }
 
     fromInvert( a: TVec3 ) : Vec3 {
-        this[0] = ( a[0] != 0 )? 1 / a[0] : 0;
-        this[1] = ( a[1] != 0 )? 1 / a[1] : 0;
-        this[2] = ( a[2] != 0 )? 1 / a[2] : 0;
+        //this[0] = ( a[0] != 0 )? 1 / a[0] : 0;
+        //this[1] = ( a[1] != 0 )? 1 / a[1] : 0;
+        //this[2] = ( a[2] != 0 )? 1 / a[2] : 0;
+
+        this[0] = 1 / a[0];
+        this[1] = 1 / a[1];
+        this[2] = 1 / a[2];
         return this;
     }
 
@@ -535,9 +539,13 @@ class Vec3 extends Float32Array{
     }
 
     invert() : Vec3 {
-        this[0] = ( this[0] != 0 )? 1 / this[0] : 0;
-        this[1] = ( this[1] != 0 )? 1 / this[1] : 0;
-        this[2] = ( this[2] != 0 )? 1 / this[2] : 0;
+        this[0] = 1 / this[0];
+        this[1] = 1 / this[1];
+        this[2] = 1 / this[2];
+
+        //this[0] = ( this[0] != 0 )? 1 / this[0] : 0;
+        //this[1] = ( this[1] != 0 )? 1 / this[1] : 0;
+        //this[2] = ( this[2] != 0 )? 1 / this[2] : 0;
         return this;
     }
 

@@ -204,6 +204,20 @@ class DualQuat extends Float32Array{
         return this;
     }
 
+    /** Calculates the inverse of a dual quat. If they are normalized, conjugate is cheaper */
+    fromInvert( a: TVec8 ) : this{
+        const sqlen = 1 / a.lenSqr();
+        this[0] = -a[0] * sqlen;
+        this[1] = -a[1] * sqlen;
+        this[2] = -a[2] * sqlen;
+        this[3] =  a[3] * sqlen;
+        this[4] = -a[4] * sqlen;
+        this[5] = -a[5] * sqlen;
+        this[6] = -a[6] * sqlen;
+        this[7] =  a[7] * sqlen;
+        return this;
+    }
+
     /** If dual quaternion is normalized, this is faster than inverting and produces the same value. */
     fromConjugate( a: TVec8 ) : this {
         this[0] = -a[0];

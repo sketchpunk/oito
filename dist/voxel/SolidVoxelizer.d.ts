@@ -9,7 +9,7 @@ declare class CellData {
     setNorm(n: TVec3): this;
     static genKey(x: number, y: number, z: number): string;
 }
-declare class VoxelizerVol {
+declare class SolidVoxelizer {
     a: Vec3;
     b: Vec3;
     c: Vec3;
@@ -27,4 +27,4 @@ declare class VoxelizerVol {
     getTriNorm(a: TVec3, b: TVec3, c: TVec3, out: Vec3): void;
     fillVolume(chunk: VoxelChunk): void;
 }
-export default VoxelizerVol;
+export default SolidVoxelizer;

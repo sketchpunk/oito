@@ -56,13 +56,41 @@ window.addEventListener( "pointerdown", e=>{
     // Compute the Ray and visually draw a line
     const ray = new Ray();
     ray.fromScreenProjection( x, y, size.x, size.y, proj, world );
+
+    //ray.fromEndPoints( [0.1,-0.2,0.1], [0.1,0,0.1] )  // Edge case where end of ray touches box
+
     ln.add( ray.origin, ray.end, 0x00ffff );
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     let t;
     const rayBox    = new AABBRay( ray );
     const results   = new RayBBoxResult();
-    
+
+    /*
+    // Less Optimized, t values aren't normalized
+    if( Data.box.rayIntersect( ray, results ) ){
+        const v = new Vec3();
+        const d = new Vec3();
+
+        //---------------------------
+        // Entry
+        ray.distAt( results.tMin, v );
+        results.getEntryNorm( d, 0.2 ).add( v );
+
+        pnt.add( v, 0x00ff00, 3 );
+        ln.add( v, d, 0x00ff00 );
+
+        //---------------------------
+        // Exit
+        ray.distAt( results.tMax, v );
+        results.getExitNorm( d, 0.2 ).add( v );
+        
+        pnt.add( v, 0xff0000, 3 );
+        ln.add( v, d, 0xff0000 );
+    }
+    */
+   
+    //Optimized Version
     if( Data.box.rayIntersects( ray, rayBox, results ) ){
         const v = new Vec3();
         const d = new Vec3();
@@ -83,6 +111,7 @@ window.addEventListener( "pointerdown", e=>{
         pnt.add( v, 0xff0000, 3 );
         ln.add( v, d, 0xff0000 );
     }
+    
 } );
 
 

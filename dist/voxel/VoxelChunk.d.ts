@@ -11,7 +11,7 @@ interface IterCellInfo {
     coord: Vec3;
 }
 declare class VoxelChunk {
-    _cellState: Uint8Array | null;
+    _cellState: Uint8Array;
     _cellData: Array<any> | null;
     cellSize: number;
     xzCount: number;
@@ -47,8 +47,8 @@ declare class VoxelChunk {
     coordMidPoint(coord: TVec3, out: Vec3): void;
     isCoord(coord: TVec3): boolean;
     /** Loop over all the cells */
-    iterAllCells(): Iterable<IterCellAllInfo> | null;
+    iterAllCells(): Iterable<IterCellAllInfo>;
     /** Loop over only cells that are active */
-    iterActiveCells(): Iterable<IterCellInfo> | null;
+    iterActiveCells(): Iterable<IterCellInfo>;
 }
 export default VoxelChunk;

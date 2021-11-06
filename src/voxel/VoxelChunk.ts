@@ -22,7 +22,7 @@ const NEIGHBOR_OFFSETS = [
 class VoxelChunk{
 
     //#region MAIN
-    _cellState : Uint8Array | null  = null;         // On/Off set of each Cell
+    _cellState !: Uint8Array;                       // On/Off set of each Cell
     _cellData  : Array<any> | null  = null;         // User Data for each cell
     cellSize                        = 0;            // Size of
     xzCount                         = 0;            // x cell cnt * z cell cnt
@@ -240,9 +240,7 @@ class VoxelChunk{
 
     //#region ITER
     /** Loop over all the cells */
-    iterAllCells(): Iterable< IterCellAllInfo > | null{
-        if( this._cellState == null ) return null;
-
+    iterAllCells(): Iterable< IterCellAllInfo >{
         let   i      = 0;
         const sCell  = this._cellState;
         const len    = sCell.length;
@@ -278,9 +276,7 @@ class VoxelChunk{
     }
 
     /** Loop over only cells that are active */
-    iterActiveCells(): Iterable< IterCellInfo > | null{
-        if( this._cellState == null ) return null;
-
+    iterActiveCells(): Iterable< IterCellInfo >{
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Get a list of cell indices that are currently active
         let ii:number;
