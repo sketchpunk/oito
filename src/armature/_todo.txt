@@ -1,0 +1,2 @@
+Cubic Spline Interpolatiotion for Gltf
+https://github.com/mrdoob/three.js/blob/89ca03db9e391af6057f525f3255ec97f6f9c034/examples/jsm/loaders/GLTFLoader.js#L1741

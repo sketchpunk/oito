@@ -478,6 +478,13 @@ class Vec3 extends Float32Array{
         return this;
     }
 
+    fromPlaneProj( v:TVec3, planeNorm: TVec3, planePos: TVec3 ): this{
+        const planeConst    = -Vec3.dot( planePos, planeNorm );
+        const scl           = Vec3.dot( planeNorm, v ) + planeConst;
+        this.fromScale( planeNorm, -scl ).add( v );
+        return this;
+    }
+
     //#endregion ////////////////////////////////////////////////////////
 
     //#region OPERATORS
@@ -761,10 +768,11 @@ class Vec3 extends Float32Array{
     }
 
     static toKey( a:TVec3, place=0 ): string{
-        //if( place != 0 ){} TODO
-        return a[0] + '_' + a[1] + '_' + a[2];
+        return ( place == 0 )? 
+            a[ 0 ] + '_' + a[ 1 ] + '_' + a[ 2 ] :
+            a[ 0 ].toFixed( place ) + '_' + a[ 1 ].toFixed( place ) + '_' + a[ 2 ].toFixed( place );
     }
-    
+
     //++++++++++++++++++++++++++++++++++
 
     static dot( a: TVec3, b: TVec3 ) : number { return a[ 0 ] * b[ 0 ] + a[ 1 ] * b[ 1 ] + a[ 2 ] * b[ 2 ]; }    

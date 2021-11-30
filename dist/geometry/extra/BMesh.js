@@ -4,11 +4,9 @@ import CircularLinkedList from "../../object/CircularLinkedList.js";
 // https://github.com/eliemichel/BMeshUnity
 // #region BMESH TYPES
 class Vertex {
-    constructor() {
-        this.idx = null; // Index of Vertex, Gets filled in At Buffer Build time
-        this.pos = new Vec3(); // Position
-        this.edge = new CircularLinkedList(); // How many edges the vertex is part of
-    }
+    idx = null; // Index of Vertex, Gets filled in At Buffer Build time
+    pos = new Vec3(); // Position
+    edge = new CircularLinkedList(); // How many edges the vertex is part of
     //constructor(){}
     dispose() {
         this.edge.clear();
@@ -17,9 +15,11 @@ class Vertex {
     }
 }
 class Edge {
+    loop = new CircularLinkedList(); // All the Face Loops this edge is part of
+    idx = null;
+    a; // First Point that makes up the Edge
+    b; // Second Point that makes up the edge
     constructor(va, vb) {
-        this.loop = new CircularLinkedList(); // All the Face Loops this edge is part of
-        this.idx = null;
         this.a = va;
         this.b = vb;
     }
@@ -33,12 +33,15 @@ class Edge {
     }
 }
 class Loop {
+    vert; // Starting Vert of the Edge for a Face
+    edge; // The Edge of a face
+    face; // Face
+    /** Can have multiple normals per vert depending on the face or edge.
+        If smooth shading, we average out all the normals
+        If sharp edges, we duplicate each vertex of the edge so it keeps its normal
+    */
+    norm = new Vec3();
     constructor(v, e, f) {
-        /** Can have multiple normals per vert depending on the face or edge.
-            If smooth shading, we average out all the normals
-            If sharp edges, we duplicate each vertex of the edge so it keeps its normal
-        */
-        this.norm = new Vec3();
         this.vert = v;
         this.edge = e;
         this.face = f;
@@ -51,10 +54,8 @@ class Loop {
     }
 }
 class Face {
-    constructor() {
-        this.vertCount = 0; // How many verts was used to create this face
-        this.loop = new CircularLinkedList(); // List all the edges/vertices that make up the face
-    }
+    vertCount = 0; // How many verts was used to create this face
+    loop = new CircularLinkedList(); // List all the edges/vertices that make up the face
     //constructor(){}
     dispose() {
         this.loop.clear();
@@ -63,16 +64,12 @@ class Face {
 }
 // #endregion ///////////////////////////////////////////////
 class BMesh {
-    constructor() {
-        this.vert_map = {}; // Lookup table to prevent duplicating vertices
-        this.vertices = new Array();
-        this.edges = new Array();
-        this.loops = new Array();
-        this.faces = new Array();
-        this.useUniqueVertex = true;
-        //buildNormals(){}
-        // #endregion ///////////////////////////////////////////////
-    }
+    vert_map = {}; // Lookup table to prevent duplicating vertices
+    vertices = new Array();
+    edges = new Array();
+    loops = new Array();
+    faces = new Array();
+    useUniqueVertex = true;
     addVert(x, y, z) {
         if (x instanceof Float32Array || Array.isArray(x)) {
             y = x[1];

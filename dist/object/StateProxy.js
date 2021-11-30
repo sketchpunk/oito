@@ -16,16 +16,17 @@ state.woot = "yo";      // Converter Prevents this from being Saved since it pro
 console.log( state.woot );
 */
 class StateProxy {
-    constructor(data) {
-        // #endregion ////////////////////////////////////////////////////////////
-        // #region MAIN
-        this._emitter = new EventTarget();
-        this._converters = new Map();
-        this._dynamicProperties = false;
-        this._data = data;
-    }
     // #region STATIC
     static new(data = {}) { return new Proxy(data, new StateProxy(data)); }
+    // #endregion ////////////////////////////////////////////////////////////
+    // #region MAIN
+    _emitter = new EventTarget();
+    _converters = new Map();
+    _dynamicProperties = false;
+    _data;
+    constructor(data) {
+        this._data = data;
+    }
     getData() { return this._data; }
     useDynamicProperties(v) { this._dynamicProperties = v; return this; }
     // #endregion ////////////////////////////////////////////////////////////

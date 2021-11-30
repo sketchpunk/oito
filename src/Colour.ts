@@ -78,7 +78,7 @@ class Colour extends Float32Array{
     toRGBNumber(): number{
         return  ( this[ 0 ] * 255 ) << 16 |
                 ( this[ 1 ] * 255 ) << 8  |
-                ( this[ 2 ] * 255 ) ;
+                ( this[ 2 ] * 255 );
     }
     // #endregion ////////////////////////////////////////////////////////
 }

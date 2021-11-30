@@ -1,15 +1,12 @@
 import Vec3 from "../../Vec3.js";
 class UniqueVertexGeo {
-    constructor() {
-        this.map = {};
-        this.geo = {
-            vertices: [],
-            indices: [],
-            normals: [],
-            texcoord: [],
-        };
-        //#endregion //////////////////////////////////////////////////////////////////
-    }
+    map = {};
+    geo = {
+        vertices: [],
+        indices: [],
+        normals: [],
+        texcoord: [],
+    };
     //#region GETTER / SETTER
     get vertexCount() { return this.geo.vertices.length / 3; }
     //#endregion //////////////////////////////////////////////////////////////////

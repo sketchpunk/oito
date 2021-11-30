@@ -11,7 +11,7 @@ class KochanekBartels {
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Interpolate a point on the curve
         const tt = t * t, ttt = tt * t;
-        out ?? (out = [0, 0, 0]);
+        out ??= [0, 0, 0];
         out[0] = p1[0] + d0x * t + (-3 * p1[0] + 3 * p2[0] - 2 * d0x - d1x) * tt + (2 * p1[0] - 2 * p2[0] + d0x + d1x) * ttt;
         out[1] = p1[1] + d0y * t + (-3 * p1[1] + 3 * p2[1] - 2 * d0y - d1y) * tt + (2 * p1[1] - 2 * p2[1] + d0y + d1y) * ttt;
         out[2] = p1[2] + d0z * t + (-3 * p1[2] + 3 * p2[2] - 2 * d0z - d1z) * tt + (2 * p1[2] - 2 * p2[2] + d0z + d1z) * ttt;
@@ -29,7 +29,7 @@ class KochanekBartels {
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Interpolate a point on the curve
         const tt = t * t;
-        out ?? (out = [0, 0, 0]);
+        out ??= [0, 0, 0];
         out[0] = d0x + (-3 * p1[0] + 3 * p2[0] - 2 * d0x - d1x) * 2 * t + (2 * p1[0] - 2 * p2[0] + d0x + d1x) * 3 * tt;
         out[1] = d0y + (-3 * p1[1] + 3 * p2[1] - 2 * d0y - d1y) * 2 * t + (2 * p1[1] - 2 * p2[1] + d0y + d1y) * 3 * tt;
         out[2] = d0z + (-3 * p1[2] + 3 * p2[2] - 2 * d0z - d1z) * 2 * t + (2 * p1[2] - 2 * p2[2] + d0z + d1z) * 3 * tt;

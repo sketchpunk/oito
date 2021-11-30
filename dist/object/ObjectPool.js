@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 class ObjectPoolItem {
-    constructor(obj) {
-        this.inUse = false;
-        this.obj = obj;
-    }
+    obj;
+    inUse = false;
+    constructor(obj) { this.obj = obj; }
 }
 class ObjectPool {
+    items = [];
+    avail = [];
+    onNew;
     constructor(fnNew = null) {
-        this.items = [];
-        this.avail = [];
         this.onNew = fnNew;
     }
     _createNew() {

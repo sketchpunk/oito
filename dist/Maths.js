@@ -1,6 +1,17 @@
 // https://en.wikipedia.org/wiki/List_of_prime_numbers#The_first_1000_prime_numbers
 // https://www.iquilezles.org/www/articles/dontflip/dontflip.htm
 class Maths {
+    //#region CONSTANTS
+    static PI_H = 1.5707963267948966;
+    static PI_2 = 6.283185307179586;
+    static PI_2_INV = 1 / 6.283185307179586;
+    static PI_Q = 0.7853981633974483;
+    static PI_Q3 = 1.5707963267948966 + 0.7853981633974483;
+    static PI_270 = Math.PI + 1.5707963267948966;
+    static DEG2RAD = 0.01745329251; // PI / 180
+    static RAD2DEG = 57.2957795131; // 180 / PI
+    static EPSILON = 1e-6;
+    static PHI = 1.618033988749895; // Goldren Ratio, (1 + sqrt(5)) / 2
     //#endregion ////////////////////////////////////////////////////////
     //#region OPERATIONS
     static clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
@@ -170,17 +181,6 @@ class Maths {
     //static select( t:number, f:number, b:boolean ): number{ return b ? t : f; }
     static negateIf(val, b) { return b ? -val : val; }
 }
-//#region CONSTANTS
-Maths.PI_H = 1.5707963267948966;
-Maths.PI_2 = 6.283185307179586;
-Maths.PI_2_INV = 1 / 6.283185307179586;
-Maths.PI_Q = 0.7853981633974483;
-Maths.PI_Q3 = 1.5707963267948966 + 0.7853981633974483;
-Maths.PI_270 = Math.PI + 1.5707963267948966;
-Maths.DEG2RAD = 0.01745329251; // PI / 180
-Maths.RAD2DEG = 57.2957795131; // 180 / PI
-Maths.EPSILON = 1e-6;
-Maths.PHI = 1.618033988749895; // Goldren Ratio, (1 + sqrt(5)) / 2
 /*
     https://github.com/godotengine/godot/blob/master/core/math/math_funcs.h
     static _ALWAYS_INLINE_ float lerp_angle(float p_from, float p_to, float p_weight) {

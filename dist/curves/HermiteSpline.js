@@ -1,26 +1,28 @@
 import Maths from "../Maths.js";
 import Vec3 from "../Vec3.js";
 class Point {
+    pos = new Vec3();
+    tension;
+    bias;
     constructor(pos, tension = 0, bias = 0) {
-        this.pos = new Vec3();
         this.pos.copy(pos);
         this.tension = tension;
         this.bias = bias;
     }
 }
 class HermiteSpline {
+    //#region MAIN
+    points = []; // All the Points that defines all the curves of the Spline
+    _curve_cnt = 0; // How many curves make up the spline
+    _point_cnt = 0; // Total points in spline
+    _is_loop = false; // Is the spline closed? Meaning should the ends be treated as another curve
+    // Private PreComputed Values for each sample of the curve
+    time = 0; // Time of the selected curve of the spline
+    tension = 0; // Lerped Tension between end points of curve
+    bias = 0; // Lerped Bias between end points of curve
+    ten_bias_p = 0; // Precomputed Value thats uses often
+    ten_bias_n = 0; // Precomputed Value thats uses often
     constructor(isLoop = false) {
-        //#region MAIN
-        this.points = []; // All the Points that defines all the curves of the Spline
-        this._curve_cnt = 0; // How many curves make up the spline
-        this._point_cnt = 0; // Total points in spline
-        this._is_loop = false; // Is the spline closed? Meaning should the ends be treated as another curve
-        // Private PreComputed Values for each sample of the curve
-        this.time = 0; // Time of the selected curve of the spline
-        this.tension = 0; // Lerped Tension between end points of curve
-        this.bias = 0; // Lerped Bias between end points of curve
-        this.ten_bias_p = 0; // Precomputed Value thats uses often
-        this.ten_bias_n = 0; // Precomputed Value thats uses often
         this._is_loop = isLoop;
     }
     //#endregion ////////////////////////////////////////////////////////

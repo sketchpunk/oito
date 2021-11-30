@@ -1,4 +1,6 @@
 class Mat3 extends Float32Array {
+    //#region STATIC VALUES
+    static BYTESIZE = 9 * Float32Array.BYTES_PER_ELEMENT;
     //#endregion ////////////////////////////////////////////////////////
     //#region CONSTRUCTORS 
     constructor() {
@@ -366,8 +368,6 @@ class Mat3 extends Float32Array {
     static fromTranslation(v) { return new Mat3().fromTranslation(v); }
     static fromRotation(v) { return new Mat3().fromRotation(v); }
 }
-//#region STATIC VALUES
-Mat3.BYTESIZE = 9 * Float32Array.BYTES_PER_ELEMENT;
 /*
 
  *

@@ -19,15 +19,15 @@ const ComponentVarMap = {
     MAT4: 16,
 };
 class Accessor {
+    componentLen = 0;
+    elementCnt = 0;
+    byteOffset = 0;
+    byteSize = 0;
+    boundMin = null;
+    boundMax = null;
+    type = null;
+    data = null;
     constructor(accessor, bufView, bin) {
-        this.componentLen = 0;
-        this.elementCnt = 0;
-        this.byteOffset = 0;
-        this.byteSize = 0;
-        this.boundMin = null;
-        this.boundMax = null;
-        this.type = null;
-        this.data = null;
         const [compByte, // Type Byte Size
         compType, typeName] = ComponentTypeMap[accessor.componentType]; // Ref to TypeArray
         if (!compType) {
@@ -50,52 +50,47 @@ class Accessor {
 //#endregion
 //#region MESH DATA
 class Mesh {
-    constructor() {
-        this.index = null; // Index in Mesh Collection
-        this.name = null; // Mesh Name
-        this.primitives = []; // Mesh is made up of more then one Primative
-        this.position = null; // Node's Position
-        this.rotation = null; // Node's Rotation
-        this.scale = null; // Node's Scale
-    }
+    index = null; // Index in Mesh Collection
+    name = null; // Mesh Name
+    primitives = []; // Mesh is made up of more then one Primative
+    position = null; // Node's Position
+    rotation = null; // Node's Rotation
+    scale = null; // Node's Scale
 }
 class Primitive {
-    constructor() {
-        this.materialName = null;
-        this.materialIdx = null;
-        this.indices = null;
-        this.position = null;
-        this.normal = null;
-        this.tangent = null;
-        this.texcoord_0 = null;
-        this.texcoord_1 = null;
-        this.color_0 = null;
-        this.joints_0 = null;
-        this.weights_0 = null;
-    }
+    materialName = null;
+    materialIdx = null;
+    indices = null;
+    position = null;
+    normal = null;
+    tangent = null;
+    texcoord_0 = null;
+    texcoord_1 = null;
+    color_0 = null;
+    joints_0 = null;
+    weights_0 = null;
 }
 //#endregion
 //#region SKIN DATA
 class Skin {
-    constructor() {
-        this.index = null; // Index in Mesh Collection
-        this.name = null; // Skin Name
-        this.joints = []; // Collection of Joints
-    }
+    index = null; // Index in Mesh Collection
+    name = null; // Skin Name
+    joints = []; // Collection of Joints
 }
 class SkinJoint {
-    constructor() {
-        this.name = null; // Name of Joint
-        this.index = null; // Joint Index
-        this.parentIndex = null; // Parent Joint Index, Null if its a Root Joint
-        this.bindMatrix = null; // Inverted WorldSpace Transform
-        this.position = null; // Local Space Position
-        this.rotation = null; // Local Space Rotation
-        this.scale = null; // Local Space Scale
-    }
+    name = null; // Name of Joint
+    index = null; // Joint Index
+    parentIndex = null; // Parent Joint Index, Null if its a Root Joint
+    bindMatrix = null; // Inverted WorldSpace Transform
+    position = null; // Local Space Position
+    rotation = null; // Local Space Rotation
+    scale = null; // Local Space Scale
 }
 //#endregion
 class Gltf {
+    //#region MAIN
+    json;
+    bin;
     constructor(json, bin) {
         this.json = json;
         this.bin = bin || new ArrayBuffer(0); // TODO, Fix for base64 inline buffer

@@ -2,11 +2,9 @@
 import Vec3 from "../Vec3.js";
 import Intersect from "../geometry/Intersect.js";
 class CellData {
-    constructor() {
-        this.norm = new Vec3();
-        this.hasBackface = false;
-        this.hasFrontface = false;
-    }
+    norm = new Vec3();
+    hasBackface = false;
+    hasFrontface = false;
     //constructor(){}
     setNorm(n) {
         this.norm.add(n);
@@ -20,21 +18,19 @@ class CellData {
     static genKey(x, y, z) { return x + '_' + y + '_' + z; }
 }
 class SolidVoxelizer {
-    constructor() {
-        //#region MAIN
-        this.a = new Vec3(); // Triangle Points
-        this.b = new Vec3();
-        this.c = new Vec3();
-        this.vmin = new Vec3(); // Triangle Bounding Box
-        this.vmax = new Vec3();
-        this.minCoord = new Vec3(); // Min/Max Voxel Coordinates
-        this.maxCoord = new Vec3();
-        this.minCell = new Vec3(); // Min/Max Voxel Cell Bounds
-        this.maxCell = new Vec3();
-        this.v0 = new Vec3();
-        this.v1 = new Vec3();
-        this.data = new Map();
-    }
+    //#region MAIN
+    a = new Vec3(); // Triangle Points
+    b = new Vec3();
+    c = new Vec3();
+    vmin = new Vec3(); // Triangle Bounding Box
+    vmax = new Vec3();
+    minCoord = new Vec3(); // Min/Max Voxel Coordinates
+    maxCoord = new Vec3();
+    minCell = new Vec3(); // Min/Max Voxel Cell Bounds
+    maxCell = new Vec3();
+    v0 = new Vec3();
+    v1 = new Vec3();
+    data = new Map();
     //#endregion
     fromGeometry(chunk, vertices, indices) {
         this.data.clear();

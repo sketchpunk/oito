@@ -2,6 +2,62 @@
 import Vec3 from "../Vec3.js";
 //#endregion///////////////////////////////////////////////////
 class VoxelMesh {
+    //#region STATIC VOXEL CELL DATA
+    // Direction of Quads to build a Voxel
+    static XP = 3;
+    static XN = 1;
+    static YP = 4;
+    static YN = 5;
+    static ZP = 2;
+    static ZN = 0;
+    // Information needed for each quad that is created.
+    // Quads are 1 Unit with its origin set at the bottom left corner
+    static UV = [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0];
+    static INDEX = [0, 1, 2, 2, 3, 0];
+    static FACES = [
+        { n: [0.0, 0.0, -1.0], nOffset: false,
+            v: [
+                [1.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [1.0, 1.0, 0.0]
+            ] },
+        { n: [-1.0, 0.0, 0.0], nOffset: false,
+            v: [
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0],
+                [0.0, 1.0, 1.0],
+                [0.0, 1.0, 0.0]
+            ] },
+        { n: [0.0, 0.0, 1.0], nOffset: true,
+            v: [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0]
+            ] },
+        { n: [1.0, 0.0, 0.0], nOffset: true,
+            v: [
+                [0.0, 0.0, 1.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 1.0]
+            ] },
+        { n: [0.0, 1.0, 0.0], nOffset: true,
+            v: [
+                [0.0, 0.0, 1.0],
+                [1.0, 0.0, 1.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0]
+            ] },
+        { n: [0.0, -1.0, 0.0], nOffset: false,
+            v: [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 0.0, 1.0],
+                [0.0, 0.0, 1.0]
+            ] } //Bottom
+    ];
     //#endregion
     static fromChunk(chunk, geo) {
         const cells = chunk.getStateArrayRef();
@@ -101,60 +157,4 @@ class VoxelMesh {
         geo.texcoord.push(...VoxelMesh.UV); // Face UV
     }
 }
-//#region STATIC VOXEL CELL DATA
-// Direction of Quads to build a Voxel
-VoxelMesh.XP = 3;
-VoxelMesh.XN = 1;
-VoxelMesh.YP = 4;
-VoxelMesh.YN = 5;
-VoxelMesh.ZP = 2;
-VoxelMesh.ZN = 0;
-// Information needed for each quad that is created.
-// Quads are 1 Unit with its origin set at the bottom left corner
-VoxelMesh.UV = [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0];
-VoxelMesh.INDEX = [0, 1, 2, 2, 3, 0];
-VoxelMesh.FACES = [
-    { n: [0.0, 0.0, -1.0], nOffset: false,
-        v: [
-            [1.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [1.0, 1.0, 0.0]
-        ] },
-    { n: [-1.0, 0.0, 0.0], nOffset: false,
-        v: [
-            [0.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0],
-            [0.0, 1.0, 1.0],
-            [0.0, 1.0, 0.0]
-        ] },
-    { n: [0.0, 0.0, 1.0], nOffset: true,
-        v: [
-            [0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [1.0, 1.0, 0.0],
-            [0.0, 1.0, 0.0]
-        ] },
-    { n: [1.0, 0.0, 0.0], nOffset: true,
-        v: [
-            [0.0, 0.0, 1.0],
-            [0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 1.0, 1.0]
-        ] },
-    { n: [0.0, 1.0, 0.0], nOffset: true,
-        v: [
-            [0.0, 0.0, 1.0],
-            [1.0, 0.0, 1.0],
-            [1.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0]
-        ] },
-    { n: [0.0, -1.0, 0.0], nOffset: false,
-        v: [
-            [0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [1.0, 0.0, 1.0],
-            [0.0, 0.0, 1.0]
-        ] } //Bottom
-];
 export default VoxelMesh;

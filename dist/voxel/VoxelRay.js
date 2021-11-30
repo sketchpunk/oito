@@ -2,6 +2,10 @@ import Vec3 from '../Vec3.js';
 import { BoundingBox, AABBRay, RayBBoxResult } from '../ray/BoundingBox.js';
 //#endregion
 class VoxelRayHit {
+    coord;
+    pos;
+    norm;
+    t;
     constructor(ix, iy, iz, pos, norm, t) {
         this.coord = [ix, iy, iz];
         this.pos = new Vec3(pos);
@@ -10,36 +14,33 @@ class VoxelRayHit {
     }
 }
 class VoxelRay {
-    constructor() {
-        //#region MAIN
-        this.tries = 30; // How many steps to take in ray march
-        this.rayBox = new AABBRay(); // AABB-Ray optimization
-        this.rayResults = new RayBBoxResult(); // Bounding box Ray Hit Results.
-        this.inPos = new Vec3(); // Current Hit Position in World Space
-        this.inPosLoc = new Vec3(); // Hit Position in Local Space
-        this.dir = new Vec3(); // Direction to move during ray marching the chunk.
-        this.ix = 0; // Voxel Coord Integer(x,y,z), Clamp between 0 and Max
-        this.iy = 0;
-        this.iz = 0;
-        this.xOut = 0; // Index value to exit loop -1 or Total Cells in Axis
-        this.yOut = 0;
-        this.zOut = 0;
-        this.xBound = 0; // Position of the closest boundary line for each axis at the ray dir. Depends on direction.
-        this.yBound = 0;
-        this.zBound = 0;
-        this.xt = 0; // Time for axis // (xBound - inPos.x) / ray.dir.x,
-        this.yt = 0;
-        this.zt = 0;
-        this.xDelta = 0; // Delta T for each axis as we traverse one voxel at a time
-        this.yDelta = 0;
-        this.zDelta = 0;
-        this.nAxis = 0; // Axis Vector Component 0:x, 1:y, 2:z
-        this.iAxis = 0; // Preselect the initial axis voxel coord.
-        this.norm = new Vec3(); // Normal of Face Being Hit
-        this.boundPos = 0;
-        this.ray_t = 0;
-        //#endregion
-    }
+    //#region MAIN
+    tries = 30; // How many steps to take in ray march
+    rayBox = new AABBRay(); // AABB-Ray optimization
+    rayResults = new RayBBoxResult(); // Bounding box Ray Hit Results.
+    inPos = new Vec3(); // Current Hit Position in World Space
+    inPosLoc = new Vec3(); // Hit Position in Local Space
+    dir = new Vec3(); // Direction to move during ray marching the chunk.
+    ix = 0; // Voxel Coord Integer(x,y,z), Clamp between 0 and Max
+    iy = 0;
+    iz = 0;
+    xOut = 0; // Index value to exit loop -1 or Total Cells in Axis
+    yOut = 0;
+    zOut = 0;
+    xBound = 0; // Position of the closest boundary line for each axis at the ray dir. Depends on direction.
+    yBound = 0;
+    zBound = 0;
+    xt = 0; // Time for axis // (xBound - inPos.x) / ray.dir.x,
+    yt = 0;
+    zt = 0;
+    xDelta = 0; // Delta T for each axis as we traverse one voxel at a time
+    yDelta = 0;
+    zDelta = 0;
+    nAxis = 0; // Axis Vector Component 0:x, 1:y, 2:z
+    iAxis = 0; // Preselect the initial axis voxel coord.
+    norm = new Vec3(); // Normal of Face Being Hit
+    boundPos = 0;
+    ray_t = 0;
     //#endregion
     //#region ALGORITHM IN PIECES
     // Initialize all the data needed ray steping the voxel chunk

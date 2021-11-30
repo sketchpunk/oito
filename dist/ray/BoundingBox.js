@@ -2,23 +2,21 @@
 import Vec3 from '../Vec3.js';
 //#endregion
 class RayBBoxResult {
-    constructor() {
-        this.tMin = 0; // 0 > 1
-        this.tMax = 0; // 0 > 1
-        this.entryAxis = 0; // 0 : X, 1 : Y, 2 : Z
-        this.entryNorm = 0; // -1 or 1 , Positive or Negative Axis
-        this.exitAxis = 0; // 0 : X, 1 : Y, 2 : Z
-        this.exitNorm = 0; // -1 or 1 , Positive or Negative Axis
-    }
+    tMin = 0; // 0 > 1
+    tMax = 0; // 0 > 1
+    entryAxis = 0; // 0 : X, 1 : Y, 2 : Z
+    entryNorm = 0; // -1 or 1 , Positive or Negative Axis
+    exitAxis = 0; // 0 : X, 1 : Y, 2 : Z
+    exitNorm = 0; // -1 or 1 , Positive or Negative Axis
     //constructor(){}
     getEntryNorm(out, scl = 1) { return out.fromScale(Vec3.AXIS[this.entryAxis], this.entryNorm).scale(scl); }
     getExitNorm(out, scl = 1) { return out.fromScale(Vec3.AXIS[this.exitAxis], this.exitNorm).scale(scl); }
 }
 // Optimization trick from ScratchAPixel
 class AABBRay {
+    vecLenInv = new Vec3();
+    dir = [0, 0, 0];
     constructor(ray) {
-        this.vecLenInv = new Vec3();
-        this.dir = [0, 0, 0];
         if (ray)
             this.fromRay(ray);
     }
@@ -31,8 +29,8 @@ class AABBRay {
     }
 }
 class BoundingBox {
+    bounds = [new Vec3(), new Vec3()];
     constructor(min, max) {
-        this.bounds = [new Vec3(), new Vec3()];
         if (min && max)
             this.setBounds(min, max);
     }

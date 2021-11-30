@@ -1,24 +1,10 @@
 import Vec3 from "../Vec3.js";
 import Mat4 from "../Mat4.js";
 class Ray {
-    constructor() {
-        this.origin = new Vec3();
-        this.end = new Vec3();
-        this.dir = new Vec3();
-        this.vecLen = new Vec3();
-        /*
-        in_circle( radius, plane_pos, plane_norm ){
-            let t = this.in_plane( plane_pos, plane_norm );
-            if(t == null) return null;
-    
-            let ip 		= this.get_pos( t ),
-                lenSqr 	= ip.len_sqr( plane_pos );
-    
-            return ( lenSqr <= radius*radius )? t : null;
-        }
-        */
-        //#endregion /////////////////////////////////////////////////////////////////
-    }
+    origin = new Vec3();
+    end = new Vec3();
+    dir = new Vec3();
+    vecLen = new Vec3();
     //#region GETTERS / SETTERS
     /** Get position of the ray from T Scale of VecLen */
     posAt(t, out) {

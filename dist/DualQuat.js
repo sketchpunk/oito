@@ -1,4 +1,6 @@
 class DualQuat extends Float32Array {
+    //#region STATIC VALUES
+    static BYTESIZE = 8 * Float32Array.BYTES_PER_ELEMENT;
     constructor(q, t) {
         super(8);
         if (q && t)
@@ -443,6 +445,4 @@ class DualQuat extends Float32Array {
         return out;
     }
 }
-//#region STATIC VALUES
-DualQuat.BYTESIZE = 8 * Float32Array.BYTES_PER_ELEMENT;
 export default DualQuat;

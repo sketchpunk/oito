@@ -1,11 +1,8 @@
 import Vec3 from "../Vec3.js";
 class Plane {
-    constructor() {
-        this.pos = new Vec3();
-        this.normal = new Vec3();
-        this.constant = 0;
-        //#endregion //////////////////////////////////////////
-    }
+    pos = new Vec3();
+    normal = new Vec3();
+    constant = 0;
     //#region SETTERS / GETTERS
     fromNormAndPos(norm, pos) {
         this.normal.copy(norm);

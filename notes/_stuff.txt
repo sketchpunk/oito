@@ -164,3 +164,6 @@ https://www.youtube.com/watch?v=suaJz-zWt3A
 
 // NOISE
 https://jobtalle.com/cubic_noise.html
+
+// CAMERA, LOTS OF FEATURES, like BBOX FITTING, SHAKE, 
+https://github.com/yomotsu/camera-controls

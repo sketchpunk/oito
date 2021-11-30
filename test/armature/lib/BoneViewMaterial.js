@@ -1,10 +1,10 @@
 import { THREE } from "../../lib/starter.js";
 
-function BoneViewMaterial( color='white' ){
+function BoneViewMaterial( color='white', useDepthTest=true ){
     let mat = new THREE.RawShaderMaterial({
-        //side     : THREE.DoubleSide,
-        //depthTest   : false,
-        uniforms : {
+        //side        : THREE.DoubleSide,
+        depthTest   : useDepthTest,
+        uniforms    : {
             color   : { type :'vec3', value:new THREE.Color( color ) },
             meshScl : { value: 0.02  },
             dirScl  : { value: 2.0  },
@@ -106,7 +106,6 @@ function BoneViewMaterial( color='white' ){
             //vec3 norm     = normalize( frag_norm ); // Model's Normals            
             float diffuse = computePointLights( light_pos, norm );
             out_color     = vec4( color * diffuse, 1.0 );
-
             //out_color     = vec4( 1.0, 0.0, 0.0, 1.0 );
         }`,
     });

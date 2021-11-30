@@ -41,15 +41,16 @@ class VoxelChunk{
     setCellSize( n:number ): this{ this.cellSize = n; return this; }
 
     /** Compute a Min/Max Chunk Boundary that fits over another bounds by using cell size */
-    fitBound( bMin:TVec3, bMax:TVec3 ): this{
+    fitBound( bMin:TVec3, bMax:TVec3, overScale=1 ): this{
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Figure out how many voxels can be made in mesh bounding box
         const vsize = Vec3
             .sub( bMax, bMin )          // Get Length of Each Axis
-            .divScale( this.cellSize ) // How Many Cells Fit per Axis
+            .scale( overScale )         // Pad some extra space
+            .divScale( this.cellSize )  // How Many Cells Fit per Axis
             .ceil()                     // OverShoot
             .copyTo( this.dimension )   // Save Cell Counts
-            .scale( this.cellSize );   // Actual Volume Size
+            .scale( this.cellSize );    // Actual Volume Size
 
         this.xzCount   = this.dimension[0] * this.dimension[2];
         this.maxCoord.fromSub( this.dimension, [1,1,1] );

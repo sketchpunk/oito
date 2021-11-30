@@ -1,6 +1,8 @@
 import Maths from "./Maths.js";
 import Vec3 from "./Vec3.js";
 class Quat extends Float32Array {
+    //#region STATIC VALUES
+    static BYTESIZE = 4 * Float32Array.BYTES_PER_ELEMENT;
     //#endregion ////////////////////////////////////////////////////////
     //#region CONSTRUCTORS
     constructor(v) {
@@ -950,8 +952,6 @@ class Quat extends Float32Array {
         return out;
     }
 }
-//#region STATIC VALUES
-Quat.BYTESIZE = 4 * Float32Array.BYTES_PER_ELEMENT;
 export default Quat;
 /*
 

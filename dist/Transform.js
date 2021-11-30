@@ -3,15 +3,17 @@ import Quat from "./Quat.js";
 // https://gabormakesgames.com/blog_transforms_transforms.html
 // https://gabormakesgames.com/blog_transforms_transform_world.html
 class Transform {
+    //#region STATIC VALUES
+    static BYTESIZE = 10 * Float32Array.BYTES_PER_ELEMENT;
+    //#endregion ////////////////////////////////////////////////////////
+    //#region MAIN
+    /** Quaternion Rotation */
+    rot = new Quat();
+    /** Vector3 Position */
+    pos = new Vec3();
+    /** Vector3 Scale */
+    scl = new Vec3(1, 1, 1);
     constructor(rot, pos, scl) {
-        //#endregion ////////////////////////////////////////////////////////
-        //#region MAIN
-        /** Quaternion Rotation */
-        this.rot = new Quat();
-        /** Vector3 Position */
-        this.pos = new Vec3();
-        /** Vector3 Scale */
-        this.scl = new Vec3(1, 1, 1);
         if (rot instanceof Transform) {
             this.copy(rot);
         }
@@ -151,8 +153,6 @@ class Transform {
         return t;
     }
 }
-//#region STATIC VALUES
-Transform.BYTESIZE = 10 * Float32Array.BYTES_PER_ELEMENT;
 /*
     World Space Position to Local Space.
     V	.copy( gBWorld.eye_lid_upper_mid_l.pos ) // World Space Postion

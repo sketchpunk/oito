@@ -1,4 +1,6 @@
 class Vec4 extends Float32Array {
+    //#region STATIC VALUES
+    static BYTESIZE = 4 * Float32Array.BYTES_PER_ELEMENT;
     constructor(v, y, z, w) {
         super(4);
         if (v instanceof Vec4 || v instanceof Float32Array || (v instanceof Array && v.length == 4)) {
@@ -333,6 +335,4 @@ class Vec4 extends Float32Array {
         return this;
     }
 }
-//#region STATIC VALUES
-Vec4.BYTESIZE = 4 * Float32Array.BYTES_PER_ELEMENT;
 export default Vec4;

@@ -1,16 +1,13 @@
 class Node {
-    constructor(v) {
-        this.prev = null;
-        this.next = null;
-        this.value = v;
-    }
+    value;
+    prev = null;
+    next = null;
+    constructor(v) { this.value = v; }
 }
 class CircularLinkedList {
-    constructor() {
-        this.head = null; // Starting Node
-        this.tail = null; // Last node before repeating
-        this.count = 0; // How Many nodes added to list
-    }
+    head = null; // Starting Node
+    tail = null; // Last node before repeating
+    count = 0; // How Many nodes added to list
     //constructor(){}
     add(v) {
         const n = new Node(v);

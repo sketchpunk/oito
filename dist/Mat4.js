@@ -1,4 +1,6 @@
 class Mat4 extends Float32Array {
+    //#region STATIC VALUES
+    static BYTESIZE = 16 * Float32Array.BYTES_PER_ELEMENT;
     //#endregion ////////////////////////////////////////////////////////
     //#region CONSTRUCTORS 
     constructor() {
@@ -1134,6 +1136,4 @@ class Mat4 extends Float32Array {
     static mul(a, b) { return new Mat4().fromMul(a, b); }
     static invert(a) { return new Mat4().fromInvert(a); }
 }
-//#region STATIC VALUES
-Mat4.BYTESIZE = 16 * Float32Array.BYTES_PER_ELEMENT;
 export default Mat4;

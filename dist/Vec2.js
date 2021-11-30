@@ -1,4 +1,6 @@
 class Vec2 extends Float32Array {
+    //#region STATIC VALUES
+    static BYTESIZE = 2 * Float32Array.BYTES_PER_ELEMENT;
     constructor(v, y) {
         super(2);
         if (v instanceof Vec2 || v instanceof Float32Array || (v instanceof Array && v.length == 2)) {
@@ -323,6 +325,4 @@ class Vec2 extends Float32Array {
         return { [Symbol.iterator]() { return { next }; } };
     }
 }
-//#region STATIC VALUES
-Vec2.BYTESIZE = 2 * Float32Array.BYTES_PER_ELEMENT;
 export default Vec2;

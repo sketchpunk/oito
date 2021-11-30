@@ -27,10 +27,10 @@ class Armature{
 		return bone;
     }
 
-    bind( skin: new()=>ISkin ): this{
-        this.updateWorld();                         // Compute WorldSpace Transform for all the bones
-        this.updateBoneLengths();                   // Compute the length of all the Bones
-        this.skin = new skin().init( this );        // Setup Skin BindPose
+    bind( skin ?: new()=>ISkin, defaultBoneLen=1.0 ): this{
+        this.updateWorld();                             // Compute WorldSpace Transform for all the bones
+        this.updateBoneLengths( defaultBoneLen );       // Compute the length of all the Bones
+        if( skin ) this.skin = new skin().init( this ); // Setup Skin BindPose
         return this;
     }
     //#endregion
@@ -71,19 +71,29 @@ class Armature{
         return this;
     }
 
-    updateBoneLengths(): this{
+    updateBoneLengths( defaultBoneLen=0 ): this{
         const bCnt = this.bones.length;
         let b : Bone, p : Bone;
 
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         for( let i=bCnt-1; i >= 0; i-- ){
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //-------------------------------
             b = this.bones[ i ];
-            if( b.pidx == null ) continue;
+            if( b.pidx == null ) continue;  // No Parent to compute its length.
 
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            p = this.bones[ b.pidx ];
+            //-------------------------------
+            // Parent Bone, Compute its length based on its position and the current bone.
+            p = this.bones[ b.pidx ];       
             p.len = Vec3.len( p.world.pos, b.world.pos );
-        }   
+        }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if( defaultBoneLen != 0 ){
+            for( let i=0; i < bCnt; i++ ){
+                b = this.bones[ i ];
+                if( b.len == 0 ) b.len = defaultBoneLen;
+            }
+        }
 
         return this;
     }

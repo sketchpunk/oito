@@ -5,14 +5,16 @@ const NEIGHBOR_OFFSETS = [
     [1, 0, 0], [-1, 0, 0],
 ];
 class VoxelChunk {
+    //#region MAIN
+    _cellState; // On/Off set of each Cell
+    _cellData = null; // User Data for each cell
+    cellSize = 0; // Size of
+    xzCount = 0; // x cell cnt * z cell cnt
+    dimension = new Vec3(); // How Many Cells available at each axis.
+    maxCoord = new Vec3(); // Maximum Coord
+    minBound = new Vec3(); // Min Position
+    maxBound = new Vec3(); // Max Position
     constructor(cellSize) {
-        this._cellData = null; // User Data for each cell
-        this.cellSize = 0; // Size of
-        this.xzCount = 0; // x cell cnt * z cell cnt
-        this.dimension = new Vec3(); // How Many Cells available at each axis.
-        this.maxCoord = new Vec3(); // Maximum Coord
-        this.minBound = new Vec3(); // Min Position
-        this.maxBound = new Vec3(); // Max Position
         if (cellSize != undefined)
             this.cellSize = cellSize;
     }
@@ -20,11 +22,12 @@ class VoxelChunk {
     //#region SETUP
     setCellSize(n) { this.cellSize = n; return this; }
     /** Compute a Min/Max Chunk Boundary that fits over another bounds by using cell size */
-    fitBound(bMin, bMax) {
+    fitBound(bMin, bMax, overScale = 1) {
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Figure out how many voxels can be made in mesh bounding box
         const vsize = Vec3
             .sub(bMax, bMin) // Get Length of Each Axis
+            .scale(overScale) // Pad some extra space
             .divScale(this.cellSize) // How Many Cells Fit per Axis
             .ceil() // OverShoot
             .copyTo(this.dimension) // Save Cell Counts

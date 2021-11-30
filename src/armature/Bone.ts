@@ -9,7 +9,7 @@ class Bone{
     local   = new Transform();  // Local Transform of Resting Pose
     world   = new Transform();  // World Transform of Resting Pose
 
-    constructor( name: string, idx: number, len=0.05 ){
+    constructor( name: string, idx: number, len=0 ){
         this.name   = name;
         this.idx    = idx;
         this.pidx   = null;

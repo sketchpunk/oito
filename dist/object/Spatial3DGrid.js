@@ -2,17 +2,15 @@
 import Vec3 from "../Vec3.js";
 //#region SUPPORT OBJECTS
 class SpatialCell {
-    constructor() {
-        this.items = [];
-    }
+    items = [];
     push(itm) { this.items.push(itm); }
     clear() { this.items.length = 0; }
 }
 class SpatialItem {
+    pos = [0, 0, 0];
+    userData = null;
+    queryId = 0;
     constructor(x, y, z, data = null) {
-        this.pos = [0, 0, 0];
-        this.userData = null;
-        this.queryId = 0;
         this.setPos(x, y, z);
         this.userData = data;
     }
@@ -26,18 +24,15 @@ class SpatialItem {
 }
 //#endregion
 class Spatial3DGrid {
-    constructor() {
-        //#region MAIN
-        this.cells = [];
-        this.minBound = new Vec3(); // Min Position of Grid in World Space
-        this.maxBound = new Vec3(); // Max Position of Grid in World Space
-        this.cellSize = 1; // Size of Each cell in grid
-        this.dimension = new Vec3(); // How many cells in each axis
-        this.maxCoord = new Vec3(); // Max Coordinate for the Grid
-        this.xzCount = 0;
-        this.queryId = 0; // Help create a unqiue list of spatialItems.
-        //#endregion
-    }
+    //#region MAIN
+    cells = [];
+    minBound = new Vec3(); // Min Position of Grid in World Space
+    maxBound = new Vec3(); // Max Position of Grid in World Space
+    cellSize = 1; // Size of Each cell in grid
+    dimension = new Vec3(); // How many cells in each axis
+    maxCoord = new Vec3(); // Max Coordinate for the Grid
+    xzCount = 0;
+    queryId = 0; // Help create a unqiue list of spatialItems.
     //constructor(){}
     //#endregion
     //#region PRIVATE METHODS

@@ -1,13 +1,13 @@
 import Vec2 from "./Vec2.js";
 class Transform2D {
+    //#region MAIN
+    /** Rotation in Radians */
+    rot = 0;
+    /** Vector2 Position */
+    pos = new Vec2();
+    /** Vector2 Scale */
+    scl = new Vec2(1, 1);
     constructor(rot, pos, scl) {
-        //#region MAIN
-        /** Rotation in Radians */
-        this.rot = 0;
-        /** Vector2 Position */
-        this.pos = new Vec2();
-        /** Vector2 Scale */
-        this.scl = new Vec2(1, 1);
         if (rot instanceof Transform2D) {
             this.copy(rot);
         }

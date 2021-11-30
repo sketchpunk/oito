@@ -1,4 +1,14 @@
 class Vec3 extends Float32Array {
+    //#region STATIC VALUES
+    static BYTESIZE = 3 * Float32Array.BYTES_PER_ELEMENT;
+    static AXIS = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+    static UP = [0, 1, 0];
+    static DOWN = [0, -1, 0];
+    static LEFT = [-1, 0, 0];
+    static RIGHT = [1, 0, 0];
+    static FORWARD = [0, 0, 1];
+    static BACK = [0, 0, -1];
+    static ZERO = [0, 0, 0];
     constructor(v, y, z) {
         super(3);
         if (v instanceof Vec3 || v instanceof Float32Array || (v instanceof Array && v.length == 3)) {
@@ -384,6 +394,12 @@ class Vec3 extends Float32Array {
         this[2] = this[2] * t + v[2] * ti;
         return this;
     }
+    fromPlaneProj(v, planeNorm, planePos) {
+        const planeConst = -Vec3.dot(planePos, planeNorm);
+        const scl = Vec3.dot(planeNorm, v) + planeConst;
+        this.fromScale(planeNorm, -scl).add(v);
+        return this;
+    }
     //#endregion ////////////////////////////////////////////////////////
     //#region OPERATORS
     /** Add vector to current vector */
@@ -605,8 +621,9 @@ class Vec3 extends Float32Array {
         return b;
     }
     static toKey(a, place = 0) {
-        //if( place != 0 ){} TODO
-        return a[0] + '_' + a[1] + '_' + a[2];
+        return (place == 0) ?
+            a[0] + '_' + a[1] + '_' + a[2] :
+            a[0].toFixed(place) + '_' + a[1].toFixed(place) + '_' + a[2].toFixed(place);
     }
     //++++++++++++++++++++++++++++++++++
     static dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
@@ -714,14 +731,4 @@ class Vec3 extends Float32Array {
         }
     }
 }
-//#region STATIC VALUES
-Vec3.BYTESIZE = 3 * Float32Array.BYTES_PER_ELEMENT;
-Vec3.AXIS = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-Vec3.UP = [0, 1, 0];
-Vec3.DOWN = [0, -1, 0];
-Vec3.LEFT = [-1, 0, 0];
-Vec3.RIGHT = [1, 0, 0];
-Vec3.FORWARD = [0, 0, 1];
-Vec3.BACK = [0, 0, -1];
-Vec3.ZERO = [0, 0, 0];
 export default Vec3;

@@ -1,18 +1,13 @@
 import Vec3 from "../Vec3.js";
 /* TODO - Add Loop Mode */
 class Point {
-    constructor(pos) {
-        this.pos = new Vec3();
-        this.pos.copy(pos);
-    }
+    pos = new Vec3();
+    constructor(pos) { this.pos.copy(pos); }
 }
 class BezierQuadSpline {
-    constructor() {
-        this.points = []; // All the Points that defines all the curves of the Spline
-        this._curve_cnt = 0; // How many curves make up the spline
-        this._point_cnt = 0; // Total points in spline
-        //#endregion ////////////////////////////////////////////////////////
-    }
+    points = []; // All the Points that defines all the curves of the Spline
+    _curve_cnt = 0; // How many curves make up the spline
+    _point_cnt = 0; // Total points in spline
     //constructor(){}
     //#region GETTERS / SETTERS
     get curve_cnt() { return this._curve_cnt; }

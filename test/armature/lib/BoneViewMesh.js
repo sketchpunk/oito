@@ -6,13 +6,13 @@ import BoneViewMaterial from './BoneViewMaterial.js';
 //#endregion
 
 class BoneViewMesh extends THREE.Mesh{
-    constructor( arm ){
+    constructor( arm, color='white', useDepthTest=true ){
         const shape     = baseShape();
         const inst      = instanceData( arm );
         const bCnt      = arm.bones.length;
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        const mat       = BoneViewMaterial()
+        const mat       = BoneViewMaterial( color, useDepthTest );
         mat.uniforms.boneRot.value = new Float32Array( 4 * bCnt );
         mat.uniforms.bonePos.value = new Float32Array( 3 * bCnt );
         mat.uniforms.boneScl.value = new Float32Array( 3 * bCnt );
@@ -40,6 +40,8 @@ class BoneViewMesh extends THREE.Mesh{
             b.world.pos.toBuf( pos, i );
             b.world.scl.toBuf( scl, i );
         }
+
+        return this;
     }
 }
 

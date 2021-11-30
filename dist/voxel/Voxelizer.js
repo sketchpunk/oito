@@ -2,18 +2,16 @@
 import Vec3 from "../Vec3.js";
 import Intersect from "../geometry/Intersect.js";
 class Voxelizer {
-    constructor() {
-        //#region MAIN
-        this.a = new Vec3(); // Triangle Points
-        this.b = new Vec3();
-        this.c = new Vec3();
-        this.vmin = new Vec3(); // Triangle Bounding Box
-        this.vmax = new Vec3();
-        this.minCoord = new Vec3(); // Min/Max Voxel Coordinates
-        this.maxCoord = new Vec3();
-        this.minCell = new Vec3(); // Min/Max Voxel Cell Bounds
-        this.maxCell = new Vec3();
-    }
+    //#region MAIN
+    a = new Vec3(); // Triangle Points
+    b = new Vec3();
+    c = new Vec3();
+    vmin = new Vec3(); // Triangle Bounding Box
+    vmax = new Vec3();
+    minCoord = new Vec3(); // Min/Max Voxel Coordinates
+    maxCoord = new Vec3();
+    minCell = new Vec3(); // Min/Max Voxel Cell Bounds
+    maxCell = new Vec3();
     //#endregion
     fromGeometry(chunk, vertices, indices) {
         let i;

@@ -1,13 +1,11 @@
 import Vec3 from "../../Vec3.js";
 import Maths from "../../Maths.js";
 class Twist {
-    constructor() {
-        //#region VALUES
-        this.startPoint = new Vec3(0, -1.0, 0);
-        this.endPoint = new Vec3(0, 1.0, 0);
-        this.startAngle = -45 * Math.PI / 180;
-        this.endAngle = 45 * Math.PI / 180;
-    }
+    //#region VALUES
+    startPoint = new Vec3(0, -1.0, 0);
+    endPoint = new Vec3(0, 1.0, 0);
+    startAngle = -45 * Math.PI / 180;
+    endAngle = 45 * Math.PI / 180;
     //#endregion 
     //#region SETTERS/GETTERS
     setYRange(start, end) {

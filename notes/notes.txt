@@ -15,3 +15,11 @@ git+https://user@hostname/project/blah.git#commit-ish
 "dependencies": {
     "Oito": "git+https://github.com/sketchpunk/oito.git",
 }
+
+
+https://medium.com/@lucksp_22012/3-options-to-compile-typescript-to-js-rollup-tsc-babel-3319977a6946
+
+
+
+npm install -g typescript@latest
+tsc -v

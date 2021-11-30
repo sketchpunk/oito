@@ -93,6 +93,7 @@ declare class Vec3 extends Float32Array {
     fromOrthogonal(v: TVec3): this;
     fromReflect(dir: TVec3, norm: TVec3): this;
     damp(v: TVec3, lambda: number, dt: number): this;
+    fromPlaneProj(v: TVec3, planeNorm: TVec3, planePos: TVec3): this;
     /** Add vector to current vector */
     add(a: TVec3): this;
     sub(v: TVec3): this;

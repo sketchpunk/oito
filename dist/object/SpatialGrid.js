@@ -1,17 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 //#region SUPPORT OBJECTS
 class SpatialCell {
-    constructor() {
-        this.items = [];
-    }
+    items = [];
     push(itm) { this.items.push(itm); }
     clear() { this.items.length = 0; }
 }
 class SpatialItem {
+    pos = [0, 0];
+    userData = null;
+    queryId = 0;
     constructor(x, y, data = null) {
-        this.pos = [0, 0];
-        this.userData = null;
-        this.queryId = 0;
         this.setPos(x, y);
         this.userData = data;
     }
@@ -24,17 +22,14 @@ class SpatialItem {
 }
 //#endregion
 class SpatialGrid {
-    constructor() {
-        //#region MAIN
-        this.cells = [];
-        this.width = 0;
-        this.height = 0;
-        this.cellSize = 100;
-        this.cellXLen = 0;
-        this.cellYLen = 0;
-        this.queryId = 0; // Help create a unqiue list of spatialItems.
-        //#endregion
-    }
+    //#region MAIN
+    cells = [];
+    width = 0;
+    height = 0;
+    cellSize = 100;
+    cellXLen = 0;
+    cellYLen = 0;
+    queryId = 0; // Help create a unqiue list of spatialItems.
     //constructor(){}
     //#endregion
     //#region PRIVATE METHODS
