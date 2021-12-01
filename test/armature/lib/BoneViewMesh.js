@@ -1,7 +1,7 @@
     
 //#region IMPORTS
-import { THREE }        from '../../lib/starter.js';
-import Vec3             from '../../../dist/Vec3.js';
+import { THREE }        from "../../_lib/threejs/Starter.js";
+import { Vec3 }         from '../../../dist/core.js';
 import BoneViewMaterial from './BoneViewMaterial.js';
 //#endregion
 

@@ -1,0 +1,28 @@
+{
+    "name"          : "@oito/core.extend",
+    "version"       : "0.0.1",
+    "description"   : "",
+    "main"          : "./build/index.js",
+    "types"         : "./build/index.d.ts",
+    "module"        : "./build/index.js",
+    "source"        : "./src/index.ts",
+    "type"          : "module",
+    "keywords"      : [],
+    "author"        : "",
+    "license"       : "MIT",
+
+    "scripts": {      
+        "build"     : "npm run esbuild && npm run tsc",
+        "esbuild"   : "node ./esbuild.mjs",
+        "tsc"       : "tsc",
+        "tsc-clean" : "tsc --build --clean"
+    },
+
+    "dependencies": {
+    },
+
+    "devDependencies": {
+        "typescript": "^4.5.2"
+    }
+  }
+  

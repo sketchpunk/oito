@@ -1,34 +1,30 @@
 {
-	"name"			: "oito",
-	"version"		: "0.0.0.1",
-	"description"	: "Javascript Math Library, primarily aimed for WebGL/WebGPU",
-	"keywords"		: [ "webgl", "webgpu", "math" ],
-	"repository"	: { "url": "https://github.com/sketchpunk/oito.git", "type": "git" },
-	"author"		: { "name": "Sketchpunk", "email": "tmp@tmp.com", "url": "http://tmp" },
-	"license"		: "MIT",
-	"main"			: "dist/index.js",
-	"types"			: "dist/index.d.ts",
-	"files"			: [ "dist" ],
+    "name"          : "oito",
+    "private"       : true,
+    "version"       : "0.0.1",
+    "description"   : "",
+    "type"          : "module",
+    "keywords"      : [],
+    "author"        : "",
+    "license"       : "MIT",
+    
+    "scripts": {
+        "build_core"    : "npm run esbuild -w ./packages/core",
+        "build_all"     : "npm run build --workspaces"
+    },
+    
+    "workspaces": [
+        "packages/types",
+        "packages/maths",
+        "packages/gltf2",
+        "packages/core",
+        "packages/core.extend",
+        "packages/armature"
+    ],
 
-	"devDependencies": {
-		"typescript"						: "^4.5.2",
-		"@typescript-eslint/eslint-plugin"	: "^4.27.0",
-		"@typescript-eslint/parser"			: "^4.27.0",
-
-		"eslint"		: "^7.28.0",
-		"concurrently"	: "^6.2.0",
-		"browser-sync"  : "^2.27.5",
-		"three"         : "0.129.0"
-	},
-	"scripts": {
-		"test"		: "echo \"Error: no test specified\" && exit 1",
-		
-		"tsc"		: "tsc --watch --preserveWatchOutput",
-		"build"		: "tsc -p tsconfig.json",
-		"lint"		: "eslint src/ --ext .js,.jsx,.ts,.tsx",
-		
-		"bsyncInit" : "browser-sync init",
-        "bsyncRun"  : "browser-sync start --config bs-config.js",
-		"start"		: "concurrently \"npm:tsc\" \"npm:bsyncRun\" "
-	}
+    "devDependencies": {
+        "typescript"                    : "^4.5.2",
+        "esbuild"                       : "^0.13.14",
+        "esbuild-plugin-text-replace"   : "^1.1.3"
+    }
 }

@@ -1,0 +1,18 @@
+https://github.com/Quramy/npm-ts-workspaces-example
+https://how-to.dev/series/esbuild-tutorial
+
+npm init -y
+
+npm install -g typescript
+npm install --save-dev typescript
+
+tsc --init
+
+
+    "build": "esbuild --bundle src/index.js --outfile=www/main.js",
+    "start": "npm run build -- --servedir=www",
+    "watch": "npm run build -- --watch"
+
+
+    tsconfig.json
+    // "noEmit": true,  will compile & type check typescript but will not generate files.

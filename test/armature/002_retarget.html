@@ -1,0 +1,194 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+    
+import Starter, { THREE }   from '../_lib/threejs/Starter.js';
+import PointsMesh           from '../_lib/threejs/PointsMesh.js';
+import Gltf2Util            from '../_lib/threejs/Gltf2Util.js';
+import Util3js              from '../_lib/threejs/Util.js';
+
+import { Armature, SkinMTX, SkinDQ, BoneSpring }    from '../../dist/armature.js';
+import { Vec3, Quat, Mat4, Transform }              from '../../dist/core.js';
+import Gltf2                                        from '../../dist/parsers/Gltf2.js';
+import { Clip, Animator, Retarget }                 from '../../dist/animator.js';
+
+import SkinMTXMaterial      from './lib/SkinMTXMaterial.js';
+import BoneViewMaterial     from './lib/BoneViewMaterial.js';
+import BoneViewMesh         from './lib/BoneViewMesh.js';
+
+let App;
+let gRetarget;
+let pnt;
+
+function onRender( dt=0, et=0 ){
+    gRetarget.update( dt );
+}
+
+window.addEventListener( "load", async _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:true, grid:true } );
+    App.set_camera( 0, 20, 4, [0,0.8,0] );
+    App.onRender = onRender;
+
+    //pnt = new PointsMesh( 100 );
+    //App.add( pnt.mesh );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    gRetarget = new RetargetProcess();
+    Promise.all([
+        gRetarget.fetchSource( '../_res/anim/Walking.gltf' ),
+        gRetarget.fetchTarget( '../_res/models/tina/tina.gltf' )
+    ]).then( _=>{ 
+        gRetarget.bind();
+        gRetarget.ready = true;
+        gRetarget.update( 0.1 );
+    } );
+
+    App.render();
+});
+
+class RetargetProcess{
+
+    constructor(){
+        this.ready          = false;
+        this.retarget       = new Retarget();
+        this.retarget.anim.inPlace = true;
+
+        this.srcBoneView    = null;
+        this.tarBoneView    = null;
+        this.tarBoneSpring  = null;
+    }
+
+    //#region INITIALIZATION
+
+    async fetchSource( url ){
+        const gltf = await Gltf2.fetch( url );
+        if( !gltf ){ console.log( 'Error loading GLTF' ); return; }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        const anim = gltf.getAnimation();
+        const clip = Clip.fromGLTF2( anim );
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Create Armature
+        const skin      = gltf.getSkin();
+        const arm       = new Armature();
+        for( let j of skin.joints ){
+            arm.addBone( j.name, j.parentIndex, j.rotation, j.position, j.scale );
+        }
+
+        arm.bind( SkinMTX, 0.07 );
+
+        // Visually See bone
+        App.add( (this.srcBoneView = this.createBoneView( arm, true )) );
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Setup Retarget with Source Animation & Bones
+        this.retarget
+            .setClipArmature( arm )
+            .setClipPoseOffset( skin.rotation, skin.position, skin.scale )
+            .setClip( clip )
+
+        this.srcBoneView.updateFromPose( this.retarget.getClipPose( true, true ) ); // Visually Update
+
+        return arm;
+    }
+
+    async fetchTarget( url ){
+        const gltf = await Gltf2.fetch( url );
+        if( !gltf ){ console.log( 'Error loading GLTF' ); return; }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Create Armature
+        const skin      = gltf.getSkin();
+        const arm       = new Armature();
+        for( let j of skin.joints ){
+            arm.addBone( j.name, j.parentIndex, j.rotation, j.position, j.scale );
+        }
+
+        arm.bind( SkinMTX, 0.07 );
+        //console.log( arm );
+
+        // Visually See bone
+        this.tarBoneView = this.createBoneView( arm, false );
+        this.tarBoneView.position.x = 1;
+        App.add( this.tarBoneView );
+
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        this.tarBoneSpring = new BoneSpring( arm );        
+        this.tarBoneSpring
+            .addRotChain( 'braidr', ["hair.L.002","hair.L.004","hair.L.003","hair.L.005"], 3, 0.8 )
+            .addRotChain( 'braidl', ["hair.R.002","hair.R.004","hair.R.003","hair.R.005"], 3, 0.8 )
+            .addPosChain( "boot1", [ "breast.L" ], 3, 0.2 )
+            .addPosChain( "boot2", [ "breast.R" ], 3, 0.2 )
+        ;
+        
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Setup Retarget with Source Animation & Bones
+        this.retarget
+            .setTargetArmature( arm )
+            .getTargetPose().fromGLTF2( gltf.getPose() ); // Apply TPose;
+
+        this.tarBoneView.updateFromPose( this.retarget.getTargetPose( true ) ); // Visually Update        
+ 
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        /**/
+        const tex  = await Util3js.loadTexture( '../_res/models/tina/initialShadingGroup_albedo.jpg' );
+        tex.flipY = false;
+
+        const mat  = SkinMTXMaterial( tex, arm.getSkinOffsets()[0] );
+        const mesh = Gltf2Util.loadMesh( gltf, null, mat );
+        mesh.position.x = -1;
+        App.add( mesh );
+
+        return arm;
+    }
+
+    createBoneView( arm, useBiggerBones=false ){
+        const bv = new BoneViewMesh( arm );
+
+        if( useBiggerBones ){
+            // Because of the transform on the Armature itself, need to scale up the bones
+            // to offset the massive scale down of the model
+            bv.material.uniforms.meshScl.value = 2.0;
+            bv.material.uniforms.dirScl.value  = 1;
+        }
+
+        return bv;
+    }
+
+    //#endregion
+
+    bind(){
+        // Bind the Two Skeletons Together
+        this.retarget.bind();
+
+        // Bind the Springs to the starting pose of the target
+        this.tarBoneSpring.setRestPose( this.retarget.getTargetPose( true ) );
+
+        /* TEST-SEE POINTS OF SPRING
+        let ch = this.tarBoneSpring.items.get( 'braidr' );
+        for( let i of ch.items ){
+            console.log( i.spring.tar );
+            pnt.add( Vec3.add( [0,0,0], i.spring.tar ), 0x00ff00, 1 );
+            //break;
+        }
+        */
+    }
+
+    update( dt ){
+        if( this.ready ){
+            const targetPose = this.retarget.getTargetPose();
+
+            this.retarget.animateNext( dt );                                // Retarget Animation
+            this.tarBoneSpring.updatePose( dt, targetPose, true );          // Apply Springs
+
+            this.srcBoneView.updateFromPose( this.retarget.getClipPose() ); // Update Source Bone View
+            this.tarBoneView.updateFromPose( targetPose );                  // Update Target Bone View
+
+            this.retarget.to.arm.updateSkinFromPose( targetPose );          // Update Skinned Mesh
+        }
+    }
+
+}
+
+</script></body></html>

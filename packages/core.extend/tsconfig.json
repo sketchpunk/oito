@@ -1,0 +1,16 @@
+{
+    "extends"           : "../../tsconfig.json",
+    "exclude"           : [ "./build" ],
+    "compilerOptions"   : {
+        "rootDir"             : "src",
+        "outDir"              : "./build",
+        "tsBuildInfoFile"     : "./build/tsconfig.tsbuildinfo",
+        "emitDeclarationOnly" : true,
+        "composite"           : true,
+    },
+
+    "references": [
+        { "path": "../types" },
+        { "path": "../core" }
+    ]
+}

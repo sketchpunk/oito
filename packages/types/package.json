@@ -1,0 +1,22 @@
+{
+    "name"          : "@oito/type",
+    "version"       : "0.0.1",
+    "description"   : "",
+    "main"          : "./src/index.ts",
+    "types"         : "./build/index.d.ts",
+    "source"        : "./src/index.ts",
+    "type"          : "module",
+
+    "scripts": {
+      "build": "tsc"
+    },
+
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+
+    "devDependencies": {
+      "typescript": "^4.5.2"
+    }
+  }
+  

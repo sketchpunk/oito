@@ -1,4 +1,4 @@
-import { THREE } from "../../lib/starter.js";
+import { THREE } from "../../_lib/threejs/Starter.js";
 
 function BoneViewMaterial( color='white', useDepthTest=true ){
     let mat = new THREE.RawShaderMaterial({

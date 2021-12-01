@@ -1,5 +1,4 @@
-import { THREE } from "../../lib/starter.js";
-
+import { THREE } from "../../_lib/threejs/Starter.js";
 
 function SkinDQMaterial( color='cyan', poseqBuffer=null, posepBuffer=null ){
     let mat = new THREE.RawShaderMaterial({
