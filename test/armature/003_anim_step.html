@@ -1,0 +1,136 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+    
+import Starter, { THREE }   from '../_lib/threejs/Starter.js';
+import PointsMesh           from '../_lib/threejs/PointsMesh.js';
+import Gltf2Util            from '../_lib/threejs/Gltf2Util.js';
+
+import { Armature, SkinMTX, SkinDQ }    from '../../dist/armature.js';
+import { Vec3, Quat, Mat4, Transform }  from '../../dist/core.js';
+import Gltf2                            from '../../dist/parsers/Gltf2.js';
+import { Clip, Animator }               from '../../dist/animator.js';
+
+import BoneViewMaterial     from './lib/BoneViewMaterial.js';
+import BoneViewMesh         from './lib/BoneViewMesh.js';
+
+let App;
+let gBAnimator;
+let pnt;
+
+function onRender( dt=0, et=0 ){
+    //gBAnimator.update( dt );
+}
+
+window.addEventListener( "load", async _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:true, grid:true } );
+    App.set_camera( 0, 20, 4, [0,0.8,0] );
+    App.onRender = onRender;
+
+    //pnt = new PointsMesh( 100 );
+    //App.add( pnt.mesh );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    gBAnimator = new AnimateBones()
+    gBAnimator.fetch( '../_res/anim/Walking.gltf' );
+
+    App.render();
+});
+
+class AnimateBones{
+
+    constructor(){
+        this.armature = null;
+        this.boneView = null;
+        this.pose     = null;
+
+        this.animator = new Animator();
+        this.animator.inPlace = true;
+
+        this.keyFrame = -1;
+
+        document.addEventListener( 'keydown', this.onKeyDown.bind( this ) );
+    }
+
+    //#region INITIALIZATION
+
+    async fetch( url ){
+        const gltf = await Gltf2.fetch( url );
+        if( !gltf ){ console.log( 'Error loading GLTF' ); return; }
+
+        this.loadClip( gltf );
+        this.loadArmature( gltf );
+        this.loadBoneView( this.armature );
+    }
+
+    loadClip( gltf ){
+        const anim = gltf.getAnimation();
+        const clip = Clip.fromGLTF2( anim );
+        this.animator.setClip( clip );
+
+        console.log( clip );
+    }
+
+    loadArmature( gltf ){
+        const skin      = gltf.getSkin();
+        
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Create Armature
+        this.armature   = new Armature();
+        for( let j of skin.joints ){
+            this.armature.addBone( j.name, j.parentIndex, j.rotation, j.position, j.scale );
+        }
+        
+        this.armature.bind( SkinMTX, 0.07 );
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Create Working Pose
+        this.pose = this.armature.newPose();
+
+        // Armature has a Transform on itself sometimes
+        // Apply it as the Offset Transform that gets preApplied to the root
+        if( skin.rotation ) this.pose.offset.rot.copy( skin.rotation );
+        if( skin.scale )    this.pose.offset.scl.copy( skin.scale );
+    }
+
+    loadBoneView( arm ){
+        this.boneView = new BoneViewMesh( arm );
+
+        // Because of the transform on the Armature itself, need to scale up the bones
+        // to offset the massive scale down of the model
+        this.boneView.material.uniforms.meshScl.value = 2.0;
+        this.boneView.material.uniforms.dirScl.value  = 1;
+
+        // Set Initial Data So it Renders
+        this.pose.updateWorld( true );
+        this.boneView.updateFromPose( this.pose );
+
+        App.add( this.boneView );
+    }
+
+    //#endregion
+
+    update( kf ){
+        if( !this.boneView ) return;
+
+        this.keyFrame = Math.min(
+            Math.max( 0, this.keyFrame + kf ),
+            this.animator.clip.frameCount - 1
+        );
+
+        this.animator
+            .atKey( this.keyFrame )
+            .applyPose( this.pose );
+
+        this.pose.updateWorld( true );
+        this.boneView.updateFromPose( this.pose ); 
+    } 
+
+    onKeyDown( e ){
+        switch( e.key ){
+            case 'ArrowRight'   : this.update( 1 );     break;
+            case 'ArrowLeft'    : this.update( -1 );    break;
+        }
+    }
+}
+
+</script></body></html>

@@ -1,4 +1,4 @@
-import { ITrack } from ".";
+import { ITrack }   from ".";
 import type Pose    from "../Pose";
 import type Clip    from "./Clip";
 
@@ -33,6 +33,7 @@ class Animator{
     
     setClip( c: Clip ): this{ this.clip = c; return this; }
 
+    /** Move Animation to the next possible frame. */
     update( deltaTime: number ): this{
         this.clock = ( this.clock + deltaTime ) % this.clip.duration;
         this._computeFrameInfo();
@@ -52,8 +53,41 @@ class Animator{
         if( this.inPlace ){
             // TODO: Y only because Maximo Animations have ZUp, Need to do a better version of inplace setting
             // Also come up with a better way then just "inPlace" property.
+
+            // Maybe InPlace Scale, so [1,0,1] will zero out Y
             const bPos = pose.bones[ 0 ].local.pos;
             bPos.y = 0; 
+        }
+
+        return this;
+    }
+
+    /** Set Animator on a specific frame */
+    atKey( n: number ): this{
+        // TODO : Revisit when have animation examples of multiple TimeStamp Arrays
+        if( !this.clip )    return this;
+        if( n < 0 )         n = 0;
+        this._genFrameInfo();
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        const aryTs = this.clip.timeStamps;
+        const aryFi = this.frameInfo;
+        let ts      : Float32Array;    // TimeStamp;
+        let fi      : FrameInfo;
+        let tsLen   : number;          // TimeStamp Length;
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        for( let i=0; i < aryTs.length; i++ ){
+            ts      = aryTs[ i ];
+            fi      = aryFi[ i ];
+            tsLen   = ts.length - 1;
+
+            fi.t    = 1;
+            fi.ti   = 0;
+            fi.k0   = ( n <= tsLen )? n : tsLen;
+            fi.k1   = fi.k0;
+            fi.kt0  = fi.k0;
+            fi.kt1  = fi.k0;
         }
 
         return this;
@@ -62,26 +96,28 @@ class Animator{
     //endregion
 
     //#region INTERNAL
+
+    /** Make sure we have enough frame info objects to handle all the timestamps of the clip  */
+    _genFrameInfo(){
+        const aryFi = this.frameInfo;
+        const aryTs = this.clip.timeStamps;
+        if( aryFi.length < aryTs.length ){
+            for( let i=aryFi.length; i < aryTs.length; i++ ) aryFi.push( new FrameInfo );
+        }
+    }
+
     _computeFrameInfo() : void{
         if( !this.clip ) return;
+        this._genFrameInfo();
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         const aryFi = this.frameInfo;
         const aryTs = this.clip.timeStamps;
         const time  = this.clock;
 
-        //console.log( aryFi, aryTs );
-
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        // Make sure we have enough frame info objects to handle all the timestamps of the clip
-        if( aryFi.length < aryTs.length ){
-            for( let i=aryFi.length; i < aryTs.length; i++ ) aryFi.push( new FrameInfo );
-        }
-
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        let ts   : Float32Array;    // TimeStamp;
-        let fi   : FrameInfo;
-        let tLen : number;          // TimeStamp Length;
+        let ts      : Float32Array;    // TimeStamp;
+        let fi      : FrameInfo;
+        let tLen    : number;          // TimeStamp Length;
 
         for( let i=0; i < aryTs.length; i++ ){
             //-------------------------------------

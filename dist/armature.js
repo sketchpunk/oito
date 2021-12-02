@@ -1,4 +1,4 @@
-import { Vec3 } from "./core.js";
+import { Vec3, Transform as Transform3 } from "./core.js";
 import { Transform } from "./core.js";
 var Bone = class {
   constructor(name, idx, len = 0) {
@@ -38,6 +38,7 @@ var Pose = class {
       for (let i = 0; i < bCnt; i++) {
         this.bones[i] = arm.bones[i].clone();
       }
+      this.offset.copy(this.arm.offset);
     }
   }
   get(bName) {
@@ -78,6 +79,14 @@ var Pose = class {
         b.local.pos.copy(jnt.pos);
       if (jnt.scl)
         b.local.scl.copy(jnt.scl);
+    }
+    return this;
+  }
+  copy(pose) {
+    const bLen = this.bones.length;
+    for (let i = 0; i < bLen; i++) {
+      this.bones[i].local.copy(pose.bones[i].local);
+      this.bones[i].world.copy(pose.bones[i].world);
     }
     return this;
   }
@@ -139,6 +148,7 @@ var Armature = class {
   constructor() {
     this.names = new Map();
     this.bones = [];
+    this.offset = new Transform3();
   }
   addBone(name, pidx, rot, pos, scl) {
     const idx = this.bones.length;
@@ -290,7 +300,7 @@ var BoneMap = class {
   }
 };
 var BoneMap_default = BoneMap;
-import { Transform as Transform3 } from "./core.js";
+import { Transform as Transform4 } from "./core.js";
 import { Vec3 as Vec32 } from "./core.js";
 var SpringBase = class {
   constructor() {
@@ -377,13 +387,13 @@ var SpringVec3_default = SpringVec3;
 var SpringItem = class {
   constructor(name, idx) {
     this.spring = new SpringVec3_default();
-    this.bind = new Transform3();
+    this.bind = new Transform4();
     this.name = name;
     this.index = idx;
   }
 };
 var SpringItem_default = SpringItem;
-import { Quat, Transform as Transform4, Vec3 as Vec33 } from "./core.js";
+import { Quat, Transform as Transform5, Vec3 as Vec33 } from "./core.js";
 var SpringRot = class {
   setRestPose(chain, pose) {
     let si;
@@ -401,8 +411,8 @@ var SpringRot = class {
     let si;
     let b;
     let tail = new Vec33();
-    let pTran = new Transform4();
-    let cTran = new Transform4();
+    let pTran = new Transform5();
+    let cTran = new Transform5();
     let va = new Vec33();
     let vb = new Vec33();
     let rot = new Quat();
@@ -427,7 +437,7 @@ var SpringRot = class {
   }
 };
 var SpringRot_default = SpringRot;
-import { Transform as Transform5 } from "./core.js";
+import { Transform as Transform6 } from "./core.js";
 var SpringPos = class {
   setRestPose(chain, pose) {
     let si;
@@ -441,9 +451,9 @@ var SpringPos = class {
   updatePose(chain, pose, dt) {
     let si;
     let b;
-    let pTran = new Transform5();
-    let cTran = new Transform5();
-    let iTran = new Transform5();
+    let pTran = new Transform6();
+    let cTran = new Transform6();
+    let iTran = new Transform6();
     si = chain.items[0];
     b = pose.bones[si.index];
     if (b.pidx != null)
@@ -582,6 +592,8 @@ var BoneSpring = class {
 };
 var bonespring_default = BoneSpring;
 import { Mat4 } from "./core.js";
+var COMP_LEN = 16;
+var BYTE_LEN = COMP_LEN * 4;
 var SkinMTX = class {
   init(arm) {
     const bCnt = arm.bones.length;
@@ -623,9 +635,34 @@ var SkinMTX = class {
   getOffsets() {
     return [this.offsetBuffer];
   }
+  getTextureInfo(frameCount) {
+    const boneCount = this.bind.length;
+    const strideFloatLength = COMP_LEN;
+    const strideByteLength = BYTE_LEN;
+    const pixelsPerStride = COMP_LEN / 4;
+    const floatRowSize = COMP_LEN * frameCount;
+    const bufferFloatSize = floatRowSize * boneCount;
+    const bufferByteSize = bufferFloatSize * 4;
+    const pixelWidth = pixelsPerStride * frameCount;
+    const pixelHeight = boneCount;
+    const o = {
+      boneCount,
+      strideFloatLength,
+      strideByteLength,
+      pixelsPerStride,
+      floatRowSize,
+      bufferFloatSize,
+      bufferByteSize,
+      pixelWidth,
+      pixelHeight
+    };
+    return o;
+  }
 };
 var SkinMTX_default = SkinMTX;
 import DualQuat from "./core.extend/DualQuat.js";
+var COMP_LEN2 = 8;
+var BYTE_LEN2 = COMP_LEN2 * 4;
 var SkinDQ = class {
   init(arm) {
     const bCnt = arm.bones.length;
@@ -676,6 +713,29 @@ var SkinDQ = class {
   }
   getOffsets() {
     return [this.offsetQBuffer, this.offsetPBuffer];
+  }
+  getTextureInfo(frameCount) {
+    const boneCount = this.bind.length;
+    const strideByteLength = BYTE_LEN2;
+    const strideFloatLength = COMP_LEN2;
+    const pixelsPerStride = COMP_LEN2 / 4;
+    const floatRowSize = COMP_LEN2 * frameCount;
+    const bufferFloatSize = floatRowSize * boneCount;
+    const bufferByteSize = bufferFloatSize * 4;
+    const pixelWidth = pixelsPerStride * frameCount;
+    const pixelHeight = boneCount;
+    const o = {
+      boneCount,
+      strideByteLength,
+      strideFloatLength,
+      pixelsPerStride,
+      floatRowSize,
+      bufferFloatSize,
+      bufferByteSize,
+      pixelWidth,
+      pixelHeight
+    };
+    return o;
   }
 };
 var SkinDQ_default = SkinDQ;

@@ -1,7 +1,7 @@
 //#region IMPORTS
 import type { TVec3, TVec4 }    from '@oito/types';
-import { Vec3 }                 from '@oito/core';
-import type ISkin               from './skins/ISkin.js'
+import { Vec3, Transform }      from '@oito/core';
+import type { ISkin }           from './skins/ISkin.js'
 import Bone                     from './Bone.js';
 import Pose                     from './Pose.js';
 //#endregion
@@ -11,6 +11,7 @@ class Armature{
     names  : Map<string, number>    = new Map();
     bones  : Array<Bone>            = [];
     skin  ?: ISkin;
+    offset : Transform              = new Transform(); // Sometimes the Armatures have a Transform Applied to them to render correctly in webgl.
     //#endregion
 
     //#region METHODS

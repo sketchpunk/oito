@@ -40,16 +40,45 @@ var Animator = class {
     }
     return this;
   }
-  _computeFrameInfo() {
+  atKey(n) {
     if (!this.clip)
-      return;
+      return this;
+    if (n < 0)
+      n = 0;
+    this._genFrameInfo();
+    const aryTs = this.clip.timeStamps;
+    const aryFi = this.frameInfo;
+    let ts;
+    let fi;
+    let tsLen;
+    for (let i = 0; i < aryTs.length; i++) {
+      ts = aryTs[i];
+      fi = aryFi[i];
+      tsLen = ts.length - 1;
+      fi.t = 1;
+      fi.ti = 0;
+      fi.k0 = n <= tsLen ? n : tsLen;
+      fi.k1 = fi.k0;
+      fi.kt0 = fi.k0;
+      fi.kt1 = fi.k0;
+    }
+    return this;
+  }
+  _genFrameInfo() {
     const aryFi = this.frameInfo;
     const aryTs = this.clip.timeStamps;
-    const time = this.clock;
     if (aryFi.length < aryTs.length) {
       for (let i = aryFi.length; i < aryTs.length; i++)
         aryFi.push(new FrameInfo());
     }
+  }
+  _computeFrameInfo() {
+    if (!this.clip)
+      return;
+    this._genFrameInfo();
+    const aryFi = this.frameInfo;
+    const aryTs = this.clip.timeStamps;
+    const time = this.clock;
     let ts;
     let fi;
     let tLen;
@@ -476,6 +505,14 @@ var Retarget = class {
     this.from.pose.updateWorld(true);
     this.applyRetarget();
     this.to.pose.updateWorld(true);
+    return this;
+  }
+  atKey(k) {
+    this.anim.atKey(k).applyPose(this.from.pose);
+    this.from.pose.updateWorld(true);
+    this.applyRetarget();
+    this.to.pose.updateWorld(true);
+    return this;
   }
   applyRetarget() {
     const fPose = this.from.pose.bones;

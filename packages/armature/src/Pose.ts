@@ -22,6 +22,8 @@ class Pose{
             for( let i=0; i < bCnt; i++ ){
                 this.bones[ i ] = arm.bones[ i ].clone();
             }
+
+            this.offset.copy( this.arm.offset );
         }
     }
     //#endregion
@@ -74,6 +76,17 @@ class Pose{
             if( jnt.pos ) b.local.pos.copy( jnt.pos );
             if( jnt.scl ) b.local.scl.copy( jnt.scl );
         }
+        return this;
+    }
+
+    copy( pose: Pose ): this{
+        const bLen = this.bones.length;
+
+        for( let i=0; i < bLen; i++ ){
+            this.bones[ i ].local.copy( pose.bones[ i ].local );
+            this.bones[ i ].world.copy( pose.bones[ i ].world );
+        }
+
         return this;
     }
 

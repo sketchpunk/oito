@@ -1,9 +1,12 @@
 //#region IMPORTS
-import { Mat4 }         from '@oito/core';
-import type ISkin       from './ISkin.js'
-import type Armature    from '../Armature.js'
-import type Pose        from '../Pose.js';
+import { Mat4 }                     from '@oito/core';
+import type { ISkin, TTextureInfo } from './ISkin.js'
+import type Armature                from '../Armature.js'
+import type Pose                    from '../Pose.js';
 //#endregion
+
+const COMP_LEN = 16;            // 16 Floats
+const BYTE_LEN = COMP_LEN * 4;  // 16 Floats * 4 Bytes Each
 
 class SkinMTX implements ISkin {
     bind         !: Array< Mat4 >;
@@ -73,6 +76,32 @@ class SkinMTX implements ISkin {
 
     getOffsets(): Array< unknown >{
         return [ this.offsetBuffer ];
+    }
+
+    getTextureInfo( frameCount: number ): TTextureInfo{
+        const boneCount         = this.bind.length;             // One Bind Per Bone
+        const strideFloatLength = COMP_LEN;                     // How many floats makes up one bone offset
+        const strideByteLength  = BYTE_LEN;                     // n Floats, 4 Bytes Each
+        const pixelsPerStride   = COMP_LEN / 4;                 // n Floats, 4 Floats Per Pixel ( RGBA )
+        const floatRowSize      = COMP_LEN * frameCount;        // How many Floats needed to hold all the frame data for 1 bone
+        const bufferFloatSize   = floatRowSize * boneCount;     // Size of the Buffer to store all the data.
+        const bufferByteSize    = bufferFloatSize * 4;          // Size of buffer in Bytes.
+        const pixelWidth        = pixelsPerStride * frameCount; // How Many Pixels needed to hold all the frame data for 1 bone 
+        const pixelHeight       = boneCount;                    // Repeat Data, but more user friendly to have 2 names depending on usage.
+
+        const o : TTextureInfo = {
+            boneCount,
+            strideFloatLength,
+            strideByteLength,
+            pixelsPerStride,
+            floatRowSize,
+            bufferFloatSize,
+            bufferByteSize,
+            pixelWidth,
+            pixelHeight,
+        };
+
+        return o;
     }
 }
 

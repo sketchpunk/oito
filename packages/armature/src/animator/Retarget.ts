@@ -261,7 +261,7 @@ class Retarget{
         return true;
     }
 
-    animateNext( dt: number ) : void{
+    animateNext( dt: number ) : this{
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Run Animation & Update the FROM Pose with the results
         this.anim
@@ -273,6 +273,24 @@ class Retarget{
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         this.applyRetarget();
         this.to.pose.updateWorld( true );
+
+        return this;
+    }
+
+    atKey( k: number ) : this{
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Set Animator to keyframe & update the FROM Pose with the results
+        this.anim
+            .atKey( k )
+            .applyPose( this.from.pose );
+
+        this.from.pose.updateWorld( true );
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        this.applyRetarget();
+        this.to.pose.updateWorld( true );
+        
+        return this;
     }
 
     applyRetarget(){

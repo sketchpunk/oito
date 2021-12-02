@@ -1,11 +1,13 @@
 //#region IMPORTS
 //import { DualQuat }     from '@oito/core.extend';
-import DualQuat         from '@oito/core.extend/build/DualQuat.js';
-import type ISkin       from './ISkin.js'
-import type Armature    from '../Armature.js'
-import type Pose        from '../Pose.js';
-
+import DualQuat                     from '@oito/core.extend/build/DualQuat.js';
+import type { ISkin, TTextureInfo } from './ISkin.js'
+import type Armature                from '../Armature.js'
+import type Pose                    from '../Pose.js';
 //#endregion
+
+const COMP_LEN = 8;             // 8 Floats
+const BYTE_LEN = COMP_LEN * 4;  // 8 Floats * 4 Bytes Each
 
 class SkinDQ implements ISkin {
     bind         !: Array< DualQuat >;
@@ -94,6 +96,32 @@ class SkinDQ implements ISkin {
 
     getOffsets(): Array< unknown >{
         return [ this.offsetQBuffer, this.offsetPBuffer ];
+    }
+
+    getTextureInfo( frameCount: number ): TTextureInfo{
+        const boneCount         = this.bind.length;             // One Bind Per Bone
+        const strideByteLength  = BYTE_LEN;                     // n Floats, 4 Bytes Each
+        const strideFloatLength = COMP_LEN;                     // How many floats makes up one bone offset
+        const pixelsPerStride   = COMP_LEN / 4;                 // n Floats, 4 Floats Per Pixel ( RGBA )
+        const floatRowSize      = COMP_LEN * frameCount;        // How many Floats needed to hold all the frame data for 1 bone
+        const bufferFloatSize   = floatRowSize * boneCount;     // Size of the Buffer to store all the data.
+        const bufferByteSize    = bufferFloatSize * 4;          // Size of buffer in Bytes.
+        const pixelWidth        = pixelsPerStride * frameCount; // How Many Pixels needed to hold all the frame data for 1 bone 
+        const pixelHeight       = boneCount;                    // Repeat Data, but more user friendly to have 2 names depending on usage.
+
+        const o : TTextureInfo = {
+            boneCount,
+            strideByteLength,
+            strideFloatLength,
+            pixelsPerStride,
+            floatRowSize,
+            bufferFloatSize,
+            bufferByteSize,
+            pixelWidth,
+            pixelHeight,
+        };
+
+        return o;
     }
 }
 
