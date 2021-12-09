@@ -9,18 +9,21 @@ const COMP_LEN = 16;            // 16 Floats
 const BYTE_LEN = COMP_LEN * 4;  // 16 Floats * 4 Bytes Each
 
 class SkinMTX implements ISkin {
-    bind         !: Array< Mat4 >;
-    world        !: Array< Mat4 >;
+    bind         !: Mat4[];
+    world        !: Mat4[];
     offsetBuffer !: Float32Array;
 
     //world ?: Array< Mat4 >;
     //constructor(){}
     
     init( arm: Armature ): this{
-        const bCnt  = arm.bones.length;
-        const world = new Array( bCnt );
-        const bind  = new Array( bCnt );
-
+        const mat4Identity  = new Mat4();
+        const bCnt          = arm.bones.length;
+        const world         = new Array( bCnt );
+        const bind          = new Array( bCnt );
+        
+        this.offsetBuffer   = new Float32Array( 16 * bCnt );    // Create Buffer Space
+        
         for( let i=0; i < bCnt; i++ ){
             world[ i ]  = new Mat4();
             bind[ i ]   = new Mat4();
@@ -35,12 +38,13 @@ class SkinMTX implements ISkin {
             if( b.pidx != null ) world[ i ].pmul( world[ b.pidx ] );                // Add Parent if Available
 
             bind[ i ].fromInvert( world[ i ] );                                     // Invert for Bind Pose
+
+            mat4Identity.toBuf( this.offsetBuffer, i * 16 );                        // Fill in Offset with Unmodified matrices
         }
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         this.bind           = bind;                             // Save Reference to Vars
         this.world          = world;
-        this.offsetBuffer   = new Float32Array( 16 * bCnt );    // Create Buffer Space
         return this;
     }
 

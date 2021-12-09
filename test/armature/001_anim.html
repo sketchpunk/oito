@@ -1,24 +1,28 @@
 <!DOCTYPE html><html><head><title></title></head><body><script type="module">
-    
+
+//#region IMPORTS
 import Starter, { THREE }   from '../_lib/threejs/Starter.js';
-import PointsMesh           from '../_lib/threejs/PointsMesh.js';
-import Gltf2Util            from '../_lib/threejs/Gltf2Util.js';
+//import PointsMesh           from '../_lib/threejs/PointsMesh.js';
+import Gltf2Util                from '../_lib/threejs/Gltf2Util.js';
 
-import { Armature, SkinMTX, SkinDQ }    from '../../dist/armature.js';
-import { Vec3, Quat, Mat4, Transform }  from '../../dist/core.js';
-import Gltf2                            from '../../dist/parsers/Gltf2.js';
-import { Clip, Animator }               from '../../dist/animator.js';
+import { Armature, SkinMTX }    from '../../dist/armature.js';
+import { Clip, Animator }       from '../../dist/animator.js';
+import Gltf2                    from '../../dist/parsers/Gltf2.js';
 
-import BoneViewMaterial     from './lib/BoneViewMaterial.js';
-import BoneViewMesh         from './lib/BoneViewMesh.js';
+import BoneViewMesh             from './lib/BoneViewMesh.js';
+//#endregion
 
 let App;
-let gBAnimator;
 let pnt;
+let Ref = {};
 
 function onRender( dt=0, et=0 ){
-    gBAnimator.update( dt );
+    Ref.animator
+        .update( dt )
+        .applyPose( Ref.pose );
 
+    Ref.pose.updateWorld( true );
+    Ref.boneView.updateFromPose( Ref.pose );
 }
 
 window.addEventListener( "load", async _=>{
@@ -27,145 +31,56 @@ window.addEventListener( "load", async _=>{
     App.set_camera( 0, 20, 4, [0,0.8,0] );
     App.onRender = onRender;
 
-    //pnt = new PointsMesh( 100 );
-    //App.add( pnt.mesh );
-    gBAnimator = new AnimateBones()
-    gBAnimator.fetch( '../_res/anim/Walking.gltf' );
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    const gltf  = await Gltf2.fetch( '../_res/anim/Walking.gltf' );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ARMATURE + POSE
+    const arm   = armature_from_gltf( gltf );   // Create an Armature from a GLTF Skeleton
+    const pose  = arm.newPose();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // VIEW BONES
+    const boneView = new BoneViewMesh( arm );       // 3JS Example of making a BoneView from Armature Data
+    
+    boneView.material.uniforms.meshScl.value = 2.0; // Mixamo Skeletons comes with an offset transform which causes the bones to scale badly
+    boneView.material.uniforms.dirScl.value  = 1;   // ... So make the bones bigger to offset that massive downscaling.
+
+    App.add( boneView );                            // Add to Scene for rendering
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // SETUP ANIMATION
+    const glAnim    = gltf.getAnimation();
+    const clip      = Clip.fromGLTF2( glAnim );
+    const animator  = new Animator();
+    animator.inPlace = true;
+    animator.setClip( clip );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // SAVE Vars
+    Ref.animator = animator;
+    Ref.pose     = pose;
+    Ref.boneView = boneView;
 
     App.render();
-    return;
-    /*
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    const gltf = await Gltf2.fetch( '../_res/anim/Walking.gltf' );
-    if( !gltf ){ console.log( 'Error loading GLTF' ); return; }
+});
 
-    let glAnim = gltf.getAnimation();
-    let clip   = Clip.fromGltf2( glAnim );
+function armature_from_gltf( gltf, defaultBoneLen = 0.07 ){
+    const arm  = new Armature();
+    const skin = gltf.getSkin();
 
-
-    //--------------------------------
-    // Setup Armature
-    const arm   = new Armature();
-    const skin  = gltf.getSkin();
     for( let j of skin.joints ){
         arm.addBone( j.name, j.parentIndex, j.rotation, j.position, j.scale );
     }
 
-    //--------------------------------
-    // Setup Skinning
-    arm.bind( SkinMTX, 0.07 ); 
-
-    //--------------------------------
-    // Visualize the Bones
-    gBoneView = new BoneViewMesh( arm );
-
-    // Because of the transform on the Armature itself, need to scale up the bones
-    // to offset the grand scale down of the model
-    gBoneView.material.uniforms.meshScl.value = 2.0;
-    gBoneView.material.uniforms.dirScl.value  = 1;
-    
-    App.add( gBoneView );
-
-    //--------------------------------
-    // Pose Model
-    gPose = arm.newPose();
+    // Create Bind Pose
+    arm.bind( SkinMTX, defaultBoneLen );
 
     // Armature has a Transform on itself sometimes
     // Apply it at the Offset Transform gets preapplied to the root
-    if( skin.rotation ) gPose.offset.rot.copy( skin.rotation );
-    if( skin.scale )    gPose.offset.scl.copy( skin.scale );
+    arm.offset.set( skin.rotation, skin.position, skin.scale );
 
-    //--------------------------------
-    gAnimator = new Animator();
-    gAnimator.inPlace = true;
-    gAnimator.setClip( clip );
-    //gAnimator.update( 0.1 ).applyPose( gPose );
-
-    gPose.updateWorld( true );
-    gBoneView.updateFromPose( gPose );
-
-    App.render();
-    */
-});
-
-class AnimateBones{
-
-    constructor(){
-        this.armature = null;
-        this.boneView = null;
-        this.pose     = null;
-
-        this.animator = new Animator();
-        this.animator.inPlace = true;
-    }
-
-    //#region INITIALIZATION
-
-    async fetch( url ){
-        const gltf = await Gltf2.fetch( url );
-        if( !gltf ){ console.log( 'Error loading GLTF' ); return; }
-
-        this.loadClip( gltf );
-        this.loadArmature( gltf );
-        this.loadBoneView( this.armature );
-    }
-
-    loadClip( gltf ){
-        const anim = gltf.getAnimation();
-        const clip = Clip.fromGLTF2( anim );
-        this.animator.setClip( clip );
-    }
-
-    loadArmature( gltf ){
-        const skin      = gltf.getSkin();
-        
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        // Create Armature
-        this.armature   = new Armature();
-        for( let j of skin.joints ){
-            this.armature.addBone( j.name, j.parentIndex, j.rotation, j.position, j.scale );
-        }
-        
-        this.armature.bind( SkinMTX, 0.07 );
-
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        // Create Working Pose
-        this.pose = this.armature.newPose();
-
-        // Armature has a Transform on itself sometimes
-        // Apply it as the Offset Transform that gets preApplied to the root
-        if( skin.rotation ) this.pose.offset.rot.copy( skin.rotation );
-        if( skin.scale )    this.pose.offset.scl.copy( skin.scale );
-    }
-
-    loadBoneView( arm ){
-        this.boneView = new BoneViewMesh( arm );
-
-        // Because of the transform on the Armature itself, need to scale up the bones
-        // to offset the massive scale down of the model
-        this.boneView.material.uniforms.meshScl.value = 2.0;
-        this.boneView.material.uniforms.dirScl.value  = 1;
-
-        // Set Initial Data So it Renders
-        this.pose.updateWorld( true );
-        this.boneView.updateFromPose( this.pose );
-
-        App.add( this.boneView );
-    }
-
-    //#endregion
-
-    update( dt ){
-        if( !this.boneView ) return;
-
-        this.animator
-            .update( dt )
-            .applyPose( this.pose );
-
-        this.pose.updateWorld( true );
-        this.boneView.updateFromPose( this.pose ); 
-    } 
-
+    return arm;
 }
 
 </script></body></html>

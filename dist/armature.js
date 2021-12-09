@@ -596,9 +596,11 @@ var COMP_LEN = 16;
 var BYTE_LEN = COMP_LEN * 4;
 var SkinMTX = class {
   init(arm) {
+    const mat4Identity = new Mat4();
     const bCnt = arm.bones.length;
     const world = new Array(bCnt);
     const bind = new Array(bCnt);
+    this.offsetBuffer = new Float32Array(16 * bCnt);
     for (let i = 0; i < bCnt; i++) {
       world[i] = new Mat4();
       bind[i] = new Mat4();
@@ -610,10 +612,10 @@ var SkinMTX = class {
       if (b.pidx != null)
         world[i].pmul(world[b.pidx]);
       bind[i].fromInvert(world[i]);
+      mat4Identity.toBuf(this.offsetBuffer, i * 16);
     }
     this.bind = bind;
     this.world = world;
-    this.offsetBuffer = new Float32Array(16 * bCnt);
     return this;
   }
   updateFromPose(pose) {
@@ -661,6 +663,7 @@ var SkinMTX = class {
 };
 var SkinMTX_default = SkinMTX;
 import DualQuat from "./core.extend/DualQuat.js";
+import { Vec4 } from "./core.js";
 var COMP_LEN2 = 8;
 var BYTE_LEN2 = COMP_LEN2 * 4;
 var SkinDQ = class {
@@ -668,9 +671,15 @@ var SkinDQ = class {
     const bCnt = arm.bones.length;
     const world = new Array(bCnt);
     const bind = new Array(bCnt);
+    const qIdent = new Vec4(0, 0, 0, 1);
+    const pIdent = new Vec4(0, 0, 0, 0);
+    this.offsetQBuffer = new Float32Array(4 * bCnt);
+    this.offsetPBuffer = new Float32Array(4 * bCnt);
     for (let i = 0; i < bCnt; i++) {
       world[i] = new DualQuat();
       bind[i] = new DualQuat();
+      qIdent.toBuf(this.offsetQBuffer, i * 4);
+      pIdent.toBuf(this.offsetPBuffer, i * 4);
     }
     let b;
     for (let i = 0; i < bCnt; i++) {
@@ -682,8 +691,6 @@ var SkinDQ = class {
     }
     this.bind = bind;
     this.world = world;
-    this.offsetQBuffer = new Float32Array(4 * bCnt);
-    this.offsetPBuffer = new Float32Array(4 * bCnt);
     return this;
   }
   updateFromPose(pose) {

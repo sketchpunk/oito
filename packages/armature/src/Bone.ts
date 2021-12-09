@@ -1,5 +1,5 @@
-import type { TVec4 }   from '@oito/types';
-import { Transform }    from '@oito/core';
+import type { TVec3, TVec4 }    from '@oito/types';
+import { Transform }            from '@oito/core';
 
 class Bone{
     name    : string;           // Name of Bone
@@ -17,7 +17,7 @@ class Bone{
         this.len    = len;
     }
 
-    setLocal( rot ?: TVec4, pos ?: TVec4, scl ?: TVec4 ): this{
+    setLocal( rot ?: TVec4, pos ?: TVec3, scl ?: TVec3 ): this{
         if( rot ) this.local.rot.copy( rot );
         if( pos ) this.local.pos.copy( pos );
         if( scl ) this.local.scl.copy( scl );

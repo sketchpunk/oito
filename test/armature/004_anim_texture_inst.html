@@ -4,199 +4,200 @@ import Starter, { THREE }   from '../_lib/threejs/Starter.js';
 //import PointsMesh           from '../_lib/threejs/PointsMesh.js';
 import Gltf2Util            from '../_lib/threejs/Gltf2Util.js';
 
-import { Armature, SkinMTX, SkinDQ }    from '../../dist/armature.js';
+import { Armature, SkinMTX }    from '../../dist/armature.js';
 import Gltf2                            from '../../dist/parsers/Gltf2.js';
 import { Clip, Animator, Retarget }     from '../../dist/animator.js';
 import Util                 from './lib/Util.js';
 //#endregion
 
+//#region MAIN
 let App;
-let gExample;
-let pnt;
-let gMesh;
+let Ref = {};
 
 function onRender( dt=0, et=0 ){
-    if( gMesh ){
-        gMesh.material.uniforms.time.value = et;
-    }
+    Ref.shader.uniforms.time.value = et;
 }
 
 window.addEventListener( "load", async _=>{
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     App = new Starter( { webgl2:true, grid:true } );
     App.set_camera( 0, 20, 4, [0,0.8,0] );
     App.onRender = onRender;
 
-    //pnt = new PointsMesh( 100 );
-    //App.add( pnt.mesh );
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Setup Retargeting
+    Ref.retarget = new Retarget();
+    Ref.retarget.anim.inPlace = true;
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    gExample = new Example()
-    await Promise.all([
-        gExample.fetchSource( '../_res/anim/Walking.gltf' ),
-        gExample.fetchTarget( '../_res/models/tina/tina.gltf' ),
-    ]).then(()=>{
-        gExample.bind();    // Do Retargeting Binding
-        gExample.build();   // Build Data Texture
-    });
+    // Load Source & Target - Each will update Retarget with their info
+    const [ glSrc, glTar, tex ] = await Promise.all([
+        Gltf2.fetch( '../_res/anim/Walking.gltf' ),
+        Gltf2.fetch( '../_res/models/tina/tina.gltf' ),
+    ]);
 
+    setup_source( glSrc );
+    setup_target( glTar );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Final Setups
+    Ref.retarget.bind();                    // Bind the Two Skeletons Together
+    
+    const texClip = createTextureData();    // Run Retargeting while saving each frame into a texture
+
+    // Create Custom Shader & Set Animation Information
+    Ref.shader = SkinMTXMaterial_DataTex( 'cyan', texClip );
+    Ref.shader.uniforms.frameCount.value    = Ref.retarget.anim.clip.frameCount;
+    Ref.shader.uniforms.duration.value      = Ref.retarget.anim.clip.duration;
+
+    // Apply Shader to Mesh
+    Ref.tarMesh.material                    = Ref.shader;
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     App.render();
 });
 
-class Example{
-    constructor(){
-        this.isReady  = false;
-        this.retarget = new Retarget();
-        this.retarget.anim.inPlace = true;
+function armature_from_gltf( gltf, defaultBoneLen = 0.07 ){
+    const arm  = new Armature();
+    const skin = gltf.getSkin();
 
-        this.srcArm   = null;   // Clip Skeleton
-        this.tarArm   = null;   // Target Skeleton
-        this.clip     = null;   // Animation Clip
-        this.tarTPose = null;   // TPose for Target Sekeleton
-
-        this.tarMesh  = null;   // Final Skinned Mesh 4 Animating
+    for( let j of skin.joints ){
+        arm.addBone( j.name, j.parentIndex, j.rotation, j.position, j.scale );
     }
 
-    //#region INITIALIZATION
+    // Create Bind Pose
+    arm.bind( SkinMTX, defaultBoneLen );
 
-    async fetchSource( url ){
-        const gltf = await Gltf2.fetch( url );
-        if( !gltf ){ console.log( 'Error loading GLTF' ); return; }
+    // Armature has a Transform on itself sometimes
+    // Apply it at the Offset Transform gets preapplied to the root
+    arm.offset.set( skin.rotation, skin.position, skin.scale );
 
-        this.clip   = Util.clipFromGltf( gltf )
-        this.srcArm = Util.armFromGltf( gltf );
-    }
-
-    async fetchTarget( url ){
-        const gltf = await Gltf2.fetch( url );
-        if( !gltf ){ console.log( 'Error loading GLTF' ); return; }
-
-        this.tarArm     = Util.armFromGltf( gltf );
-        this.tarTPose   = this.tarArm.newPose().fromGLTF2( gltf.getPose() ).updateWorld( true );
-        
-
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        const [ inst_pos, inst_dat ] = this.randomInstances( 20 );
-        const prim = gltf.getMesh().primitives[ 0 ];
-        const geo  = new THREE.InstancedBufferGeometry();
-        geo.setIndex( new THREE.BufferAttribute( prim.indices.data, 1 ) );
-        geo.setAttribute( 'position',   new THREE.BufferAttribute( prim.position.data, prim.position.componentLen ) );
-        geo.setAttribute( 'skinWeight', new THREE.BufferAttribute( prim.weights_0.data, prim.weights_0.componentLen ) );
-        geo.setAttribute( 'skinIndex',  new THREE.BufferAttribute( prim.joints_0.data, prim.joints_0.componentLen ) );
-        geo.setAttribute( "i_pos",      new THREE.InstancedBufferAttribute( inst_pos, 3 ) );
-        geo.setAttribute( "i_dat",      new THREE.InstancedBufferAttribute( inst_dat, 2 ) );
-        geo.instanceCount       = inst_pos.length / 3;
-        geo._maxInstanceCount   = Infinity; //ThreeJS is buggy, found in a forum setting this can fix Instancing not rendering sometimes
-
-        this.tarMesh = new THREE.Mesh( geo, null ); //
-
-    }
-
-    bind(){
-        this.retarget
-            .setClipArmature( this.srcArm )
-            .setClip( this.clip )
-            .setTargetArmature( this.tarArm )
-            .getTargetPose().copy( this.tarTPose )
-        ;
-
-        this.retarget.bind();
-        this.isReady = true;
-    }
-
-    //#endregion
-
-    randomInstances( cnt ){
-        const pos = new Float32Array( cnt * 3 );
-        const dat = new Float32Array( cnt * 2 );
-
-        let ra, rb, rc;
-        let xMin = -10;
-        let xMax = 10;
-
-        for( let i=0; i < cnt; i++ ){
-            let iii = i * 3;
-            let ii =  i * 2;
-            ra = Math.random();
-            rb = Math.random();
-            rc = Math.random();
-            
-            pos[ iii+0 ] = xMin * (1-ra) + xMax * ra;
-            pos[ iii+1 ] = 0
-            pos[ iii+2 ] = xMin * (1-rb) + xMax * rb;
-
-            dat[ ii+0 ]  = Math.PI * 2 * rc;
-            dat[ ii+1 ]  = 1.2 * ra;
-        }
-
-        return [ pos, dat ];
-    }
-
-    build(){
-        if( !this.isReady ) return;
-
-        const dTex = this.createTextureData();
-        const mat  = SkinMTXMaterial_DataTex( 'cyan', dTex );
-        mat.uniforms.frameCount.value    = this.clip.frameCount;
-        mat.uniforms.duration.value      = this.clip.duration;
-
-        this.tarMesh.material = mat;
-        App.add( this.tarMesh );
-        gMesh = this.tarMesh;
-    } 
-
-    createTextureData(){
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        // Each Pixel Row Contains all the Keyframe Offset Matrices of 1 Bone.
-        // Each 4 Pixels on a row is a single offset matrix.
-        
-        const frameCnt = this.clip.frameCount;
-        const texInfo  = this.tarArm.skin.getTextureInfo( frameCnt );
-        const buf      = new Float32Array( texInfo.bufferFloatSize );
-
-        const tarPose  = this.retarget.getTargetPose();
-        const offsets  = this.tarArm.getSkinOffsets()[0];
-
-        let f, bIdx, colIdx, offIdx, rowIdx, startIdx;
-
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        for( f=0; f < frameCnt; f++ ){
-            this.retarget.atKey( f).applyRetarget();    // Retarget Animation Frame
-            this.tarArm.updateSkinFromPose( tarPose );  // Generate Skinning Offsets
-            colIdx = f * texInfo.strideFloatLength;     // Starting Float Index of the column
-
-            // Loop Each Bone in the Animated Pose
-            for( bIdx=0; bIdx < texInfo.boneCount; bIdx++ ){
-                offIdx      = bIdx * texInfo.strideFloatLength; // Index of Bone's Offset Matrix
-                rowIdx      = bIdx * texInfo.floatRowSize;      // Row Index for the Bone in the Texture  
-                startIdx    = rowIdx + colIdx;                  // Starting Index to start coping Data.
-
-                // Loop each float in the bone's offset matrix
-                // Copy it into the correct stop in the texture buffer.
-                for( let k=0; k < texInfo.strideFloatLength; k++ ){
-                    buf[ startIdx + k ] = offsets[ offIdx + k ];
-                }
-            }
-        }
-
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        const texData = new THREE.DataTexture( 
-            buf, 
-            texInfo.pixelWidth, 
-            texInfo.pixelHeight, 
-            THREE.RGBAFormat,
-            THREE.FloatType,
-            THREE.UVMapping,
-            THREE.ClampToEdgeWrapping, 
-            THREE.ClampToEdgeWrapping, 
-            THREE.NearestFilter, 
-            THREE.NearestFilter, 
-        );
-
-        return texData;
-    }
+    return arm;
 }
 
+function setup_source( gltf ){
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    const arm       = armature_from_gltf( gltf );   // Get Animation Skeleton
+    const anim      = gltf.getAnimation();          // Get Animation
+    const clip      = Clip.fromGLTF2( anim );       // ... Convert to Clip
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Ref.retarget
+        .setClipArmature( arm )
+        .setClip( clip );
+}
+
+function setup_target( gltf, tex ){
+    const arm = armature_from_gltf( gltf );   // Get Target Skeleton
+    Ref.tarArm = arm;
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Ref.retarget
+        .setTargetArmature( arm )
+        .getTargetPose().fromGLTF2( gltf.getPose() );   // Resting Pose is A, but requires T for retargeting
+                                                        // So pull TPose from file & apply it as the starting pose for retargeting
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    const [ inst_pos, inst_dat ] = randomInstances( 50 );
+
+    const prim = gltf.getMesh().primitives[ 0 ];
+    const geo  = new THREE.InstancedBufferGeometry();
+    
+    geo.setIndex( new THREE.BufferAttribute( prim.indices.data, 1 ) );
+    geo.setAttribute( 'position',   new THREE.BufferAttribute( prim.position.data, prim.position.componentLen ) );
+    geo.setAttribute( 'skinWeight', new THREE.BufferAttribute( prim.weights_0.data, prim.weights_0.componentLen ) );
+    geo.setAttribute( 'skinIndex',  new THREE.BufferAttribute( prim.joints_0.data, prim.joints_0.componentLen ) );
+    geo.setAttribute( "i_pos",      new THREE.InstancedBufferAttribute( inst_pos, 3 ) );
+    geo.setAttribute( "i_dat",      new THREE.InstancedBufferAttribute( inst_dat, 2 ) );
+    geo.instanceCount       = inst_pos.length / 3;
+    geo._maxInstanceCount   = Infinity; //ThreeJS is buggy, found in a forum setting this can fix Instancing not rendering sometimes
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Ref.tarMesh = new THREE.Mesh( geo, null );
+    App.add( Ref.tarMesh );
+}
+
+function createTextureData(){
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Each Pixel Row Contains all the Keyframe Offset Matrices of 1 Bone.
+    // Each 4 Pixels on a row is a single offset matrix.
+    
+    const frameCnt = Ref.retarget.anim.clip.frameCount;
+    const texInfo  = Ref.tarArm.skin.getTextureInfo( frameCnt );
+    const buf      = new Float32Array( texInfo.bufferFloatSize );
+
+    const tarPose  = Ref.retarget.getTargetPose();
+    const offsets  = Ref.tarArm.getSkinOffsets()[0];
+
+    let f, bIdx, colIdx, offIdx, rowIdx, startIdx;
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    for( f=0; f < frameCnt; f++ ){
+        Ref.retarget.atKey( f ).applyRetarget();    // Retarget Animation Frame
+        Ref.tarArm.updateSkinFromPose( tarPose );  // Generate Skinning Offsets
+        colIdx = f * texInfo.strideFloatLength;     // Starting Float Index of the column
+
+        // Loop Each Bone in the Animated Pose
+        for( bIdx=0; bIdx < texInfo.boneCount; bIdx++ ){
+            offIdx      = bIdx * texInfo.strideFloatLength; // Index of Bone's Offset Matrix
+            rowIdx      = bIdx * texInfo.floatRowSize;      // Row Index for the Bone in the Texture  
+            startIdx    = rowIdx + colIdx;                  // Starting Index to start coping Data.
+
+            // Loop each float in the bone's offset matrix
+            // Copy it into the correct stop in the texture buffer.
+            for( let k=0; k < texInfo.strideFloatLength; k++ ){
+                buf[ startIdx + k ] = offsets[ offIdx + k ];
+            }
+        }
+    }
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    const texData = new THREE.DataTexture( 
+        buf, 
+        texInfo.pixelWidth, 
+        texInfo.pixelHeight, 
+        THREE.RGBAFormat,
+        THREE.FloatType,
+        THREE.UVMapping,
+        THREE.ClampToEdgeWrapping, 
+        THREE.ClampToEdgeWrapping, 
+        THREE.NearestFilter, 
+        THREE.NearestFilter, 
+    );
+
+    return texData;
+}
+
+function randomInstances( cnt ){
+    const pos = new Float32Array( cnt * 3 );
+    const dat = new Float32Array( cnt * 2 );
+
+    let ra, rb, rc;
+    let xMin = -10;
+    let xMax = 10;
+
+    for( let i=0; i < cnt; i++ ){
+        let iii = i * 3;
+        let ii =  i * 2;
+        ra = Math.random();
+        rb = Math.random();
+        rc = Math.random();
+        
+        pos[ iii+0 ] = xMin * (1-ra) + xMax * ra;
+        pos[ iii+1 ] = 0
+        pos[ iii+2 ] = xMin * (1-rb) + xMax * rb;
+
+        dat[ ii+0 ]  = Math.PI * 2 * rc;
+        dat[ ii+1 ]  = 1.2 * ra;
+    }
+
+    return [ pos, dat ];
+}
+
+//#endregion
+
+
+//#region CUSTOM MATRIX SKINNING SHADER THAT USES DATA TEXTURES FOR GPU ANIMATING
 
 function SkinMTXMaterial_DataTex( val='cyan', dTex ){
     const isTex    = ( val instanceof THREE.Texture );
@@ -221,8 +222,6 @@ function SkinMTXMaterial_DataTex( val='cyan', dTex ){
     mat.extensions  = { derivatives : true }; // If not using WebGL2.0 and Want to use dfdx or fwidth, Need to load extension
     return mat;
 }
-
-//#region SHADER CODE
 
 // HANDLE SKINNING
 const VERT_SRC = `#version 300 es
@@ -300,20 +299,19 @@ vec3 yRot( vec3 p, float rad ){
 }
 
 void main() {
-    /**/
     float animTime  = mod( time + i_dat.y, duration );        // Truncate Global Time between 0 and total seconds
-	float ntime		= animTime / duration;          // Normalize Time
-	float frame		= frameCount * ntime;           // Figure out which frame ( or between 2 frames)
-	int pixel_x		= int( floor( frame ) ) * 4;    // Floor to get starting frame, mul by 4 pixels per Mat4 for texture x coord
+    float ntime     = animTime / duration;                    // Normalize Time
+    float frame     = frameCount * ntime;                     // Figure out which frame ( or between 2 frames)
+    int pixel_x     = int( floor( frame ) ) * 4;              // Floor to get starting frame, mul by 4 pixels per Mat4 for texture x coord
 
-    mat4 boneMatrix = getBoneMatrix( clip, skinIndex, skinWeight, pixel_x );      // Get the Skinning Matrix
-    mat4 mbMatrix   = modelMatrix * boneMatrix;                             // Merge Model and Bone Matrices together
-    
-    vec4 wpos       = mbMatrix * vec4( position, 1.0 );                     // Use new Matrix to Transform Vertices
-    wpos.xyz        = yRot( wpos.xyz, i_dat.x ) + i_pos;                    // Apply Instance Pos / Rotation
+    mat4 boneMatrix = getBoneMatrix( clip, skinIndex, skinWeight, pixel_x );    // Get the Skinning Matrix
+    mat4 mbMatrix   = modelMatrix * boneMatrix;                                 // Merge Model and Bone Matrices together
 
-    frag_wpos       = wpos.xyz;                                             // Save WorldSpace Position for Fragment Shader
-    frag_norm       = mat3( transpose( inverse( mbMatrix ) ) ) * normal;    // Transform Normals using bone + model matrix
+    vec4 wpos       = mbMatrix * vec4( position, 1.0 );                         // Use new Matrix to Transform Vertices
+    wpos.xyz        = yRot( wpos.xyz, i_dat.x ) + i_pos;                        // Apply Instance Pos / Rotation
+
+    frag_wpos       = wpos.xyz;                                                 // Save WorldSpace Position for Fragment Shader
+    frag_norm       = mat3( transpose( inverse( mbMatrix ) ) ) * normal;        // Transform Normals using bone + model matrix
     frag_uv         = uv;
 
     gl_Position     = projectionMatrix * viewMatrix * wpos;
@@ -368,23 +366,6 @@ void main(){
     out_color     = vec4( color * diffuse, 1.0 );
 
     //out_color.rgb = vec3( 1.0, 0.0, 0.0 );
-}`;
-
-// FRAGMENT THAT ONLY RENDERS TEXTURE
-const FRAG_TEX = `#version 300 es
-precision mediump float;
-
-////////////////////////////////////////////////////////////////////////
-
-out     vec4 out_color;
-in      vec2 frag_uv;
-
-uniform sampler2D texBase;
-
-////////////////////////////////////////////////////////////////////////
-
-void main(){
-    out_color = texture( texBase, frag_uv );
 }`;
 
 //#endregion

@@ -16,8 +16,6 @@ function SkinMTXMaterial( val='cyan', poseBuffer=null ){
         fragmentShader	: ( !isTex )? FRAG_COL : FRAG_TEX,
     }
 
-    console.log( matConfig );
-
     const mat       = new THREE.RawShaderMaterial( matConfig );
     mat.extensions  = { derivatives : true }; // If not using WebGL2.0 and Want to use dfdx or fwidth, Need to load extension
     return mat;

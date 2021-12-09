@@ -1,15 +1,13 @@
 <!DOCTYPE html><html><head><title></title></head><body><script type="module">
     
 import Starter, { THREE }   from '../_lib/threejs/Starter.js';
-import PointsMesh           from '../_lib/threejs/PointsMesh.js';
+//import PointsMesh           from '../_lib/threejs/PointsMesh.js';
 import Gltf2Util            from '../_lib/threejs/Gltf2Util.js';
 
-import { Armature, SkinMTX, SkinDQ }    from '../../dist/armature.js';
-import { Vec3, Quat, Mat4, Transform }  from '../../dist/core.js';
-import Gltf2                            from '../../dist/parsers/Gltf2.js';
-import { Clip, Animator }               from '../../dist/animator.js';
+import { Armature, SkinMTX }    from '../../dist/armature.js';
+import Gltf2                    from '../../dist/parsers/Gltf2.js';
+import { Clip, Animator }       from '../../dist/animator.js';
 
-import BoneViewMaterial     from './lib/BoneViewMaterial.js';
 import BoneViewMesh         from './lib/BoneViewMesh.js';
 
 let App;

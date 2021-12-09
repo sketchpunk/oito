@@ -10,7 +10,7 @@ import type { Pose as GLPose, PoseJoint as GLPoseJoint }   from '../../gltf2/src
 class Pose{
     //#region MAIN
     arm     !: Armature;
-    bones   !: Array< Bone >;   // Clone of Armature Bones
+    bones   !: Bone[];          // Clone of Armature Bones
     offset  = new Transform();  // Pose Transform Offset, useful to apply parent mesh transform
 
     constructor( arm ?: Armature ){

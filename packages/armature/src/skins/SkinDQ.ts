@@ -1,6 +1,7 @@
 //#region IMPORTS
 //import { DualQuat }     from '@oito/core.extend';
 import DualQuat                     from '@oito/core.extend/build/DualQuat.js';
+import { Vec4 }                     from '@oito/core';
 import type { ISkin, TTextureInfo } from './ISkin.js'
 import type Armature                from '../Armature.js'
 import type Pose                    from '../Pose.js';
@@ -24,10 +25,19 @@ class SkinDQ implements ISkin {
         const bCnt  = arm.bones.length;
         const world = new Array( bCnt );
         const bind  = new Array( bCnt );
+        const qIdent = new Vec4( 0,0,0,1 );
+        const pIdent = new Vec4( 0,0,0,0 );
+
+        // For THREEJS support, Split DQ into Two Vec4 since it doesn't support mat2x4 properly
+        this.offsetQBuffer   = new Float32Array( 4 * bCnt );   // Create Flat Buffer Space
+        this.offsetPBuffer   = new Float32Array( 4 * bCnt );
 
         for( let i=0; i < bCnt; i++ ){
             world[ i ]  = new DualQuat();
             bind[ i ]   = new DualQuat();
+
+            qIdent.toBuf( this.offsetQBuffer, i * 4 );         // Init Offsets : Quat Identity
+            pIdent.toBuf( this.offsetPBuffer, i * 4 );         // ...No Translation
         }
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -44,10 +54,6 @@ class SkinDQ implements ISkin {
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         this.bind           = bind;                            // Save Reference to Vars
         this.world          = world;
-
-        //this.offsetBuffer  = new Float32Array( 8 * bCnt );   // Create Buffer Space
-        this.offsetQBuffer   = new Float32Array( 4 * bCnt );   // 
-        this.offsetPBuffer   = new Float32Array( 4 * bCnt );
         return this;
     }
 
