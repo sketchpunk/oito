@@ -372,12 +372,12 @@ class Quat extends Float32Array{
 
         const dot = Vec3.dot( a, b );
 
-        if( dot < -0.999999 ){
+        if( dot < -0.999999 ){ // 180 opposites
           const tmp = Vec3.cross( Vec3.LEFT, a );
           if( tmp.len() < 0.000001 ) tmp.fromCross( Vec3.UP, a );
           this.fromAxisAngle( tmp.norm(), Math.PI );
 
-        }else if( dot > 0.999999 ){
+        }else if( dot > 0.999999 ){ // Same Direction
           this[ 0 ] = 0;
           this[1] = 0;
           this[2] = 0;

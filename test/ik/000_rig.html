@@ -1,0 +1,125 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+
+//#region IMPORTS
+import Starter, { THREE }   from '../_lib/threejs/Starter.js';
+import PointsMesh           from '../_lib/threejs/PointsMesh.js';
+import LinesMesh            from '../_lib/threejs/LinesMesh.js';
+import Gltf2Util                from '../_lib/threejs/Gltf2Util.js';
+
+import { Armature, SkinMTX }    from '../../dist/armature.js';
+import Gltf2                    from '../../dist/parsers/Gltf2.js';
+import { BipedRig, SwingTwistSolver, LimbSolver,SwingTwistEndsSolver, NaturalCCDSolver }  from '../../dist/ikrig.js';
+
+import BoneViewMesh             from '../armature/lib/BoneViewMesh.js';
+import Util                     from '../armature/lib/Util.js';
+//#endregion
+
+let App;
+let pnt, ln;
+let Ref = {};
+
+function onRender( dt=0, et=0 ){
+
+}
+
+window.addEventListener( "load", async _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:true, grid:true } );
+    App.set_camera( 30, 20, 2.5, [0,0.8,0] );
+    //App.onRender = onRender;
+
+    pnt = new PointsMesh( 100 );
+    ln  = new LinesMesh( 100 );
+
+    let look = [ 0.3, 0.8, 0 ];
+    pnt.add( look, 0xff0000, 1 );
+
+    let HipPos = [ 0, 0.2, 0 ];
+    pnt.add( HipPos, 0xff0000, 1 );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    const gltf      = await Gltf2.fetch( '../_res/models/nabba/nabba.gltf' );
+    const arm       = Util.armFromGltf( gltf );
+
+    const rig       = new BipedRig();
+    rig.autoRig( arm );
+    //rigPoints( rig, arm );
+
+    const boneView  = new BoneViewMesh( arm );
+    App.add( boneView );
+
+    Ref.arm         = arm;
+    Ref.boneView    = boneView;
+
+    arm.getBone( 'Clavicle_L' ).pidx = 3;
+    arm.getBone( 'Clavicle_R' ).pidx = 3;
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    let pose = arm.newPose();
+    //pose.fromGLTF2( gltf.getPose() );
+    rig.bindPose( pose );           // Late Binding of TPose : Rigs only work with TPoses
+    rig.useDefaultSolvers( pose );  // Use Default Solvers for known chains, Should Happen After Bind
+    
+
+
+
+    //console.log( pose.bones );
+    //pose.rotLocal( 3, 90, 'y' );
+
+    /* 
+    rig.spine.setSolver( new SwingTwistEndsSolver() );
+    rig.spine.solver.initData( pose, rig.spine );
+    rig.spine.solver.setStartDir( [0,1,0], [0,0,1] );
+    rig.spine.solver.setEndDir( [0,1,0], [1,0,0] );
+    rig.spine.solver.resolve( rig.spine, pose, { pnt, ln } );
+    */
+
+    let spinePos = [0.2, 1.021, 0.355613]; //[0, 1.221, -0.055613];
+    rig.spine.setSolver( new NaturalCCDSolver().useArcSqrFactor( 0.05, 0.2, false ).setTries( 30 ) );
+    rig.spine.solver.initData( pose, rig.spine );
+
+    rig.spine.solver.setTargetPos( spinePos);
+    rig.spine.solver.resolve( rig.spine, pose, { pnt, ln } );
+
+    pnt.add( spinePos, 0x00ffff, 1 );
+
+    //rig.hip.solver.setMovePos( HipPos, false );
+    //rig.head.solver.setTargetPos( look );
+    //rig.head.solver.setTargetPos( [0, 1.6, 0.3 ], [0.5,0.5,0] );
+        //.resolveToPose( pose, { pnt, ln } );
+
+    //rig.armL.solver.setTargetPos( look, [0,0,-1] );
+
+    //rig.head.setTarget( new IK.Position_Pole( look, [0,0.5,-0.5] ) )
+    //rig.head.setTarget( new IK.Position( look ) )
+    //rig.head.target.update( [0, 1.2, 0.3 ], [0.5,0.5,0] );
+
+    //rig.hip.solver.setTargetDir( [1,0,0], [0,0.5,-0.5] );
+
+    //rig.armL
+    //    .setTarget( new IK.Position_Pole( look, [0,0,-1] ) )
+        //.resolveToPose( pose, { pnt, ln } );
+
+    //rig.resolveToPose( pose );
+    boneView.updateFromPose( pose.updateWorld() );
+    arm.updateSkinFromPose( pose );
+
+    const mesh      = Util.skinMtxMesh( gltf, arm );
+    mesh.position.x = 1.2;
+    App.add( mesh );
+
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App.add( pnt.mesh );
+    App.add( ln.mesh );
+    App.render();
+});
+
+function rigPoints( rig, pose ){
+    let p;
+    for( let ch of rig.items.values() ){
+        p = ch.getEndPositions( pose );
+        pnt.add( p[0], 0x00ffff, 1 );
+    }
+}
+</script></body></html>

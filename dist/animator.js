@@ -379,6 +379,8 @@ var BoneMap = class {
     }
   }
 };
+BoneMap.BoneInfo = BoneInfo;
+BoneMap.BoneChain = BoneChain;
 var BoneMap_default = BoneMap;
 var Source = class {
   constructor(arm) {

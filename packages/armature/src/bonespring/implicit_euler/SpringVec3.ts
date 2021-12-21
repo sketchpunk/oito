@@ -30,10 +30,10 @@ class SpringVec3 extends SpringBase {
     //#endregion ///////////////////////////////////////////////////////////////////
 
     update( dt: number ): boolean{
-        if( this.vel.isZero() && Vec3.lenSqr( this.tar, this.val ) == 0 ) return false;
+        if( this.vel.isZero() && Vec3.lenSq( this.tar, this.val ) == 0 ) return false;
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if ( this.vel.lenSqr() < this.epsilon && Vec3.lenSqr( this.tar, this.val ) < this.epsilon ) {
+        if ( this.vel.lenSq() < this.epsilon && Vec3.lenSq( this.tar, this.val ) < this.epsilon ) {
             this.vel.xyz( 0, 0, 0 );
             this.val.copy( this.tar );
             return true;

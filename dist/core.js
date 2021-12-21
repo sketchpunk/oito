@@ -490,7 +490,7 @@ var _Vec3 = class extends Float32Array {
     this[2] = sp * Math.cos(theta);
     return this;
   }
-  lenSqr() {
+  lenSq() {
     return this[0] ** 2 + this[1] ** 2 + this[2] ** 2;
   }
   len(v) {
@@ -923,7 +923,7 @@ var _Vec3 = class extends Float32Array {
   static cross(a, b) {
     return new _Vec3().fromCross(a, b);
   }
-  static lenSqr(a, b) {
+  static lenSq(a, b) {
     return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
   }
   static len(a, b) {

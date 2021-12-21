@@ -63,12 +63,15 @@ class BoneInfo{
 //#endregion
 
 class BoneMap{
+    static BoneInfo     = BoneInfo;
+    static BoneChain    = BoneChain;
+
     bones : Map< string, BoneInfo | BoneChain > = new Map();
     constructor( arm: Armature ){
         let i   : number;
         let b   : Bone;
         let bp  : BoneParse;
-        let key   : string | null;
+        let key : string | null;
 
         for( i=0; i < arm.bones.length; i++ ){
             b = arm.bones[ i ];

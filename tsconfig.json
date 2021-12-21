@@ -26,6 +26,7 @@
         { "path": "packages/gltf2" },
         { "path": "packages/core" },
         { "path": "packages/core.extend" },
-        { "path": "packages/armature" }
+        { "path": "packages/armature" },
+        { "path": "packages/ikrig" }
     ]
 }

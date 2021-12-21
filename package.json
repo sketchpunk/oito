@@ -19,7 +19,8 @@
         "packages/gltf2",
         "packages/core",
         "packages/core.extend",
-        "packages/armature"
+        "packages/armature",
+        "packages/ikrig"
     ],
 
     "devDependencies": {

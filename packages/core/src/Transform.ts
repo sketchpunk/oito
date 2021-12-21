@@ -151,9 +151,6 @@ class Transform{
         this.rot.fromInvert( t.rot );
 
         // Invert Scale
-        //this.scl.x = ( t.scl.x != 0 )? 1 / t.scl.x : 0;
-        //this.scl.y = ( t.scl.y != 0 )? 1 / t.scl.y : 0;
-        //this.scl.z = ( t.scl.z != 0 )? 1 / t.scl.z : 0;
         this.scl.fromInvert( t.scl );
 
         // Invert Position : rotInv * ( invScl * -Pos )

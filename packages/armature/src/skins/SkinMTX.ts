@@ -49,6 +49,7 @@ class SkinMTX implements ISkin {
     }
 
     updateFromPose( pose: Pose ): this{
+        //console.time( 'skinMTX.updateFromPose' );
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Get Pose Starting Offset
         const offset = new Mat4();
@@ -74,7 +75,7 @@ class SkinMTX implements ISkin {
                 .fromMul( this.world[ i ], this.bind[ i ] )
                 .toBuf( this.offsetBuffer, i * 16 );
         }
-
+        //console.timeEnd( 'skinMTX.updateFromPose' );
         return this
     }
 

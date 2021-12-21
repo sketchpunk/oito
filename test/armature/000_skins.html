@@ -32,7 +32,7 @@ window.addEventListener( "load", async _=>{
     const arm   = armature_from_gltf( gltf );   // Create an Armature from a GLTF Skeleton
     const pose  = arm.newPose();                // Lets Start a Pose
 
-    set_test_pose( pose );                      // Superman Like Pose :)
+    //set_test_pose( pose );                      // Superman Like Pose :)
 
     pose.updateWorld();                         // Compute WorldSpace Transforms
     arm.updateSkinFromPose( pose );             // Turn pose into Skinning Flat Offset Data for Shader Use

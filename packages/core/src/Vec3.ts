@@ -155,7 +155,7 @@ class Vec3 extends Float32Array{
     //++++++++++++++++++++++++++++++++++
     
     /** Length / Magnitude squared of the vector. Good for quick simple testing */
-    lenSqr() : number{ return this[0]**2 + this[1]**2 + this[2]**2; }
+    lenSq() : number{ return this[0]**2 + this[1]**2 + this[2]**2; }
 
     /** Length / Magnitude of the vector */
     len() : number
@@ -749,7 +749,7 @@ class Vec3 extends Float32Array{
     static equal( a: TVec3, b: TVec3 ) : boolean{ return ( a[ 0 ] == b[ 0 ] && a[ 1 ] == b[ 1 ] && a[ 2 ] == b[ 2 ] ); }
     static cross( a: TVec3, b: TVec3 ) : Vec3 { return new Vec3().fromCross( a, b ); }
 
-    static lenSqr( a: TVec3, b: TVec3 ): number{ return (a[ 0 ]-b[ 0 ]) ** 2 + (a[ 1 ]-b[ 1 ]) ** 2 + (a[ 2 ]-b[ 2 ]) ** 2; }
+    static lenSq( a: TVec3, b: TVec3 ): number{ return (a[ 0 ]-b[ 0 ]) ** 2 + (a[ 1 ]-b[ 1 ]) ** 2 + (a[ 2 ]-b[ 2 ]) ** 2; }
     
     static len( a: TVec3 ) : number
     static len( a: TVec3, b: TVec3 ) : number
@@ -798,6 +798,12 @@ class Vec3 extends Float32Array{
         const d = this.dot( a, b ),
               c = this.cross( a, b );
         return Math.atan2( c.len(), d ); 
+
+        // This also works, but requires more LEN / SQRT Calls
+        // 2 * atan2( ( u * v.len - v * u.len ).len, ( u * v.len + v * u.len ).len );
+
+        //https://math.stackexchange.com/questions/1143354/numerically-stable-method-for-angle-between-3d-vectors/1782769
+        // θ=2 atan2(|| ||v||u−||u||v ||, || ||v||u+||u||v ||)
 
         //let cosine = this.dot( a, b );
         //if(cosine > 1.0) return 0;

@@ -90,7 +90,8 @@ let gMat = null;
 function get_material(){
     if( gMat ) return gMat;
 
-    gMat = new THREE.RawShaderMaterial( { 
+    gMat = new THREE.RawShaderMaterial( {
+        depthTest       : false, 
         vertexShader	: vert_src, 
         fragmentShader	: frag_src, 
         transparent 	: true, 

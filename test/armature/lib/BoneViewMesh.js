@@ -3,6 +3,7 @@
 import { THREE }        from "../../_lib/threejs/Starter.js";
 import { Vec3 }         from '../../../dist/core.js';
 import BoneViewMaterial from './BoneViewMaterial.js';
+import { ReinhardToneMapping } from "../../_lib/threejs/three.module.js";
 //#endregion
 
 class BoneViewMesh extends THREE.Mesh{
@@ -25,6 +26,7 @@ class BoneViewMesh extends THREE.Mesh{
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         super( geo, mat );
+        this.updateFromPose( arm );
     }
 
     updateFromPose( pose ){
