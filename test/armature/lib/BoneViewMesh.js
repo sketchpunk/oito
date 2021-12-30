@@ -7,13 +7,13 @@ import { ReinhardToneMapping } from "../../_lib/threejs/three.module.js";
 //#endregion
 
 class BoneViewMesh extends THREE.Mesh{
-    constructor( arm, color='white', useDepthTest=true ){
+    constructor( arm, color='white', matConfig=null ){
         const shape     = baseShape();
         const inst      = instanceData( arm );
         const bCnt      = arm.bones.length;
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        const mat       = BoneViewMaterial( color, useDepthTest );
+        const mat       = BoneViewMaterial( color, matConfig );
         mat.uniforms.boneRot.value = new Float32Array( 4 * bCnt );
         mat.uniforms.bonePos.value = new Float32Array( 3 * bCnt );
         mat.uniforms.boneScl.value = new Float32Array( 3 * bCnt );

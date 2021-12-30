@@ -1,0 +1,170 @@
+<!DOCTYPE html><html><head><title></title></head><body><script type="module">
+
+//#region IMPORTS
+import Starter, { THREE }       from '../_lib/threejs/Starter.js';
+import ShapePointsMesh          from '../_lib/threejs/ShapePointsMesh.js';
+import DynLineMesh              from '../_lib/threejs/DynLineMesh.js';
+import Gltf2Util                from '../_lib/threejs/Gltf2Util.js';
+import GizmoCaster              from '../_lib/threejs/GizmoCaster.js';
+
+import { Armature, SkinMTX }    from '../../dist/armature.js';
+import Gltf2                    from '../../dist/parsers/Gltf2.js';
+import { BipedRig, SwingTwistSolver, LimbSolver,SwingTwistEndsSolver, NaturalCCDSolver,
+BipedFBIK }  from '../../dist/ikrig.js';
+
+import BoneViewMesh             from '../armature/lib/BoneViewMesh.js';
+import Util                     from '../armature/lib/Util.js';
+//#endregion
+
+let App;
+let GCaster = null;
+let Cursor  = null;
+let IdxMap  = new Map();
+let Ref     = {};
+let debug   = {};
+
+function onRender( dt=0, et=0 ){
+
+}
+
+window.addEventListener( "load", async _=>{
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App = new Starter( { webgl2:true, grid:true } );
+    App.set_camera( 30, 20, 2.5, [0,0.8,0] );
+    //App.onRender = onRender;
+
+    debug.pnt = new ShapePointsMesh();
+    debug.ln  = new DynLineMesh( );
+
+    GCaster   = new GizmoCaster( App.renderer.domElement, App.camera, App.orbit ).initEvents();
+    GCaster.onRayCast   = onRayCast;
+    GCaster.onGizmoMove = onGizmoMove
+    App.add( GCaster.gizmo );
+
+    Cursor = new ShapePointsMesh();
+    Cursor.add( [0,0,0], 0xffff00, 2, 7 );
+    App.add( Cursor );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    const gltf      = await Gltf2.fetch( '../_res/models/nabba/nabba.gltf' );
+    const arm       = Util.armFromGltf( gltf );
+
+    const rig       = new BipedRig();
+    rig.autoRig( arm );
+
+    Ref.arm         = arm;
+    Ref.rig         = rig;
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    let pose = arm.newPose();
+    rig.bindPose( pose );           // Late Binding of TPose : Rigs only work with TPoses
+    rig.useSolversForFBIK( pose );  // Use Default Solvers for known chains, Should Happen After Bind
+
+    Ref.pose = pose;
+
+    //boneView.updateFromPose( pose.updateWorld() );
+    //arm.updateSkinFromPose( pose );
+
+    const mesh      = Util.skinMtxMesh( gltf, arm );
+    //mesh.position.x = 1.2;
+    App.add( mesh );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    let fbody = new BipedFBIK( rig );
+    fbody.bindPose( pose, debug );
+
+    let p, idx = 0;
+    for( let i=0; i < fbody.skeleton.points.length; i++ ){
+        p = fbody.skeleton.points[ i ];
+        if( !p.visible || !p.draggable ) continue;
+        IdxMap.set( idx++, p );
+    }
+
+    Ref.fb = fbody;
+    renderFullbody( fbody );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App.add( debug.ln );
+    App.add( debug.pnt );
+    App.render();
+});
+
+
+function onRayCast( gizCaster ){
+    const minDistance = 0.08;
+    const hits = gizCaster.ray.intersectObject( debug.pnt );
+
+    if( hits?.length ){
+        const minHit = hits.reduce( GizmoCaster.reduceMinPointHit );
+        if( minHit.distanceToRay > minDistance ) return;
+
+        const pos = debug.pnt.getPosAt( minHit.index );
+        Cursor.position.fromArray( pos );
+        gizCaster.attachGizmo( Cursor, minHit.index );
+    }
+}
+
+function onGizmoMove( pos, userData ){
+    const dIdx  = userData;
+    const pnt   = IdxMap.get( dIdx );
+    
+    //debug.pnt.setPosAt( dIdx, pos );
+
+    if( pnt != undefined ){
+        //console.log( pnt.isPole );
+
+        /*
+        if a Limb Pole, Pin Head
+        if Axis Pole, Pin Head+Tail
+        if P4 Pole, Pin Head
+        */
+
+        Ref.fb.skeleton.setPos( pnt.idx, pos );
+        if( !pnt.isPole ) Ref.fb.resolve();
+        else              Ref.fb.resolveForPole( pnt.idx );
+
+        renderFullbody();
+
+        fbToRig();
+    }
+}
+
+function renderFullbody( fb ){
+    fb = Ref.fb;
+    debug.pnt.reset();
+    debug.ln.reset();
+
+    let i, ii, grp, color;
+    for( i of fb.skeleton.points ){
+        if( ! i.visible ) continue;
+        color = ( i.draggable )? 0x808080 : 0xaa0000;
+        debug.pnt.add( i.pos, color, 1 );
+        //console.log( i );
+    }
+    
+
+    for( let ln of fb.lines ){
+        debug.ln.add( ln.head, ln.tail, 0x808080 );
+    }
+    
+    /*
+    for( let con of fb.skeleton.constraints ){
+        if( con.constraints ){
+            for( let c of con.constraints ){
+                debug.ln.add( c.pa.pos, c.pb.pos, 0x808080 );
+            }
+        }else{
+            debug.ln.add( con.pa.pos, con.pb.pos, 0x808080 );
+        }
+    }
+    */
+}
+
+function fbToRig(){
+    Ref.fb.updateRigTargets();
+    Ref.rig.resolveToPose( Ref.pose );
+    Ref.pose.updateWorld();
+    Ref.arm.updateSkinFromPose( Ref.pose );
+}
+
+</script></body></html>

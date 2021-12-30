@@ -21,6 +21,7 @@ class Util{
         arm.bind( SkinMTX, 0.07 );
 
         // Save Offsets if available
+        // arm.offset.set( skin.rotation, skin.position, skin.scale );
         if( skin.rotation ) arm.offset.rot.copy( skin.rotation );
         if( skin.position ) arm.offset.pos.copy( skin.position );
         if( skin.scale )    arm.offset.scl.copy( skin.scale );

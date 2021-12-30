@@ -19,7 +19,9 @@ class GizmoCaster{
         this.camCtrl    = camCtrl;
 
         this.onRayCast      = null;
+        this.onGizmoStart   = null;
         this.onGizmoMove    = null;
+        this.onGizmoEnd     = null;
     }
 
     initEvents(){
@@ -105,8 +107,8 @@ class GizmoCaster{
         this.camCtrl.enabled        = !isDragging;
         this.camCtrl.enableRotate   = !isDragging;
 
-        //if( isDragging )    this.events.emit( 'gizmostart' );
-        //else                this.events.emit( 'gizmoend' );
+        if( isDragging && this.onGizmoStart )       this.onGizmoStart();
+        else if( !isDragging && this.onGizmoEnd )   this.onGizmoEnd();
     }
     //#endregion
 }

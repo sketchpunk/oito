@@ -1,17 +1,24 @@
 import { THREE } from "../../_lib/threejs/Starter.js";
 
-function BoneViewMaterial( color='white', useDepthTest=true ){
+function BoneViewMaterial( color='white', config=null ){
+    const uniforms = {
+        color   : { type :'vec3', value:new THREE.Color( color ) },
+        meshScl : { value: 0.02  },
+        dirScl  : { value: 2.0  },
+        boneRot : { value: null },
+        bonePos : { value: null },
+        boneScl : { value: null },
+    };
+
+    if( config ){
+        if( config.meshScl )    uniforms.meshScl.value  = config.meshScl;
+        if( config.dirScl )     uniforms.dirScl.value   = config.dirScl;
+    }
+
     let mat = new THREE.RawShaderMaterial({
         //side        : THREE.DoubleSide,
-        depthTest   : useDepthTest,
-        uniforms    : {
-            color   : { type :'vec3', value:new THREE.Color( color ) },
-            meshScl : { value: 0.02  },
-            dirScl  : { value: 2.0  },
-            boneRot : { value: null },
-            bonePos : { value: null },
-            boneScl : { value: null },
-        },
+        depthTest   : true,
+        uniforms    : uniforms,
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         vertexShader : `#version 300 es

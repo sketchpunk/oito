@@ -5,7 +5,9 @@
 import IKRig                from './rigs/IKRig';
 import { IKChain, Link }    from './rigs/IKChain';
 import BipedRig             from './rigs/BipedRig';
-import BipedFB             from './fullbody/BipedFB';
+import BipedFBIK            from './fbik/BipedFBIK';
+import BipedIKPose          from './animation/BipedIKPose';
+import * as IKData          from './IKData';
 
 import {
     SwingTwistChainSolver,
@@ -17,7 +19,9 @@ import {
 } from './solvers/index';
 
 export {
+    IKData, 
     IKRig, BipedRig, IKChain, Link,
     SwingTwistChainSolver, SwingTwistEndsSolver, SwingTwistSolver, LimbSolver, HipSolver, NaturalCCDSolver, 
-    BipedFB,
+    BipedFBIK,
+    BipedIKPose,
 };

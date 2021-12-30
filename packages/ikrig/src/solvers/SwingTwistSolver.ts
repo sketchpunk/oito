@@ -3,6 +3,7 @@ import type { TVec3 }               from '@oito/type';
 import type { Pose }                from '@oito/armature';
 import type { IKChain }             from '../rigs/IKChain';
 import type { ISolver }             from './ISolver';
+import type { IKData }              from '..';
 
 import { Vec3, Transform, Quat }    from '@oito/core';
 //#endregion
@@ -10,12 +11,14 @@ import { Vec3, Transform, Quat }    from '@oito/core';
 class SwingTwistSolver implements ISolver{
     //#region TARGETTING DATA
     _isTarPosition  = false;        // Is the Target a Position or a Direction?
-    _originPoleDir  = [ 0, 0, 0 ];
+    _originPoleDir  = [ 0, 0, 0 ];  // Pole gets updated based on effector direction, so keep originally set dir to compute the orthogonal poleDir
+    effectorScale   = 1;
     effectorPos     = [ 0, 0, 0 ];  // IK Target can be a Position or...
     effectorDir     = [ 0, 0, 1 ];  // Direction. BUT if its position, need to compute dir from chain origin position.
     poleDir         = [ 0, 1, 0 ];  // Direction that handles the twisitng rotation
     orthoDir        = [ 1, 0, 0 ];  // Direction that handles the bending direction, like elbow/knees.
     originPos       = [ 0, 0, 0 ];  // Starting World Position of the Chain
+
     //#endregion
 
     initData( pose?: Pose, chain?: IKChain ): this{
@@ -36,12 +39,14 @@ class SwingTwistSolver implements ISolver{
     }
 
     //#region SETTING TARGET DATA
-    setTargetDir( e: TVec3, pole ?: TVec3 ): this{
+    setTargetDir( e: TVec3, pole ?: TVec3, effectorScale ?: number ): this{
         this._isTarPosition     = false;
         this.effectorDir[ 0 ]   = e[ 0 ];
         this.effectorDir[ 1 ]   = e[ 1 ];
         this.effectorDir[ 2 ]   = e[ 2 ];
         if( pole ) this.setTargetPole( pole );
+
+        if( effectorScale ) this.effectorScale = effectorScale;
         return this;
     }
 
@@ -68,6 +73,23 @@ class SwingTwistSolver implements ISolver{
         rot.pmulInvert( pt.rot );                       // To Local Space
         pose.setLocalRot( chain.links[ 0 ].idx, rot );  // Save to Pose
     }
+
+    ikDataFromPose( chain: IKChain, pose: Pose, out: IKData.Dir ): void{
+        const dir = new Vec3();
+        const lnk = chain.first();
+        const b   = pose.bones[ lnk.idx ];
+
+        // Alt Effector
+        dir .fromQuat( b.world.rot, lnk.effectorDir )
+            .norm()
+            .copyTo( out.effectorDir );
+
+        // Alt Pole
+        dir .fromQuat( b.world.rot, lnk.poleDir )
+            .norm()
+            .copyTo( out.poleDir );
+    }
+
 
     /** Update Target Data  */
     _update( origin: TVec3 ): void{
@@ -119,7 +141,16 @@ class SwingTwistSolver implements ISolver{
         q.fromUnitVecs( dir, this.poleDir );        // Rotation to IK Pole Direction
         rot.pmul( q );                              // Apply to Bone WS Rot + Swing
 
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Kinda Hacky putting this here, but its the only time where there is access to chain's length for all extending solvers.
+        // So if not using a TargetPosition, means we're using Direction then we have to compute the effectorPos.
+        if( !this._isTarPosition ){
+            this.effectorPos[ 0 ] = this.originPos[ 0 ] + this.effectorDir[ 0 ] * chain.length * this.effectorScale;
+            this.effectorPos[ 1 ] = this.originPos[ 1 ] + this.effectorDir[ 1 ] * chain.length * this.effectorScale;
+            this.effectorPos[ 2 ] = this.originPos[ 2 ] + this.effectorDir[ 2 ] * chain.length * this.effectorScale;
+        }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         return [ rot, pt ];
     }
 

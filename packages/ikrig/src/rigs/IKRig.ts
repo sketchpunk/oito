@@ -6,10 +6,7 @@ import { IKChain }             from './IKChain';
 class IKRig{
     //#region MAIN
     items: Map< string, IKChain > = new Map();
-
-    constructor(){
-
-    }
+    constructor(){}
     //#endregion
 
     //#region METHODS
@@ -19,6 +16,16 @@ class IKRig{
     bindPose( pose: Pose ): this{
         let ch: IKChain;
         for( ch of this.items.values() ) ch.bindToPose( pose );
+        return this;
+    }
+
+    updateBoneLengths( pose: Pose ): this{
+        let ch: IKChain;
+
+        for( ch of this.items.values() ){
+            ch.resetLengths( pose );
+        }
+
         return this;
     }
 

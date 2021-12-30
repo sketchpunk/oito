@@ -1,28 +1,19 @@
 //#region IMPORTS
 import type { TVec3 }               from '@oito/type';
-import type { Pose }                from '@oito/armature';
+import type { Bone, Pose }          from '@oito/armature';
 import type { IKChain, Link }       from '../rigs/IKChain';
 import type { ISolver }             from './ISolver';
+import type { IKData }              from '..';
 
 import { Vec3, Transform, Quat }    from '@oito/core';
 //#endregion
 
 class SwingTwistEndsSolver implements ISolver{
     //#region TARGETTING DATA
-
     startEffectorDir    = [ 0, 0, 0 ];
     startPoleDir        = [ 0, 0, 0 ];
     endEffectorDir      = [ 0, 0, 0 ];
     endPoleDir          = [ 0, 0, 0 ];
-    /*
-    _isTarPosition  = false;        // Is the Target a Position or a Direction?
-    _originPoleDir  = [ 0, 0, 0 ];
-    effectorPos     = [ 0, 0, 0 ];  // IK Target can be a Position or...
-    effectorDir     = [ 0, 0, 1 ];  // Direction. BUT if its position, need to compute dir from chain origin position.
-    poleDir         = [ 0, 1, 0 ];  // Direction that handles the twisitng rotation
-    orthoDir        = [ 1, 0, 0 ];  // Direction that handles the bending direction, like elbow/knees.
-    originPos       = [ 0, 0, 0 ];  // Starting World Position of the Chain
-    */
     //#endregion
 
     initData( pose?: Pose, chain?: IKChain ): this{
@@ -145,42 +136,26 @@ class SwingTwistEndsSolver implements ISolver{
         }
     }
 
-    /*
-    getWorldRot( chain: IKChain, pose: Pose, debug?:any ) : [ Quat, Transform ]{
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        const pt    = new Transform();
-        const ct    = new Transform();
-        
-        let lnk     = chain.first();
-
-        // Get the Starting Transform
-        if( lnk.pidx == -1 )    pt.copy( pose.offset );
-        else                    pose.getWorldTransform( lnk.pidx, pt );
-
-        ct.fromMul( pt, lnk.bind );     // Get Bone's BindPose position in relation to this pose
-        this._update( ct.pos );         // Update Data to use new Origin.
-
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        const rot = new Quat( ct.rot );
+    ikDataFromPose( chain: IKChain, pose: Pose, out: IKData.DirEnds ): void{
         const dir = new Vec3();
-        const q   = new Quat();
+        let lnk : Link;
+        let b   : Bone;
+        
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // First Bone
+        lnk = chain.first();
+        b   = pose.bones[ lnk.idx ];
+        dir.fromQuat( b.world.rot, lnk.effectorDir ).norm().copyTo( out.startEffectorDir );
+        dir.fromQuat( b.world.rot, lnk.poleDir ).norm().copyTo( out.startPoleDir );
 
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        // Swing
-        dir.fromQuat( ct.rot, lnk.effectorDir );    // Get WS Binding Effector Direction of the Bone
-        q.fromUnitVecs( dir, this.effectorDir );    // Rotation TO IK Effector Direction
-        rot.pmul( q );                              // Apply to Bone WS Rot
-
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        // Twist
-        dir.fromQuat( rot, lnk.poleDir );           // Get WS Binding Pole Direction of the Bone
-        q.fromUnitVecs( dir, this.poleDir );        // Rotation to IK Pole Direction
-        rot.pmul( q );                              // Apply to Bone WS Rot + Swing
-
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        return [ rot, pt ];
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Last Bone
+        lnk = chain.last();
+        b   = pose.bones[ lnk.idx ];
+        dir.fromQuat( b.world.rot, lnk.effectorDir ).norm().copyTo( out.endEffectorDir );
+        dir.fromQuat( b.world.rot, lnk.poleDir ).norm().copyTo( out.endPoleDir );
     }
-    */
+
 }
 
 export default SwingTwistEndsSolver;

@@ -1,7 +1,8 @@
-import type VerletPoint from '../VerletPoint';
-import type IConstraint from './IConstraint';
-import { Vec3 } from '@oito/core';
-
+//#region IMPORTS
+import type VerletPoint     from '../VerletPoint';
+import type { IConstraint } from '../../types';
+import { Vec3 }             from '@oito/core';
+//#endregion
 
 // Force a distance between Two Points
 class DistanceConstraint implements IConstraint{
@@ -69,7 +70,10 @@ class DistanceConstraint implements IConstraint{
         else if( !aPin && bPin ){   aScl = stiffness;   bScl = 0; }
         else{
             // Compute the Weight between the Two Points using its mass
-            aScl = ( this.pa.mass / (this.pa.mass + this.pb.mass) ) * stiffness;
+            // 1 - Mass Ratio, this is done so greater mass will have the smaller side of travel scale.
+            // So M1 + M3 = M4, M3/M4 = 0.8, dont want the heaver side to handle 80% of the travel distance, 
+            // so 1.0 - 0.8 = 0.2, So Mass 3 will do 20% of the difference, while Mass 1 which is lighter moves 80% the diff. 
+            aScl = ( 1 - this.pa.mass / (this.pa.mass + this.pb.mass) ) * stiffness;
             bScl = stiffness - aScl;    // Since Stiffness is the Max Weight value, Use that to get the inverse of A's Weight Ratio
         }
 

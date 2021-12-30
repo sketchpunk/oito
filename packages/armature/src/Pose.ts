@@ -1,8 +1,8 @@
 //#region IMPORTS
-import type { TVec3, TVec4 }    from '@oito/types';
-import { Quat, Transform }      from '@oito/core';
-import type Armature            from './Armature.js';
-import type Bone                from './Bone.js';
+import type { TVec3, TVec4 }        from '@oito/types';
+import { Vec3, Quat, Transform }    from '@oito/core';
+import type Armature                from './Armature.js';
+import type Bone                    from './Bone.js';
 
 import type { Pose as GLPose, PoseJoint as GLPoseJoint }   from '../../gltf2/src/Pose';
 //#endregion
@@ -181,6 +181,36 @@ class Pose{
         // Add offset at the end
         out.pmul( this.offset.rot );
         return out;
+    }
+
+    updateBoneLengths( defaultBoneLen=0 ): this{
+        const bCnt = this.bones.length;
+        let b: Bone, p: Bone;
+        
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Compute Bone Length from Children to Parent Bones
+        // Leaf bones don't have children, so no way to determine this length
+        for( let i=bCnt-1; i >= 0; i-- ){
+            //-------------------------------
+            b = this.bones[ i ];
+            if( b.pidx == null ) continue;  // No Parent to compute its length.
+
+            //-------------------------------
+            // Parent Bone, Compute its length based on its position and the current bone.
+            p       = this.bones[ b.pidx ];       
+            p.len   = Vec3.len( p.world.pos, b.world.pos );
+        }
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Set a default size for Leaf bones
+        if( defaultBoneLen != 0 ){
+            for( let i=0; i < bCnt; i++ ){
+                b = this.bones[ i ];
+                if( b.len == 0 ) b.len = defaultBoneLen;
+            }
+        }
+
+        return this;
     }
     //#endregion
 }

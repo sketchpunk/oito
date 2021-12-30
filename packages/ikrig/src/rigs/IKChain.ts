@@ -73,6 +73,21 @@ class IKChain{
 
         return this;
     }
+
+    //#region METHIDS
+    resetLengths( pose: Pose ): void{
+        let lnk: Link;
+        let len: number;
+
+        this.length = 0;
+        for( lnk of this.links ){
+            len         = pose.bones[ lnk.idx ].len;    // Get Current Length in Pose
+            lnk.len     = len;                          // Save it to Link
+            this.length += len;                         // Accumulate the total chain length
+        }
+    }
+    //#endregion
+
     //#endregion
 
     //#region GETTERS
@@ -147,10 +162,16 @@ class IKChain{
         return b.world.pos.toArray();
     }
 
-    getTailPosition( pose: Pose ): number[]{
+    getTailPosition( pose: Pose, ignoreScale=false ): number[]{
         const b = pose.bones[ this.links[ this.count - 1 ].idx ];
         const v = new Vec3( 0, b.len, 0 );
-        return b.world.transformVec3( v ).toArray();
+
+        if( !ignoreScale ) return b.world.transformVec3( v ).toArray();
+
+        return v
+            .transformQuat( b.world.rot )
+            .add( b.world.pos )
+            .toArray();
     }
 
     getAltDirections( pose: Pose, idx = 0 ): Array< number[] >{

@@ -1,4 +1,4 @@
-import { Vec3, Transform as Transform3 } from "./core.js";
+import { Vec3 as Vec32, Transform as Transform3 } from "./core.js";
 import { Transform } from "./core.js";
 var Bone = class {
   constructor(name, idx, len = 0) {
@@ -27,7 +27,7 @@ var Bone = class {
   }
 };
 var Bone_default = Bone;
-import { Quat, Transform as Transform2 } from "./core.js";
+import { Vec3, Quat, Transform as Transform2 } from "./core.js";
 var Pose = class {
   constructor(arm) {
     this.offset = new Transform2();
@@ -168,6 +168,25 @@ var Pose = class {
     out.pmul(this.offset.rot);
     return out;
   }
+  updateBoneLengths(defaultBoneLen = 0) {
+    const bCnt = this.bones.length;
+    let b, p;
+    for (let i = bCnt - 1; i >= 0; i--) {
+      b = this.bones[i];
+      if (b.pidx == null)
+        continue;
+      p = this.bones[b.pidx];
+      p.len = Vec3.len(p.world.pos, b.world.pos);
+    }
+    if (defaultBoneLen != 0) {
+      for (let i = 0; i < bCnt; i++) {
+        b = this.bones[i];
+        if (b.len == 0)
+          b.len = defaultBoneLen;
+      }
+    }
+    return this;
+  }
 };
 var Pose_default = Pose;
 var Armature = class {
@@ -233,7 +252,7 @@ var Armature = class {
       if (b.pidx == null)
         continue;
       p = this.bones[b.pidx];
-      p.len = Vec3.len(p.world.pos, b.world.pos);
+      p.len = Vec32.len(p.world.pos, b.world.pos);
     }
     if (defaultBoneLen != 0) {
       for (let i = 0; i < bCnt; i++) {
@@ -329,7 +348,7 @@ BoneMap.BoneInfo = BoneInfo;
 BoneMap.BoneChain = BoneChain;
 var BoneMap_default = BoneMap;
 import { Transform as Transform4 } from "./core.js";
-import { Vec3 as Vec32 } from "./core.js";
+import { Vec3 as Vec33 } from "./core.js";
 var SpringBase = class {
   constructor() {
     this.oscPerSec = Math.PI * 2;
@@ -373,9 +392,9 @@ var SpringBase_default = SpringBase;
 var SpringVec3 = class extends SpringBase_default {
   constructor() {
     super(...arguments);
-    this.vel = new Vec32();
-    this.val = new Vec32();
-    this.tar = new Vec32();
+    this.vel = new Vec33();
+    this.val = new Vec33();
+    this.tar = new Vec33();
     this.epsilon = 1e-6;
   }
   setTarget(v) {
@@ -394,9 +413,9 @@ var SpringVec3 = class extends SpringBase_default {
     return this;
   }
   update(dt) {
-    if (this.vel.isZero() && Vec32.lenSq(this.tar, this.val) == 0)
+    if (this.vel.isZero() && Vec33.lenSq(this.tar, this.val) == 0)
       return false;
-    if (this.vel.lenSq() < this.epsilon && Vec32.lenSq(this.tar, this.val) < this.epsilon) {
+    if (this.vel.lenSq() < this.epsilon && Vec33.lenSq(this.tar, this.val) < this.epsilon) {
       this.vel.xyz(0, 0, 0);
       this.val.copy(this.tar);
       return true;
@@ -421,12 +440,12 @@ var SpringItem = class {
   }
 };
 var SpringItem_default = SpringItem;
-import { Quat as Quat2, Transform as Transform5, Vec3 as Vec33 } from "./core.js";
+import { Quat as Quat2, Transform as Transform5, Vec3 as Vec34 } from "./core.js";
 var SpringRot = class {
   setRestPose(chain, pose) {
     let si;
     let b;
-    let tail = new Vec33();
+    let tail = new Vec34();
     for (si of chain.items) {
       b = pose.bones[si.index];
       tail.xyz(0, b.len, 0);
@@ -438,11 +457,11 @@ var SpringRot = class {
   updatePose(chain, pose, dt) {
     let si;
     let b;
-    let tail = new Vec33();
+    let tail = new Vec34();
     let pTran = new Transform5();
     let cTran = new Transform5();
-    let va = new Vec33();
-    let vb = new Vec33();
+    let va = new Vec34();
+    let vb = new Vec34();
     let rot = new Quat2();
     si = chain.items[0];
     b = pose.bones[si.index];

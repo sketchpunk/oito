@@ -58,9 +58,8 @@ window.addEventListener( "load", async _=>{
     let pose = arm.newPose();
     //pose.fromGLTF2( gltf.getPose() );
     rig.bindPose( pose );           // Late Binding of TPose : Rigs only work with TPoses
-    rig.useDefaultSolvers( pose );  // Use Default Solvers for known chains, Should Happen After Bind
+    rig.useSolversForRetarget( pose );  // Use Default Solvers for known chains, Should Happen After Bind
     
-
 
 
     //console.log( pose.bones );
@@ -68,20 +67,22 @@ window.addEventListener( "load", async _=>{
 
     /* 
     rig.spine.setSolver( new SwingTwistEndsSolver() );
-    rig.spine.solver.initData( pose, rig.spine );
+    rig.spine.solver.initData( pose, rig.spine );*/
     rig.spine.solver.setStartDir( [0,1,0], [0,0,1] );
     rig.spine.solver.setEndDir( [0,1,0], [1,0,0] );
     rig.spine.solver.resolve( rig.spine, pose, { pnt, ln } );
-    */
+    
 
+    /*
     let spinePos = [0.2, 1.021, 0.355613]; //[0, 1.221, -0.055613];
     rig.spine.setSolver( new NaturalCCDSolver().useArcSqrFactor( 0.05, 0.2, false ).setTries( 30 ) );
     rig.spine.solver.initData( pose, rig.spine );
 
     rig.spine.solver.setTargetPos( spinePos);
     rig.spine.solver.resolve( rig.spine, pose, { pnt, ln } );
+    */
 
-    pnt.add( spinePos, 0x00ffff, 1 );
+    //pnt.add( spinePos, 0x00ffff, 1 );
 
     //rig.hip.solver.setMovePos( HipPos, false );
     //rig.head.solver.setTargetPos( look );

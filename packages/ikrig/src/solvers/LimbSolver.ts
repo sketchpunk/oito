@@ -2,10 +2,11 @@
 import type { TVec3 }               from '@oito/type';
 import type { Pose }                from '@oito/armature';
 import type { IKChain }             from '../rigs/IKChain';
+import type { IKData }              from '..';
+import type { ISolver }             from './ISolver';
 
 import { Vec3, Transform, Quat }    from '@oito/core';
 import SwingTwistSolver             from './SwingTwistSolver';
-import { ISolver }                  from './ISolver';
 //#endregion
 
 function lawcos_sss( aLen: number, bLen: number, cLen: number ): number{
@@ -18,6 +19,7 @@ function lawcos_sss( aLen: number, bLen: number, cLen: number ): number{
 }
 
 class LimbSolver implements ISolver{
+    //#region MAIN
     _swingTwist = new SwingTwistSolver();
 
     initData( pose?: Pose, chain?: IKChain ): this{
@@ -31,9 +33,10 @@ class LimbSolver implements ISolver{
         }
         return this;
     }
+    //#endregion
 
     //#region SETTING TARGET DATA
-    setTargetDir( e: TVec3, pole ?: TVec3 ): this{ this._swingTwist.setTargetDir( e, pole ); return this; }
+    setTargetDir( e: TVec3, pole ?: TVec3, effectorScale ?: number ): this{ this._swingTwist.setTargetDir( e, pole, effectorScale ); return this; }
     setTargetPos( v: TVec3, pole ?: TVec3 ): this{ this._swingTwist.setTargetPos( v, pole ); return this; }
     setTargetPole( v: TVec3 ): this{ this._swingTwist.setTargetPole( v ); return this; }
     //#endregion
@@ -74,6 +77,31 @@ class LimbSolver implements ISolver{
 			.pmulInvert( prot );						    // To Local Space
 
 		pose.setLocalRot( b1.idx, rot );                    // Save to Pose
+    }
+
+    ikDataFromPose( chain: IKChain, pose: Pose, out: IKData.DirScale ): void{
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Length Scaled & Effector Direction
+        const p0    = chain.getStartPosition( pose );
+        const p1    = chain.getTailPosition( pose, true );
+        const dir   = Vec3.sub( p1, p0 );
+        
+        out.lenScale = dir.len() / chain.length;
+
+        dir
+            .norm()
+            .copyTo( out.effectorDir );
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // Pole Direction
+        const lnk   = chain.first();            // Chain Link : Pole is based on the first Bone's Rotation
+        const bp    = pose.bones[ lnk.idx ];    // Bone ref from Pose 
+        dir
+            .fromQuat( bp.world.rot, lnk.poleDir )  // Get Alt Pole Direction from Pose
+            .fromCross( dir, out.effectorDir )      // Get orthogonal Direction 
+            .fromCross( out.effectorDir, dir )      // To Align Pole to Effector
+            .norm()
+            .copyTo( out.poleDir );
     }
 }
 
